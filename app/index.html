@@ -267,6 +267,7 @@ label.btnlike:hover{background:#3d3d3d}
   </div>
   <div class="grp" id="oshape" hidden>
     <button class="sm" id="shapePick" title="Choose a shape" aria-haspopup="true"><span id="shapePickGlyph"></span><span id="shapeName">Dot</span> &#9662;</button>
+    <label class="chk" title="Center the shape on the page around the whole design, to use as a frame or border (the rectangle takes its width and height from your drag)"><input type="checkbox" id="frameChk">frame</label>
     <label for="fitBox" id="fitL" title="0 shrinks the shape to fit its field; 100 lets it flatten against the ink">fit to field</label><input type="range" id="fitBox" min="0" max="100" value="50"><span class="num" id="fitN">50</span>
     <label for="inkFx">ink</label><select id="inkFx" title="Marker ink for shape line work (filled shapes stay plain)"><option value="">Plain</option><option value="glitter">Glitter</option><option value="pearl">Pearl</option><option value="gold">Gold</option><option value="silver">Silver</option><option value="copper">Copper</option><option value="bronze">Bronze</option><option value="bismuth">Bismuth</option></select>
     <span id="pearlUI" class="pearlui" hidden><input type="color" id="pt0" title="Pearl base"><input type="color" id="pt1" title="Pearl flip: where it starts to catch the light"><input type="color" id="pt2" title="Pearl highlight: the brightest points"><select id="pearlPre" title="Pearl combos"><option value="">combos</option></select></span>
@@ -345,7 +346,7 @@ label.btnlike:hover{background:#3d3d3d}
     <button class="sech" data-sec="drawsec"><span class="cv">&#9660;</span><span class="ti">Drawing</span></button>
     <div class="secb">
       <div class="prow"><label for="gBlobs">Blobs</label><input type="range" id="gBlobs" min="1" max="3" value="2"><output id="oBlobs">2</output></div>
-      <div class="prow"><label for="gLines">Lines</label><input type="range" id="gLines" min="0" max="14" value="8"><output id="oLines">8</output></div>
+      <div class="prow"><label for="gLines" title="How many strokes cross the blobs in each direction (0: none)">Lines</label><input type="range" id="gLines" min="0" max="14" value="8"><output id="oLines">8</output></div>
       <div class="prow"><span class="lb">Blob shape</span><div class="seg"><button class="sm" id="shpSplat">Splat</button><button class="sm" id="shpFlower">Flower</button></div><span></span></div>
       <div class="prow"><label for="gOrg">Hand-drawn</label><input type="range" id="gOrg" min="0" max="10" value="5"><output id="oOrg">5</output></div>
       <div class="prow"><label for="gWeight">Outline</label><input type="range" id="gWeight" min="3" max="12" value="6"><output id="oWeight">6</output></div>
@@ -478,9 +479,9 @@ function genPalette(seed){
   out.sort((a,b)=>Math.round(a.h/30)-Math.round(b.h/30)||a.L-b.L);
   return out.map(o=>o.hex);
 }
-const HINTS={fill:'Tap a shape to fill. Pinch to zoom.',aim:'Touch, slide to aim, lift to fill',line:'Drag to draw a line',curve:'Drag, then pull the dot to bend',fan:'Drag from one corner of a field to the other'};
+const HINTS={fill:'Tap a shape to fill. Pinch to zoom.',aim:'Touch, slide to aim, lift to fill',line:'Drag to draw a line',curve:'Drag, then pull the dot to bend',fan:'Press where the fan starts and drag toward the far side; drag farther to reach farther'};
 
-const S={strokes:[],legacyInk:false,pearl:['#3b1470','#d0379a','#e6b33d'],fx:'',stamp:'dot',stamps:[],shape:'splat',organic:.5,autoArea:'all',autoStyle:'rings',latPaths:[],dark:false,inkIdx:0,inkC:'',palId:'markers',pal:null,minCell:2,tool:'fill',color:'#f7c613',size:4,wall:false,blobs:2,lines:8,weight:6,ink:INKS_LIGHT[0],blobPaths:[]};
+const S={outW:6,frame:false,strokes:[],legacyInk:false,pearl:['#3b1470','#d0379a','#e6b33d'],fx:'',stamp:'dot',stamps:[],shape:'splat',organic:.5,autoArea:'all',autoStyle:'rings',latPaths:[],dark:false,inkIdx:0,inkC:'',palId:'markers',pal:null,minCell:2,tool:'fill',color:'#f7c613',size:4,wall:false,blobs:2,lines:8,weight:6,ink:INKS_LIGHT[0],blobPaths:[]};
 const PAPER=()=>S.dark?'#1d1a25':'#fffefb';
 const store={get(k){try{return localStorage.getItem(k);}catch(_){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(_){}}};
 {const c=store.get('licorice-inkc');if(/^#[0-9a-f]{6}$/i.test(c||''))S.inkC=c.toLowerCase();} // last own line color, offered in the picker
@@ -784,9 +785,10 @@ function makeGrid(pts){
     return{ang,nx,ny,vmin,vmax,uv};
   };
   const tilt=rand(-.1,.1),A=fam(Math.PI/4+tilt),B=fam(-Math.PI/4+tilt+rand(-.08,.08));
-  const span=((A.vmax-A.vmin)+(B.vmax-B.vmin))/2,sp=span/Math.max(2,S.lines-.5);
+  const count=Math.round(S.lines);if(count<1)return[];  // the Lines slider: exactly this many strokes each way
+  const span=((A.vmax-A.vmin)+(B.vmax-B.vmin))/2,n=count-1,step=span/(count+.35);
   for(const F of[A,B]){
-    const lo=F.vmin-sp*rand(.35,.5),hi=F.vmax+sp*rand(.35,.5),n=Math.max(2,Math.round((hi-lo)/sp)),step=(hi-lo)/n;
+    const lo=(F.vmin+F.vmax)/2-n*step/2;
     // how far the blobs reach along each stroke
     const offs=[],e0=[],e1=[];
     for(let i=0;i<=n;i++){
@@ -958,7 +960,7 @@ async function generate(first){
     const cand=await buildGrid(lim);
     if(!first)pushUndo([P,O,K,D]);
     [P,O,K,D,V].forEach(c=>c.clearRect(0,0,W,H));
-    drawCand(O,cand);
+    drawCand(O,cand);S.outW=S.weight;
     if(lim){
       const m=wallMask(),an=analyze(m,W,H),ids=[];
       for(let i=1;i<=an.id;i++)if(an.areas[i]<KNOT.a||an.rmax[i]<KNOT.r*3)ids.push(i);
@@ -1102,7 +1104,7 @@ function cellGraph(){
     const p=seeds[i],x=p%W,y=(p/W)|0;
     inside[i]=areas[i]>=30&&(S.autoArea==='all'?!edge[i]:S.blobPaths.some(b=>O.isPointInPath(b,x+.5,y+.5)))?1:0;
   }
-  const d=Math.ceil(S.weight*1.5)+4;
+  const d=Math.ceil(S.outW*1.5)+4;
   const adj=adjLists(contacts(lab,[[d,0],[0,d]]),id,8);
   return{m,lab,id,areas,seeds,inside,cx,cy,adj};
 }
@@ -1135,7 +1137,7 @@ function autoRings(g){
   const border=new Uint8Array(lid+1);
   for(let x=0;x<W;x++){border[ll[x]]=1;border[ll[N-W+x]]=1;}
   for(let y=0;y<H;y++){border[ll[y*W]]=1;border[ll[y*W+W-1]]=1;}
-  const d=Math.ceil(S.weight*1.5)+4,dd=Math.round(d*.8);
+  const d=Math.ceil(S.outW*1.5)+4,dd=Math.round(d*.8);
   const ladj=adjLists(contacts(ll,[[d,0],[0,d],[dd,dd],[dd,-dd]]),lid,2);
   // center of the colored area
   let tx=0,ty=0,ta=0;
@@ -1353,6 +1355,10 @@ function rays(n,r0,r1,a0=-Math.PI/2){return Array.from({length:n},(_,i)=>{const 
 // shapes with a base and a direction: the base sits on the press point and `ang` (the way the shape points in
 // the unit disc) turns to follow the drag. A drop's base is its round bottom and it points up.
 const DROPDIR={base:ls=>ls[0].reduce((b,p)=>p[1]>b[1]?p:b),ang:-Math.PI/2};
+// a rounded rectangle, half-width hw, half-height hh, corner radius r, as one closed polyline
+function roundRect(hw,hh,r){r=Math.min(r,hw,hh);const pts=[],k=[[hw-r,hh-r,0],[-hw+r,hh-r,Math.PI/2],[-hw+r,-hh+r,Math.PI],[hw-r,-hh+r,Math.PI*1.5]];
+  k.forEach(([cx,cy,a0])=>{for(let i=0;i<=12;i++){const a=a0+i/12*Math.PI/2;pts.push([cx+Math.cos(a)*r,cy+Math.sin(a)*r]);}});
+  pts.push(pts[0]);return densify(pts,false);}
 function arcPoly(cx,cy,r,a0,a1,n=90){return Array.from({length:n+1},(_,i)=>{const a=a0+(a1-a0)*i/n;return[cx+Math.cos(a)*r,cy+Math.sin(a)*r];});}
 const SHAPES=[
   {id:'dot',name:'Dot',k:.25,fill:true,make:()=>[circ(.42)]},
@@ -1378,6 +1384,7 @@ const SHAPES=[
     const r=a=>([x,y])=>[x*Math.cos(a)-y*Math.sin(a),x*Math.sin(a)+y*Math.cos(a)],rot=r(-.6);
     return[[...up,...lo.reverse()].map(rot),densify([[-.9,0],[.62,0]],false).map(rot)];},
     dir:{base:ls=>ls[1][0],ang:-.6}},
+  {id:'rect',name:'Rectangle',k:.5,make:()=>[roundRect(.9,.9,.14)]},
   {id:'plus',name:'Plus',k:.6,make:()=>[densify([[-.8,0],[.8,0]],false),densify([[0,-.8],[0,.8]],false)]},
   {id:'waves',name:'Waves',k:1,make:()=>[-.6,-.2,.2,.6].map(y0=>{const w=Math.sqrt(.88**2-y0*y0),out=[];for(let i=0;i<=90;i++){const x=-w+2*w*i/90;out.push([x,y0+.07*Math.sin(x*10)]);}return out;})},
   {id:'fan',name:'Fan',drag:true}
@@ -1396,14 +1403,20 @@ const UPDIR={ang:-Math.PI/2}; // a shape with no base of its own grows from its 
    default size, upright). Room: fit 0 shrinks the whole shape until it fits; fit 1 keeps its size and eases in only
    the directions where it comes near the ink. A whole direction eases in together, so nested lines (rings, a sun's
    rays) keep their spacing, and the easing is smoothed around the pivot so the shape bends without kinks. */
-function stampAt(c,o,sh,q){
+function stampAt(c,o,sh,q,free){
   let ls=sh.make(),bx=0,by=0;
   const dir=sh.dir||UPDIR,dragged=q&&Math.hypot(q.x-o.x,q.y-o.y)>6,rot=dragged?Math.atan2(q.y-o.y,q.x-o.x)-dir.ang:0;
   if(sh.dir)[bx,by]=sh.dir.base(ls);
   const cs=Math.cos(rot),sn=Math.sin(rot);
   ls=ls.map(l=>l.map(([x,y])=>{x-=bx;y-=by;return[x*cs-y*sn,x*sn+y*cs];}));
   let ext=0;ls.forEach(l=>l.forEach(([x,y])=>{ext=Math.max(ext,Math.hypot(x,y));}));
-  const want=dragged?Math.hypot(q.x-o.x,q.y-o.y):8+3*S.size,u=want/ext,k=fitOf(sh),L=roomRing(o.R,6);
+  const want=dragged?Math.hypot(q.x-o.x,q.y-o.y):8+3*S.size,u=want/ext,k=fitOf(sh);
+  if(free){ // outside the design: nothing to fit, it goes where it's pressed at the dragged size
+    ls=subdiv(ls,1.5/u);
+    return{d:linesToD(ls.map(l=>l.map(([x,y])=>[o.x+x*u,o.y+y*u]))),fill:!!sh.fill,color:S.color,size:S.size,ax:o.x,ay:o.y,shape:sh.id,...inkOf(),
+      dot:sh.dotC?[f1s(o.x),f1s(o.y),f1s(Math.max(2,.12*u))]:undefined};
+  }
+  const L=roomRing(o.R,6);
   ls=subdiv(ls,1.5/u);
   const M=L.length,E=new Float32Array(M),bin=a=>((Math.round(a/TAU*M)%M)+M)%M;let u0=u;
   ls.forEach(l=>l.forEach(([x,y])=>{const r=Math.hypot(x,y);if(r<1e-6)return;const a=Math.atan2(y,x),j=bin(a);
@@ -1420,6 +1433,23 @@ function stampAt(c,o,sh,q){
   if(sh.dotC){const q0=f(0,0),t=f(0,-.8),r=Math.max(2,.12/.8*Math.hypot(t[0]-q0[0],t[1]-q0[1]));st.dot=[f1s(q0[0]),f1s(q0[1]),f1s(r)];}
   return st;
 }
+/* frame: the shape is centered on the page, around the whole design, sized by the drag (the pointer marks its edge)
+   and turned to face the pointer. The rectangle takes its width and height from the pointer instead, so it can be a
+   border. With no drag it sits just inside the page. */
+function frameStamp(sh,q){
+  const cx=W/2,cy=H/2,dx=q?q.x-cx:0,dy=q?q.y-cy:0,dragged=q&&Math.hypot(dx,dy)>12;let ls;
+  if(sh.id==='rect'){
+    const hw=dragged?Math.max(12,Math.abs(dx)):W/2-18-S.size,hh=dragged?Math.max(12,Math.abs(dy)):H/2-18-S.size;
+    ls=[roundRect(hw,hh,Math.min(hw,hh)*.12)].map(l=>l.map(([x,y])=>[cx+x,cy+y]));
+  }else{
+    ls=sh.make();let ext=0;ls.forEach(l=>l.forEach(([x,y])=>{ext=Math.max(ext,Math.hypot(x,y));}));
+    const u=(dragged?Math.hypot(dx,dy):Math.min(W,H)/2-18-S.size)/ext,rot=dragged?Math.atan2(dy,dx)-(sh.dir||UPDIR).ang:0,cs=Math.cos(rot),sn=Math.sin(rot);
+    ls=subdiv(ls,1.5/u).map(l=>l.map(([x,y])=>[cx+(x*cs-y*sn)*u,cy+(x*sn+y*cs)*u]));
+  }
+  const st={d:linesToD(ls),fill:!!sh.fill,color:S.color,size:S.size,ax:cx,ay:cy,shape:sh.id,...inkOf()};
+  if(sh.dotC)st.dot=[f1s(cx),f1s(cy),f1s(Math.max(3,Math.min(W,H)*.02))];
+  return st;
+}
 // a spiral or echo: centered on the field's deepest point, following its outline, sized by s; a spiral turns by rot
 function stampFor(c,sh,s=1,rot=0){
   const spi=sh.id.startsWith('spiral'),f=warpFn(c,fitOf(sh),spi),cs=Math.cos(rot),sn=Math.sin(rot);
@@ -1430,42 +1460,40 @@ function stampFor(c,sh,s=1,rot=0){
   return st;
 }
 
-/* the fan: drag from one corner of a field toward the other. Tips spread evenly along the far side of the
-   field and stop just short of its ink; the outer strokes follow the sides, so where a side bulges out they
-   bulge out with it. Off any field it falls back to the free fan. */
+/* the fan: press where its base should be and drag toward the far side. The strokes spread evenly in angle across the
+   width of the field as seen from the base, reach as far as the drag has gone (all the way to the far side once the
+   pointer gets there) and bow gently outward: smooth curves that follow the field without hugging its sides.
+   Off any field it falls back to the free fan. */
 function cfanStamp(d){
   const c=d.cell;if(!c||c.edge||dist(d.a,d.b)<12)return null;  // the page background is not a field
-  const M=c.M,P=[],L=[0];
-  for(let j=0;j<M;j++){const a=j/M*TAU,r=Rat(c,a);P.push([c.cx+Math.cos(a)*r,c.cy+Math.sin(a)*r]);}
-  for(let j=1;j<=M;j++){const p=P[j-1],q=P[j%M];L.push(L[j-1]+Math.hypot(q[0]-p[0],q[1]-p[1]));}
-  const per=L[M];
-  const near=(x,y)=>{let bi=0,bd=1e18;P.forEach((p,i)=>{const e=(p[0]-x)**2+(p[1]-y)**2;if(e<bd){bd=e;bi=i;}});return bi;};
-  const at=s=>{s=((s%per)+per)%per;let j=0;while(j<M-1&&L[j+1]<s)j++;const t=(s-L[j])/((L[j+1]-L[j])||1),p=P[j],q=P[(j+1)%M];
-    return{x:p[0]+(q[0]-p[0])*t,y:p[1]+(q[1]-p[1])*t,a:(j+t)/M*TAU};};
-  // the base: where the drag started, pulled inside the inset outline
-  const aA=Math.atan2(d.a.y-c.cy,d.a.x-c.cx),RA=Rat(c,aA),rhoA=Math.min(.999,Math.hypot(d.a.x-c.cx,d.a.y-c.cy)/RA);
-  const A=[c.cx+Math.cos(aA)*RA*rhoA,c.cy+Math.sin(aA)*RA*rhoA];
-  const iA=near(A[0],A[1]),iB=near(d.b.x,d.b.y);
-  const dp=((L[iA]-L[iB])%per+per)%per,dm=per-dp,reach=.74;
-  if(dp<10||dm<10)return null;
-  const s0=L[iB]-reach*dm,s1=L[iB]+reach*dp,arc=s1-s0;
-  const n=clamp(Math.round(arc/(16+S.size*2.6)),4,16),lines=[];
+  const o=d.o||(d.o=raysFrom(c,d.a.x,d.a.y)),L=roomRing(o.R,3),B={x:o.x,y:o.y};
+  const th=Math.atan2(d.b.y-o.y,d.b.x-o.x),full=ringAt(L,th);if(full<8)return null;
+  const f=clamp(dist(B,d.b)/full,.12,1);
+  // how wide it opens: out to where the room falls below a third of the room straight ahead (80 degrees at most),
+  // then a little less, so the outer strokes keep clear of the sides
+  const stp=TAU/288;let aL=0,aR=0;
+  while(aR<1.4&&ringAt(L,th+aR+stp)>=full*.34)aR+=stp;
+  while(aL<1.4&&ringAt(L,th-aL-stp)>=full*.34)aL+=stp;
+  const aR0=aR,aL0=aL;aR=Math.max(.12,aR-Math.min(.3,aR*.3));aL=Math.max(.12,aL-Math.min(.3,aL*.3)); // off the sides: strokes that skim a wall bunch up along it
+  // the tips are spaced evenly along the curve they make, not by angle, so the short strokes by the sides don't bunch
+  const span=aL+aR,K=120,ang=[],cum=[0];let px=null;
+  for(let k=0;k<=K;k++){const a=th-aL+span*k/K,r=ringAt(L,a)*f,x=Math.cos(a)*r,y=Math.sin(a)*r;
+    if(px)cum.push(cum[k-1]+Math.hypot(x-px[0],y-px[1]));ang.push(a);px=[x,y];}
+  const arc=cum[K],angAt=s=>{let k=0;while(k<K-1&&cum[k+1]<s)k++;const u=(s-cum[k])/((cum[k+1]-cum[k])||1);return ang[k]+(ang[k+1]-ang[k])*u;};
+  const n=clamp(Math.round(arc/(14+S.size*2.4))+1,3,15),seed=d.seed,lines=[];
   for(let i=0;i<n;i++){
-    const s=s0+arc*i/(n-1),T=at(s),fwd=s>=L[iB],t=fwd?(s-L[iB])/(reach*dp):(s-L[iB])/(reach*dm);
-    const w=.82*Math.pow(Math.abs(t),1.6);
-    const dA=fwd?-((((aA-T.a)%TAU)+TAU)%TAU):(((T.a-aA)%TAU)+TAU)%TAU;
-    const pts=[];
-    for(let u=0;u<=1.0001;u+=1/32){
-      const chx=A[0]+(T.x-A[0])*u,chy=A[1]+(T.y-A[1])*u;
-      const a=aA+dA*u,rho=rhoA+(1-rhoA)*u,r=Rat(c,a)*rho,px=c.cx+Math.cos(a)*r,py=c.cy+Math.sin(a)*r;
-      pts.push([chx+(px-chx)*w,chy+(py-chy)*w]);
-    }
-    pts[pts.length-1]=[T.x,T.y];
-    // iron out the little steps the traced outline leaves, keeping both ends where they are
-    for(let it=0;it<4;it++)for(let j=pts.length-2;j>0;j--)pts[j]=[(pts[j-1][0]+2*pts[j][0]+pts[j+1][0])/4,(pts[j-1][1]+2*pts[j][1]+pts[j+1][1])/4];
+    const t=i/(n-1),a=angAt(arc*t),tt=(a-th+aL)/span*2-1,cs=Math.cos(a),sn=Math.sin(a);
+    const len=ringAt(L,a)*f*(.93+.07*seed[i%seed.length][1]),ex=o.x+cs*len,ey=o.y+sn*len;
+    // bow outward (more toward the sides), never so far that the bulge leaves the room in its direction
+    // and never so much that it sets off beyond the fan's open range (that's where it would run along a wall)
+    let bend=len*.1*tt;
+    for(let k=0;k<8;k++){const mx=(o.x+ex)/2-sn*bend,my=(o.y+ey)/2+cs*bend,a0=a+Math.atan2(4*bend,len);
+      if(Math.hypot(mx-o.x,my-o.y)<=ringAt(L,Math.atan2(my-o.y,mx-o.x))*.9&&a0<=th+aR0&&a0>=th-aL0)break;bend*=.6;}
+    const kx=(o.x+ex)/2-sn*bend*2,ky=(o.y+ey)/2+cs*bend*2,pts=[];
+    for(let u=0;u<=24;u++){const v=u/24,w=1-v;pts.push([w*w*o.x+2*w*v*kx+v*v*ex,w*w*o.y+2*w*v*ky+v*v*ey]);}
     lines.push(pts);
   }
-  return{d:linesToD(lines),fill:false,color:S.color,size:S.size,ax:c.cx,ay:c.cy,shape:'fan',...inkOf()};
+  return{d:linesToD(lines),fill:false,color:S.color,size:S.size,ax:o.x,ay:o.y,shape:'fan',...inkOf()};
 }
 
 /* the shape layer */
@@ -1573,7 +1601,7 @@ function renderStamps(){requestView();}
    sit under the lines). */
 function drawVectors(c){
   c.save();c.lineCap='round';c.lineJoin='round';
-  if(!S.legacyInk){c.strokeStyle=S.ink;c.lineWidth=S.weight;(S.blobPaths||[]).forEach(b=>c.stroke(b));(S.latPaths||[]).forEach(l=>c.stroke(l));}
+  if(!S.legacyInk){c.strokeStyle=S.ink;c.lineWidth=S.outW;(S.blobPaths||[]).forEach(b=>c.stroke(b));(S.latPaths||[]).forEach(l=>c.stroke(l));}
   (S.strokes||[]).forEach(st=>{c.strokeStyle=st.color;c.lineWidth=st.size;c.stroke(strokePath(st));});
   c.restore();
   (S.stamps||[]).forEach(st=>paintStamp(c,st));
@@ -1621,11 +1649,16 @@ function cleanStamp(o){return{d:o.d,fill:!!o.fill,color:o.color,size:clamp(+o.si
 let hover=null,hoverRaf=0,aim=null;
 function isStampTool(){return S.tool==='shape'&&!shapeById(S.stamp).drag;}
 function startAim(p){
-  const c=cellAt(p.x,p.y),sh=shapeById(S.stamp);
-  aim=c&&!c.edge?{cell:c,p,q:null,o:sh.snap?null:raysFrom(c,p.x,p.y)}:null;showAim();
+  const sh=shapeById(S.stamp);
+  if(S.frame){aim={frame:true,p,q:null};showAim();return;}
+  const c=cellAt(p.x,p.y);
+  // on the page around the design (the background) a shape is placed freely; inside, it fits its field
+  aim=!c?null:c.edge?{cell:c,p,q:null,free:true}:{cell:c,p,q:null,o:sh.snap?null:raysFrom(c,p.x,p.y)};showAim();
 }
 function aimStamp(a){
   const sh=shapeById(S.stamp),c=a.cell;
+  if(a.frame)return frameStamp(sh,a.q);
+  if(a.free)return stampAt(c,{x:a.p.x,y:a.p.y},sh,a.q,true);
   if(!sh.snap)return stampAt(c,a.o||(a.o=raysFrom(c,a.p.x,a.p.y)),sh,a.q);
   const q=a.q;let s=q?clamp(Math.hypot(q.x-c.cx,q.y-c.cy)/Rat(c,Math.atan2(q.y-c.cy,q.x-c.cx)),.15,1):1;
   if(sh.id==='echo'){
@@ -1776,7 +1809,7 @@ function setTool(t){
 }
 const TOOLNAMES={fill:'Fill',line:'Line',curve:'Curve',shape:'Shape'};
 function updHint(){
-  if(S.tool==='shape'){const sh=shapeById(S.stamp);$('#hint').textContent=sh.drag?HINTS.fan:(sh.id==='echo'?'Press in a field to echo its outline; each new echo goes inside the last. Drag while holding to size it.':sh.snap?'Press in a field to center a spiral on it; drag while holding to size it.':'Press where the '+sh.name.toLowerCase().replace(/,.*/,'')+' should start; drag while holding to grow it. Place as many as you like.');return;}
+  if(S.tool==='shape'){const sh=shapeById(S.stamp);$('#hint').textContent=sh.drag?HINTS.fan:S.frame?'Frame: drag out from the middle of the page to size it around the design (tap for one just inside the page).':(sh.id==='echo'?'Press in a field to echo its outline; each new echo goes inside the last. Drag while holding to size it.':sh.snap?'Press in a field to center a spiral on it; drag while holding to size it.':'Press where the '+sh.name.toLowerCase().replace(/,.*/,'')+' should start; drag while holding to grow it. Place as many as you like.');return;}
   $('#hint').textContent=S.tool==='fill'&&S.loupe?HINTS.aim:HINTS[S.tool];
 }
 /* ---------- the shapes tool: a Photoshop-style group, hold (or right-click) for the picker ---------- */
@@ -1815,6 +1848,8 @@ function setLoupe(v){
 $('#loupeBtn').onchange=e=>setLoupe(e.target.checked);
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
 function setWall(v){S.wall=v;$('#wall').checked=v;}
+function setFrame(v){S.frame=!!v;$('#frameChk').checked=S.frame;store.set('licorice-frame',S.frame?'1':'0');updHint();}
+$('#frameChk').onchange=e=>setFrame(e.target.checked);
 $('#wall').onchange=e=>setWall(e.target.checked);
 $('#autoGo').onclick=()=>{autoColor();closePanel();};
 $('#undo').onclick=undo;
@@ -2004,7 +2039,7 @@ function snapshot(){
   return{app:'licorice',v:2,W,H,paint:cv.paint.toDataURL('image/png'),outline:cv.outline.toDataURL('image/png'),deco:cv.deco.toDataURL('image/png'),stamps:S.stamps,
     knots:cv.knots.toDataURL('image/png'),strokes:S.strokes||[],legacyInk:S.legacyInk||undefined,
     blobs:(S.blobPaths||[]).map(p=>p.d).filter(Boolean),lat:(S.latPaths||[]).map(p=>p.d).filter(Boolean),
-    dark:S.dark,inkIdx:S.inkIdx,inkC:S.inkIdx<0?S.ink:undefined,palId:S.palId,weight:S.weight};
+    dark:S.dark,inkIdx:S.inkIdx,inkC:S.inkIdx<0?S.ink:undefined,palId:S.palId,weight:S.outW};
 }
 function thumbURL(){
   return flatten(240/W).toDataURL('image/jpeg',.82);
@@ -2023,7 +2058,7 @@ function flatten(k){
 // the line work at page size, cached until the drawing changes (for the loupe when the drawing is heavy)
 let vecC=null,vecKey=null;
 function vecDoc(){
-  const key=[S.blobPaths,S.latPaths,S.strokes,S.stamps,S.ink,S.legacyInk,W,H];
+  const key=[S.blobPaths,S.latPaths,S.strokes,S.stamps,S.ink,S.legacyInk,S.outW,W,H];
   if(!vecC||!vecKey||key.some((v,i)=>v!==vecKey[i])){vecC=vecC&&vecC.width===W&&vecC.height===H?vecC:mkCanvas(W,H);
     const x=vecC.getContext('2d');x.clearRect(0,0,W,H);drawVectors(x);vecKey=key;}
   return vecC;
@@ -2038,7 +2073,7 @@ async function restore(st){
   else{S.inkIdx=clamp(st.inkIdx|0,0,3);S.ink=currentInks()[S.inkIdx];}
   renderInks();
   if(typeof st.palId==='string')setPalette(st.palId);
-  if(st.weight)S.weight=clamp(+st.weight,3,12);
+  S.outW=st.weight?clamp(+st.weight,3,12):6;
   [P,O,D].forEach((c,k)=>{c.clearRect(0,0,W,H);c.drawImage(imgs[k],0,0);});
   // before v20 the line work was only pixels: show it as it was saved (from K), and don't draw the outline again on top
   S.legacyInk=!knots||!!st.legacyInk;K.clearRect(0,0,W,H);K.drawImage(S.legacyInk?imgs[1]:knots,0,0);
@@ -2147,7 +2182,7 @@ function buildSVG(){
   const o=[`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`,
     `<rect width="${W}" height="${H}" fill="${PAPER()}"/>`,
     `<g id="fills">${img(layerPNG([cv.paint,cv.knots]))}</g>`];
-  if(!S.legacyInk)o.push(`<g id="outline" fill="none" stroke="${S.ink}" stroke-width="${S.weight}" stroke-linecap="round" stroke-linejoin="round">`+
+  if(!S.legacyInk)o.push(`<g id="outline" fill="none" stroke="${S.ink}" stroke-width="${S.outW}" stroke-linecap="round" stroke-linejoin="round">`+
     [...(S.blobPaths||[]),...(S.latPaths||[])].filter(p=>p.d).map(p=>`<path d="${esc(p.d)}"/>`).join('')+'</g>');
   const deco=layerPNG([cv.deco]);if(deco)o.push(`<g id="older-lines">${img(deco)}</g>`);
   o.push('<g id="lines" fill="none" stroke-linecap="round" stroke-linejoin="round">'+(S.strokes||[]).map(st=>
@@ -2247,7 +2282,7 @@ addEventListener('keydown',e=>{
   else return;
   e.preventDefault();
 });
-setStamp(store.get('dblob-stamp')||'dot');
+setStamp(store.get('dblob-stamp')||'dot');setFrame(store.get('licorice-frame')==='1');
 function setFx(v){S.fx=isInk(v)?v:'';store.set('dblob-fx',S.fx);$('#inkFx').value=S.fx;$('#pearlUI').hidden=S.fx!=='pearl';if(aim)showAim();}
 function setPearl(t){S.pearl=t.slice();store.set('dblob-pearl',JSON.stringify(S.pearl));[0,1,2].forEach(i=>{$('#pt'+i).value=S.pearl[i];});if(aim)showAim();}
 [0,1,2].forEach(i=>{$('#pt'+i).oninput=e=>{const t=S.pearl.slice();t[i]=e.target.value;setPearl(t);};});
