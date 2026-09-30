@@ -1418,7 +1418,7 @@ function cfanStamp(d){
 
 /* the shape layer */
 function stampPath(st){const p=new Path2D(st.d);if(st.dot)p.moveTo(st.dot[0]+st.dot[2],st.dot[1]),p.arc(st.dot[0],st.dot[1],st.dot[2],0,TAU);return p;}
-/* marker inks for shapes: plain, glitter (coarse flecks of the marker color, with twinkles) or a metal. Metallic
+/* marker inks for shapes: plain, glitter (sandpaper: fine grains of the marker color, a few brighter) or a metal. Metallic
    marker ink is flat: a solid stroke in the metal's color, a fine mica shimmer, and a soft sheen that comes and
    goes along the line where it catches the light. Bismuth is the rainbow one: its color drifts along the line. */
 const METALS={
@@ -1493,19 +1493,19 @@ function paintStamp(c,st){
       c.globalAlpha=.25+R()*.35;c.fillStyle=shades[(R()*shades.length)|0];c.fillRect(x+Math.cos(a)*r-z/2,y+Math.sin(a)*r-z/2,z,z);});
     c.globalAlpha=1;c.lineCap='round';
   }else if(fx==='glitter'){
+    // sandpaper: the marker color as the base, packed with fine grains in its own shades; a few grains catch the
+    // light brighter. Flat, no rays or twinkles.
     const ls=stampPolys(st),R=rng(Math.round(st.ax*73856093^st.ay*19349663^st.d.length));
-    const cols=[tint(st.color,.45),tint(st.color,.8),'#fff',st.color,tint(st.color,-.35),tint(st.color,.25)];
-    const fleck=(x,y,r)=>{c.fillStyle=cols[(R()*cols.length)|0];const s=r*(.5+R());c.fillRect(x-s/2,y-s/2,s,s);};
-    const twinkle=(x,y)=>{const L=w*(.9+R()*.9);c.strokeStyle='rgba(255,255,255,.9)';c.lineWidth=Math.max(.8,w*.14);
-      c.beginPath();c.moveTo(x-L,y);c.lineTo(x+L,y);c.moveTo(x,y-L);c.lineTo(x,y+L);c.stroke();};
-    c.strokeStyle=tint(st.color,-.2);c.stroke(new Path2D(st.d));
-    const step=Math.max(1,w*.4),tw=[];let acc=0; // acc: distance walked since the last fleck
-    ls.forEach(l=>{for(let i=1;i<l.length;i++){const[ax,ay]=l[i-1],[bx,by]=l[i],len=Math.hypot(bx-ax,by-ay);let pos=step-acc;
-      for(;pos<=len;pos+=step){const t=pos/len,x=ax+(bx-ax)*t,y=ay+(by-ay)*t;
-        for(let j=0;j<2;j++){const a=R()*TAU,r=R()*w*.45;fleck(x+Math.cos(a)*r,y+Math.sin(a)*r,Math.max(1,w*.28));}
-        if(R()<.025)tw.push([x,y]);}
-      acc=len-(pos-step);}});
-    tw.forEach(([x,y])=>twinkle(x,y));
+    const mid=[tint(st.color,-.25),tint(st.color,-.12),tint(st.color,.12),tint(st.color,.25)],bright=[tint(st.color,.55),tint(st.color,.75)];
+    c.strokeStyle=st.color;c.stroke(new Path2D(st.d));
+    // sand is fine whatever the marker width: grains stay ~1px and wider lines just get more of them
+    const per=Math.max(2,Math.round(w*.7));
+    walkLines(ls,.8,(x,y)=>{
+      for(let j=0;j<per;j++){
+        const a=R()*TAU,r=Math.sqrt(R())*w*.46,z=.6+R()*.9,k=R();
+        c.globalAlpha=k<.12?.95:.35+R()*.4;c.fillStyle=k<.015?'#fff':k<.12?bright[(R()*2)|0]:mid[(R()*4)|0];
+        c.fillRect(x+Math.cos(a)*r-z/2,y+Math.sin(a)*r-z/2,z,z);}});
+    c.globalAlpha=1;
   }else{
     const p=stampPath(st);if(st.fill)c.fill(p);else c.stroke(p);
   }
