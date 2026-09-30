@@ -283,7 +283,7 @@ label.btnlike:hover{background:#3d3d3d}
     <button class="sm" id="shapePick" title="Choose a shape" aria-haspopup="true"><span id="shapePickGlyph"></span><span id="shapeName">Dot</span> &#9662;</button>
     <span id="seedUI" hidden><label for="seedBox" title="The same seed always draws the same one: write it down to get it back">seed</label><input id="seedBox" spellcheck="false" autocomplete="off" maxlength="24" title="Type a number or any word (a name always gives the same one)"><button class="sm" id="dice" title="Roll a new one" aria-label="Roll a new one"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="15" r="1.2"/><circle cx="15" cy="9" r="1.2"/><circle cx="9" cy="15" r="1.2"/></svg></button></span>
     <label class="chk" title="Center the shape on the page around the whole design, to use as a frame or border (the rectangle takes its width and height from your drag)"><input type="checkbox" id="frameChk">frame</label>
-    <label class="chk" title="Draw the shape under the drawing's own lines, so they cross over it (good for a border behind the design)"><input type="checkbox" id="underChk">behind</label>
+    <label class="chk" title="Put the shape behind the design: it shows only outside it, like a border the design sits on"><input type="checkbox" id="underChk">behind</label>
     <label for="fitBox" id="fitL" title="0 shrinks the shape to fit its field; 100 lets it flatten against the ink">fit to field</label><input type="range" id="fitBox" min="0" max="100" value="50"><span class="num" id="fitN">50</span>
     <label for="inkFx">ink</label><select id="inkFx" title="Marker ink for shape line work (filled shapes stay plain)"><option value="">Plain</option><option value="glitter">Glitter</option><option value="pearl">Pearl</option><option value="gold">Gold</option><option value="silver">Silver</option><option value="copper">Copper</option><option value="bronze">Bronze</option><option value="bismuth">Bismuth</option></select>
     <span id="pearlUI" class="pearlui" hidden><input type="color" id="pt0" title="Pearl base"><input type="color" id="pt1" title="Pearl flip: where it starts to catch the light"><input type="color" id="pt2" title="Pearl highlight: the brightest points"><select id="pearlPre" title="Pearl combos"><option value="">combos</option></select></span>
@@ -1240,7 +1240,7 @@ function drawPreview(){
     if(drag.type==='line'||drag.type==='curve')V.stroke(linePath(drag.a,drag.b));
     else if(drag.type==='cfan'){const st=cfanStamp(drag);V.stroke(st?stampPath(st):fanPath(drag.a,drag.b,drag.seed));}
   }
-  if(hover){V.save();V.globalAlpha=.6;paintStamp(V,hover);V.restore();}
+  if(hover){V.save();V.globalAlpha=.6;paintStampClip(V,hover);V.restore();}
   if(pending){
     V.stroke(curvePath(pending));
     const s=scale(),acc=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#6b3fd1';
@@ -1782,7 +1782,7 @@ S.candyCorn=()=>{ // rounded top, as the real candy is
   const band=(y,bend)=>clipTo([ln([-.8,y],[0,y+bend],[.8,y])],out);
   return fit([out,...band(.28,.1),...band(-.26,.06)]);
 };
-S._tinyLoop=tinyLoop;
+S._tinyLoop=tinyLoop;S._trace=traceLoops;
 return S;
 })();
 const SEASONAL=[
@@ -2072,7 +2072,7 @@ function renderStamps(){requestView();}
    current zoom, so it stays crisp however far you zoom in. Fills and knots stay pixels underneath (their edges
    sit under the lines). */
 function drawVectors(c){
-  (S.stamps||[]).forEach(st=>{if(st.under)paintStamp(c,st);}); // shapes set behind: under the drawing's own lines
+  (S.stamps||[]).forEach(st=>{if(st.under)paintStampClip(c,st);}); // shapes set behind: under the drawing's own lines, outside the design
   c.save();c.lineCap='round';c.lineJoin='round';
   if(!S.legacyInk){c.strokeStyle=S.ink;c.lineWidth=S.outW;(S.blobPaths||[]).forEach(b=>c.stroke(b));(S.latPaths||[]).forEach(l=>c.stroke(l));}
   (S.strokes||[]).forEach(st=>{c.strokeStyle=st.color;c.lineWidth=st.size;c.stroke(strokePath(st));});
@@ -2104,7 +2104,7 @@ function viewMoved(){
   clearTimeout(viewT);viewT=setTimeout(requestView,120);
 }
 // with wall on, a shape is also drawn into the walls, so fills stop at it (fill inside a circle, around a star...)
-function wallStamp(c,st){c.save();c.lineCap='round';c.lineJoin='round';c.strokeStyle=c.fillStyle=st.color;c.lineWidth=st.size;
+function wallStamp(c,st){c.save();if(st.under){const h=designHole();if(h)c.clip(h.p,'evenodd');}c.lineCap='round';c.lineJoin='round';c.strokeStyle=c.fillStyle=st.color;c.lineWidth=st.size;
   const p=stampPath(st);if(st.fill)c.fill(p);else c.stroke(p);if(st.sd)c.fill(new Path2D(st.sd));c.restore();}
 function placeStamp(st){
   if(!st)return;
@@ -2119,6 +2119,26 @@ function cleanStamp(o){return{d:o.d,fill:!!o.fill,color:o.color,size:clamp(+o.si
   dot:Array.isArray(o.dot)&&o.dot.length===3&&o.dot.every(isFinite)?o.dot.map(Number):undefined,
   fx:isInk(o.fx)?o.fx:undefined,pt:Array.isArray(o.pt)&&o.pt.length===3&&o.pt.every(h=>/^#[0-9a-f]{6}$/i.test(h))?o.pt.slice():undefined,es:isFinite(o.es)?clamp(+o.es,0,1):undefined,wall:o.wall?true:undefined,under:o.under?true:undefined,sd:typeof o.sd==='string'&&/^[ML0-9 .\-]+$/.test(o.sd)?o.sd:undefined,seed:isFinite(o.seed)&&o.seed>0?o.seed>>>0:undefined};}
 
+/* the design's silhouette: everything the generated lines enclose, lines included. A shape set behind is clipped to
+   the page outside it, as if the design were paper laid over the shape. Traced once per design (and only when needed). */
+let holeKey=null,hole=null;
+function designHole(){
+  const key=[S.blobPaths,S.latPaths,S.outW,W,H];
+  if(holeKey&&key.every((v,i)=>v===holeKey[i]))return hole;
+  holeKey=key;hole=null;const ps=[...(S.blobPaths||[]),...(S.latPaths||[])];if(!ps.length||S.legacyInk)return null;
+  const k=Math.min(1,1100/Math.max(W,H)),n=Math.ceil(Math.max(W,H)*k)+4,c=mkCanvas(n,n),x=c.getContext('2d');
+  x.setTransform(k,0,0,k,2,2);x.lineCap=x.lineJoin='round';x.lineWidth=S.outW+2;x.strokeStyle='#000';ps.forEach(p=>x.stroke(p));
+  const a=x.getImageData(0,0,n,n).data,out=new Uint8Array(n*n),q=new Int32Array(n*n);let h=0,t=0;
+  const push=i=>{if(!out[i]&&a[i*4+3]<128){out[i]=1;q[t++]=i;}};
+  for(let i=0;i<n;i++){push(i);push((n-1)*n+i);push(i*n);push(i*n+n-1);}
+  while(h<t){const i=q[h++],px=i%n;if(px>0)push(i-1);if(px<n-1)push(i+1);if(i>=n)push(i-n);if(i<n*n-n)push(i+n);}
+  const v=new Float32Array(n*n);for(let i=0;i<n*n;i++)v[i]=out[i]?0:255;
+  const loops=SZ._trace(v,n,128).map(l=>l.map(([px,py])=>[(px-2)/k,(py-2)/k]));if(!loops.length)return null;
+  const d=`M0 0H${W}V${H}H0Z`+loops.map(l=>l.map(([px,py],i)=>(i?'L':'M')+pn(px,py)).join('')+'Z').join('');
+  hole={p:new Path2D(d),d};return hole;
+}
+// draw a stamp; one set behind stays outside the design
+function paintStampClip(c,st,part){if(!st.under){paintStamp(c,st,part);return;}const h=designHole();c.save();if(h)c.clip(h.p,'evenodd');paintStamp(c,st,part);c.restore();}
 /* aim: while the pointer is held, show the shape it would place. aim = {cell, o (rays from the press), q (pointer once dragged)} */
 let hover=null,hoverRaf=0,aim=null;
 function isStampTool(){return S.tool==='shape'&&!shapeById(S.stamp).drag;}
@@ -2129,7 +2149,7 @@ function startAim(p){
   // on the page around the design (the background) a shape is placed freely; inside, it fits its field
   aim=!c?null:c.edge?{cell:c,p,q:null,free:true}:{cell:c,p,q:null,o:sh.snap?null:raysFrom(c,p.x,p.y)};showAim();
 }
-function aimStamp(a){const st=aimStamp0(a),sh=shapeById(S.stamp);if(st&&sh.seeded)st.seed=S.seed;return st;}
+function aimStamp(a){const st=aimStamp0(a),sh=shapeById(S.stamp);if(st&&sh.seeded)st.seed=S.seed;if(st&&S.under)st.under=true;return st;}
 function setUnder(v){S.under=!!v;$('#underChk').checked=S.under;store.set('licorice-under',S.under?'1':'0');}
 function aimStamp0(a){
   const sh=shapeById(S.stamp),c=a.cell;
@@ -2802,7 +2822,8 @@ function buildSVG(){
     return s;
   };
   const under=(S.stamps||[]).filter(st=>st.under).map(shapeSVG),shapes=(S.stamps||[]).filter(st=>!st.under).map(shapeSVG);
-  if(under.length)o.splice(o.findIndex(l=>l.startsWith('<g id="fills"'))+1,0,'<g id="shapes-behind" stroke-linecap="round" stroke-linejoin="round">'+under.join('')+'</g>');
+  const hl=under.length&&designHole();if(hl)defs+=`<clipPath id="outside-design"><path clip-rule="evenodd" d="${hl.d}"/></clipPath>`;
+  if(under.length)o.splice(o.findIndex(l=>l.startsWith('<g id="fills"'))+1,0,'<g id="shapes-behind"'+(hl?' clip-path="url(#outside-design)"':'')+' stroke-linecap="round" stroke-linejoin="round">'+under.join('')+'</g>');
   if(defs)o.splice(1,0,`<defs>${defs}</defs>`);
   o.push('<g id="shapes" stroke-linecap="round" stroke-linejoin="round">'+shapes.join('')+'</g>');
   const fxs=(S.stamps||[]).filter(st=>st.fx&&!st.fill);
