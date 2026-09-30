@@ -969,7 +969,7 @@ function pushUndo(list){
 function undo(){
   if(pending){pending=null;drawPreview();return;}
   const e=undoStack.pop();if(!e)return;
-  e.layers.forEach(l=>l.c.putImageData(l.d,0,0));S.blobPaths=e.blobs;S.latPaths=e.lat;S.stamps=e.stamps||[];renderStamps();bumpWalls();
+  e.layers.forEach(l=>l.c.putImageData(l.d,0,0));S.blobPaths=e.blobs;S.latPaths=e.lat;S.stamps=e.stamps||[];renderStamps();bumpWalls();drawPreview();
   $('#undo').disabled=!undoStack.length;
 }
 
@@ -1516,7 +1516,7 @@ function renderStamps(){const c=cx.stamp;c.clearRect(0,0,W,H);(S.stamps||[]).for
 function placeStamp(st){
   if(!st)return;
   pushUndo([]);
-  S.stamps=[...(S.stamps||[]),st];renderStamps(); // a new array: undo keeps the old one by reference
+  S.stamps=[...(S.stamps||[]),st];renderStamps();drawPreview(); // a new array: undo keeps the old one by reference; drawPreview clears the drag preview (a Fan's would linger as a ghost)
 }
 const validStamp=o=>o&&typeof o.d==='string'&&/^[ML0-9 .\-]+$/.test(o.d)&&/^#[0-9a-f]{6}$/i.test(o.color)&&isFinite(o.ax)&&isFinite(o.ay);
 function cleanStamp(o){return{d:o.d,fill:!!o.fill,color:o.color,size:clamp(+o.size||4,2,18),ax:+o.ax,ay:+o.ay,shape:String(o.shape||''),
