@@ -114,6 +114,10 @@ svg.glyph .dotc{fill:currentColor;stroke:none}
 #overlay{touch-action:none}
 /* outline is only the fill walls now; what you see of the line work is drawn sharp on #view */
 #stage canvas#outline{visibility:hidden}
+#zl{min-width:48px;font-size:13px;font-weight:600;color:var(--bright)}
+#zbadge{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:3;pointer-events:none;background:rgba(20,18,26,.82);color:#fff;
+  font:600 15px/1 system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:7px 12px;border-radius:14px;opacity:0;transition:opacity .35s}
+#zbadge.on{opacity:1;transition:opacity .08s}
 #view{position:absolute;left:0;top:0;pointer-events:none;transform-origin:0 0}
 #overlay.fill{cursor:crosshair}
 #busy{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:3;background:var(--panel);
@@ -218,6 +222,12 @@ label.btnlike:hover{background:#3d3d3d}
 #shot{max-width:100%;max-height:58vh;border-radius:2px;display:block;margin:0 auto 12px;-webkit-user-select:auto;user-select:auto;-webkit-touch-callout:default;box-shadow:0 0 0 1px #000}
 #modal p{margin:0 0 10px;color:var(--dim)}
 #modal .foot{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+#modal .exrow{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:0 0 8px}
+#modal .exrow label{display:flex;gap:6px;align-items:center;color:var(--dim,#aaa)}
+#modal .exrow select{font-size:13px;padding:5px 8px}
+#modal .exhint{margin:0 0 6px;font-size:12.5px;line-height:1.4;color:var(--dim,#aaa)}
+#modal .exinfo{margin:0 0 10px;font-size:13px;font-variant-numeric:tabular-nums;color:var(--bright)}
+#modal .exinfo .warn{color:#f0b35a;font-size:12.5px;margin-top:3px}
 #modal .later{margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--edge)}
 #helpbox{line-height:1.6;-webkit-user-select:text;user-select:text}
 #helpbox h2{margin:0 0 4px;font-size:17px;color:var(--bright);display:flex;align-items:center;gap:10px}
@@ -281,7 +291,7 @@ label.btnlike:hover{background:#3d3d3d}
   <div class="vsep deskonly"></div>
   <div class="grp deskonly">
     <button class="sm" id="zOut" aria-label="Zoom out">&#8722;</button>
-    <span class="num" id="zl" style="min-width:40px">100%</span>
+    <span class="num" id="zl" title="Zoom: how big the page is on screen">100%</span>
     <button class="sm" id="zIn" aria-label="Zoom in">+</button>
     <button class="sm" id="fit">Fit</button>
   </div>
@@ -312,6 +322,7 @@ label.btnlike:hover{background:#3d3d3d}
   </div>
   <canvas id="view"></canvas>
   <div id="busy" hidden>Drawing…</div>
+  <div id="zbadge" hidden aria-live="polite"></div>
 </div>
 <canvas id="loupe" hidden></canvas>
 <div id="fly" hidden role="menu" aria-label="Shapes"></div>
@@ -409,7 +420,7 @@ label.btnlike:hover{background:#3d3d3d}
     <h3>Auto color</h3>
     <p><b>Rings</b> spreads one color family per ring of grid squares out from the center, alternating light and dark. <b>Random</b> uses any palette color, never the same as a touching cell.</p>
     <h3>Saving</h3>
-    <p><b>Save image</b> gives you a PNG. <b>Save SVG</b> gives you the lines and shapes as real vector paths for Illustrator, Inkscape or Affinity (the colored fills come along as a picture underneath). <b>Keep this one</b> stores the drawing in this browser so you can reopen and keep coloring; <b>Save file</b> writes it to a .json file you can open anywhere.</p>
+    <p><b>Save image</b> lets you pick a size (720p up to 8K) and a format: <b>PNG</b> for printing and any app, <b>WebP</b> for a smaller file to share, <b>Small PNG</b> (up to 256 colors) for the tiniest file, and <b>SVG</b>, which keeps the lines and shapes as real vector paths for Illustrator, Inkscape or Affinity (the colored fills come along as a picture underneath). The dialog shows the file size before you save. Everything happens on your device; nothing is uploaded. <b>Keep this one</b> stores the drawing in this browser so you can reopen and keep coloring; <b>Save file</b> writes it to a .json file you can open anywhere.</p>
     <h3>Keys</h3>
     <table>
       <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Undo</td></tr>
@@ -424,8 +435,12 @@ label.btnlike:hover{background:#3d3d3d}
 <div id="modal" class="scrim" hidden>
   <div class="dlg">
     <img id="shot" alt="Your finished drawing">
-    <p id="saveMsg">Tap Save image, then choose Save Image to put it in Photos.</p>
-    <div class="foot"><button class="go" id="dl" hidden>Save image</button><button id="svg">Save SVG</button><button id="share" hidden></button><button id="closeModal">Done</button></div>
+    <div class="exrow"><label>size <select id="exSize" title="How many pixels the picture has on its long side"></select></label>
+      <label>format <select id="exFmt"><option value="png">PNG</option><option value="webp">WebP</option><option value="png8">Small PNG</option><option value="svg">SVG</option></select></label></div>
+    <p id="exHint" class="exhint"></p>
+    <p id="exInfo" class="exinfo" aria-live="polite"></p>
+    <p id="saveMsg"></p>
+    <div class="foot"><button class="go" id="dl">Save image</button><button id="closeModal">Done</button></div>
     <p class="later">Keep working on it later:</p>
     <div class="foot"><button id="keepDrawing">Keep in My drawings</button><button id="exportFile">Save file</button></div>
   </div>
@@ -863,10 +878,12 @@ function fitPath(p,s,cx,cy,tx,ty){
   const d=p.d.replace(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g,(m,x,y)=>f1((+x-cx)*s+tx)+' '+f1((+y-cy)*s+ty));
   const q=mkPath(d);q.pts=(p.pts||[]).map(([x,y])=>[(x-cx)*s+tx,(y-cy)*s+ty]);return q;
 }
+// the design fills about this share of each side of the page; the rest is room for frames and borders
+const DOC=.64;
 async function buildGrid(lim){
   let scale=1,closest=null;
   for(let attempt=0;attempt<14;attempt++){
-    const wide=W/H,R=Math.min(W,H)*rand(.46,.5)*scale,x0=W/2,y0=H/2,blobs=[];
+    const wide=W/H,R=Math.min(W,H)*rand(.46,.5)*DOC*scale,x0=W/2,y0=H/2,blobs=[];
     const st=wide>1.2?rand(1.15,Math.min(1.55,wide*.85)):wide>1?rand(1,1.15):rand(1,1.15),xs=wide>1?st:1,ys=wide>1?1:st;
     for(let i=0;i<S.blobs;i++){
       let x=x0,y=y0;
@@ -884,8 +901,8 @@ async function buildGrid(lim){
       // measure the whole drawing and center it on the page; skip grids that don't fit
       let x0b=1e9,y0b=1e9,x1b=-1e9,y1b=-1e9;
       [...blobs,...lines].forEach(p=>p.pts.forEach(([x,y])=>{if(x<x0b)x0b=x;if(x>x1b)x1b=x;if(y<y0b)y0b=y;if(y>y1b)y1b=y;}));
-      if(x1b-x0b>W-40||y1b-y0b>H-40){
-        const over=Math.max((x1b-x0b)/(W-40),(y1b-y0b)/(H-40));
+      if(x1b-x0b>W*DOC||y1b-y0b>H*DOC){
+        const over=Math.max((x1b-x0b)/(W*DOC),(y1b-y0b)/(H*DOC));
         if(!closest||over<closest.over)closest={over,blobs,lines,cx:(x0b+x1b)/2,cy:(y0b+y1b)/2};
         continue;
       }
@@ -931,7 +948,7 @@ function inkFill(an,m,ids){
 }
 // page shape follows the screen: same pixel budget, aspect of the drawing area
 function desiredSize(){
-  const r=wrap.getBoundingClientRect(),a=clamp((r.width-20)/Math.max(1,r.height-12),.6,2.2),budget=1250000;
+  const r=wrap.getBoundingClientRect(),a=clamp((r.width-20)/Math.max(1,r.height-12),.6,2.2),budget=1800000;
   const w=Math.round(Math.sqrt(budget*a));return[w,Math.round(budget/w)];
 }
 function setSize(w,h){
@@ -1439,14 +1456,21 @@ function stampAt(c,o,sh,q,free){
 /* frame: the shape is centered on the page, around the whole design, sized by the drag (the pointer marks its edge)
    and turned to face the pointer. The rectangle takes its width and height from the pointer instead, so it can be a
    border. With no drag it sits just inside the page. */
+// how far the design reaches from the page center: its box half-sizes and its farthest point
+function designReach(){
+  const cx=W/2,cy=H/2;let hx=0,hy=0,r=0;
+  [...(S.blobPaths||[]),...(S.latPaths||[])].forEach(p=>{const m=(p.d||'').match(/-?\d+(?:\.\d+)?/g)||[];
+    for(let i=0;i+1<m.length;i+=2){const x=Math.abs(m[i]-cx),y=Math.abs(m[i+1]-cy);if(x>hx)hx=x;if(y>hy)hy=y;const d=Math.hypot(x,y);if(d>r)r=d;}});
+  return r?{hx,hy,r}:null;
+}
 function frameStamp(sh,q){
-  const cx=W/2,cy=H/2,dx=q?q.x-cx:0,dy=q?q.y-cy:0,dragged=q&&Math.hypot(dx,dy)>12;let ls;
+  const cx=W/2,cy=H/2,dx=q?q.x-cx:0,dy=q?q.y-cy:0,dragged=q&&Math.hypot(dx,dy)>12,dr=designReach(),pad=(S.outW||6)/2+S.size+10;let ls;
   if(sh.id==='rect'){
-    const hw=dragged?Math.max(12,Math.abs(dx)):W/2-18-S.size,hh=dragged?Math.max(12,Math.abs(dy)):H/2-18-S.size;
+    const hw=dragged?Math.max(12,Math.abs(dx)):Math.min(W/2-18-S.size,dr?dr.hx+pad:1e9),hh=dragged?Math.max(12,Math.abs(dy)):Math.min(H/2-18-S.size,dr?dr.hy+pad:1e9);
     ls=[roundRect(hw,hh,Math.min(hw,hh)*.12)].map(l=>l.map(([x,y])=>[cx+x,cy+y]));
   }else{
     ls=sh.make();let ext=0;ls.forEach(l=>l.forEach(([x,y])=>{ext=Math.max(ext,Math.hypot(x,y));}));
-    const u=(dragged?Math.hypot(dx,dy):Math.min(W,H)/2-18-S.size)/ext,rot=dragged?Math.atan2(dy,dx)-(sh.dir||UPDIR).ang:0,cs=Math.cos(rot),sn=Math.sin(rot);
+    const u=(dragged?Math.hypot(dx,dy):dr?Math.min(dr.r+pad,Math.hypot(W,H)/2):Math.min(W,H)/2-18-S.size)/ext,rot=dragged?Math.atan2(dy,dx)-(sh.dir||UPDIR).ang:0,cs=Math.cos(rot),sn=Math.sin(rot);
     ls=subdiv(ls,1.5/u).map(l=>l.map(([x,y])=>[cx+(x*cs-y*sn)*u,cy+(x*sn+y*cs)*u]));
   }
   const st={d:linesToD(ls),fill:!!sh.fill,color:S.color,size:S.size,ax:cx,ay:cy,shape:sh.id,...inkOf()};
@@ -1690,14 +1714,21 @@ function glyphSVG(sh){
 
 /* ---------- zoom ---------- */
 const wrap=$('#wrap'),stage=$('#stage'),fitBtn=$('#fit');
-const Z={z:1,tx:0,ty:0,bx:0,by:0,sw:0,sh:0};
-function applyZ(){stage.style.transform=`translate(${Z.tx}px,${Z.ty}px) scale(${Z.z})`;$('#zl').textContent=Math.round(Z.sw/W*Z.z*100)+'%';viewMoved();}
+const Z={z:1,tx:0,ty:0,bx:0,by:0,sw:0,sh:0},ZMIN=.5; // z is relative to Fit: .5 = half the fitted size
+let zShown=null,zBadgeT=0;
+function applyZ(){
+  stage.style.transform=`translate(${Z.tx}px,${Z.ty}px) scale(${Z.z})`;
+  const pc=Math.round(Z.sw/W*Z.z*100)+'%';$('#zl').textContent=pc;
+  if(zShown!==null&&Math.abs(Z.z-zShown)>.001){const b=$('#zbadge');b.textContent=pc;b.hidden=false;b.classList.add('on');
+    clearTimeout(zBadgeT);zBadgeT=setTimeout(()=>b.classList.remove('on'),900);}
+  zShown=Z.z;viewMoved();
+}
 function stepZoom(f){const r=wrap.getBoundingClientRect();zoomAt(r.width/2,r.height/2,Z.z*f);}
 $('#zIn').onclick=()=>stepZoom(1.5);$('#zOut').onclick=()=>stepZoom(1/1.5);
 function clampAxis(t,size,avail,b){return size<=avail?(avail-size)/2-b:clamp(t,avail-size-b,-b);}
 function clampPan(){const r=wrap.getBoundingClientRect();Z.tx=clampAxis(Z.tx,Z.sw*Z.z,r.width,Z.bx);Z.ty=clampAxis(Z.ty,Z.sh*Z.z,r.height,Z.by);}
 function zoomAt(mx,my,nz){
-  nz=clamp(nz,1,8);const qx=(mx-Z.bx-Z.tx)/Z.z,qy=(my-Z.by-Z.ty)/Z.z;
+  nz=clamp(nz,ZMIN,8);const qx=(mx-Z.bx-Z.tx)/Z.z,qy=(my-Z.by-Z.ty)/Z.z;
   Z.z=nz;Z.tx=mx-Z.bx-qx*nz;Z.ty=my-Z.by-qy*nz;clampPan();applyZ();
 }
 fitBtn.onclick=()=>{Z.z=1;Z.tx=0;Z.ty=0;clampPan();applyZ();};
@@ -1734,7 +1765,7 @@ function startPinch(){
 function movePinch(){
   const[a,b]=[...pts.values()],r=wrap.getBoundingClientRect();
   const mx=(a.x+b.x)/2-r.left,my=(a.y+b.y)/2-r.top;
-  Z.z=clamp(pinch.z0*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d0,1,8);
+  Z.z=clamp(pinch.z0*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d0,ZMIN,8);
   Z.tx=mx-Z.bx-pinch.qx*Z.z;Z.ty=my-Z.by-pinch.qy*Z.z;clampPan();applyZ();
 }
 wrap.addEventListener('pointerdown',e=>{
@@ -2150,22 +2181,117 @@ $('#importFile').onchange=async e=>{
 };
 renderGallery();
 
-let shotBlob=null,dl=null;
+let dl=null;
 try{if(window.claude&&window.claude.use)window.claude.use('downloads').then(x=>{dl=x;}).catch(()=>{});}catch(_){}
+/* Save image: a size (long side in pixels) and a format. The chosen file is made in the background as soon as both are
+   picked, so the dialog can show its real size; Save hands over that same file. */
+const EXS=[['720p',1280],['1080p',1920],['1440p',2560],['4K',3840],['8K',7680]];
+const IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const MAXPX=IOS?16.7e6:120e6; // iPhone/iPad Safari refuses canvases above ~16.7 million pixels
+const FMT={
+  png:{ext:'png',type:'image/png',hint:'PNG: sharp and lossless. Opens in any app. The one to print.'},
+  webp:{ext:'webp',type:'image/webp',hint:'WebP: a much smaller file for sharing online. Colored edges get a touch softer if you look very closely, and a few older apps can’t open it.'},
+  png8:{ext:'png',type:'image/png',hint:'Small PNG: at most 256 colors, so the file is tiny. Perfect for plain colors; glitter and soft edges can look a little rougher.'},
+  svg:{ext:'svg',type:'image/svg+xml',hint:'SVG: the lines and shapes stay vector, so you can edit them in Illustrator, Inkscape or Affinity and print them at any size. The fills come along as a picture.'}};
+let webpOK=false;try{webpOK=mkCanvas(1,1).toDataURL('image/webp').startsWith('data:image/webp');}catch(_){}
+const png8OK=typeof CompressionStream==='function';
+if(!webpOK)$('#exFmt option[value="webp"]').remove(); // Safari can't make WebP files
+if(!png8OK)$('#exFmt option[value="png8"]').remove();
+const fmtBytes=n=>n<1048576?Math.max(1,Math.round(n/1024))+' KB':(n/1048576).toFixed(1)+' MB';
+const exDims=long=>{const k=long/Math.max(W,H);return[Math.round(W*k),Math.round(H*k)];};
+let exJob=0,exCache={},exCur=null;
+function fillSizes(){
+  const sel=$('#exSize'),keep=+sel.value||+(store.get('licorice-exsize')||2560);sel.innerHTML='';
+  EXS.forEach(([n,long])=>{const[w,h]=exDims(long),o=document.createElement('option');o.value=long;
+    o.textContent=n+' · '+w+' × '+h;if(w*h>MAXPX){o.disabled=true;o.textContent+=' (too big for this device)';}sel.appendChild(o);});
+  const ok=[...sel.options].filter(o=>!o.disabled);
+  sel.value=(ok.find(o=>+o.value===keep)||ok.filter(o=>+o.value<=keep).pop()||ok[0]).value;
+}
+async function makeExport(){
+  const job=++exJob,fmt=$('#exFmt').value,long=+$('#exSize').value,key=fmt==='svg'?'svg':fmt+'|'+long;
+  store.set('licorice-exfmt',fmt);if(fmt!=='svg')store.set('licorice-exsize',long);
+  $('#exSize').disabled=fmt==='svg';$('#exHint').textContent=FMT[fmt].hint;
+  $('#dl').textContent=fmt==='svg'?'Save SVG':'Save image';$('#saveMsg').textContent='';
+  if(exCache[key]){showExport(exCache[key]);return;}
+  exCur=null;$('#dl').disabled=true;$('#exInfo').textContent='Working out the file size…';
+  await new Promise(r=>setTimeout(r,40));if(job!==exJob)return;
+  try{
+    let blob,dims,note=null;
+    if(fmt==='svg'){blob=new Blob([buildSVG()],{type:FMT.svg.type});dims=W+' × '+H+', scales to any size';}
+    else{
+      const c=flatten(long/Math.max(W,H));dims=c.width+' × '+c.height;
+      if(fmt==='png8'){const r=await encodePNG8(c);blob=r.blob;
+        note=r.n>256?{warn:true,t:r.n.toLocaleString()+' colors in this picture: it keeps the best 256, so soft edges may look slightly rougher.'}
+          :{t:r.n+' colors: all kept exactly, nothing lost.'};}
+      else{blob=await new Promise(res=>c.toBlob(res,FMT[fmt].type,fmt==='webp'?.95:undefined));
+        if(blob&&blob.type!==FMT[fmt].type)blob=null;}
+      c.width=c.height=0; // hand the memory back now; big canvases add up fast on phones
+    }
+    if(!blob)throw new Error('encode');
+    const e=exCache[key]={blob,dims,note,fmt,label:fmt==='svg'?'SVG':(EXS.find(x=>x[1]===long)||['?'])[0]};
+    if(job===exJob)showExport(e);
+  }catch(_){if(job===exJob)$('#exInfo').textContent='That size is too big for this device. Try a smaller one.';}
+}
+function showExport(e){
+  exCur=e;$('#dl').disabled=false;
+  const info=$('#exInfo');info.textContent=(e.fmt==='png8'?'Small PNG':e.fmt.toUpperCase())+(e.fmt==='svg'?'':' · '+e.label)+' · '+e.dims+' · '+fmtBytes(e.blob.size);
+  if(e.note){const n=document.createElement('span');if(e.note.warn)n.className='warn';n.style.display='block';n.textContent=e.note.t;info.appendChild(n);}
+}
+$('#exSize').onchange=makeExport;$('#exFmt').onchange=makeExport;
+/* Small PNG: an indexed PNG (PNG-8). Up to 256 colors are kept exactly; above that, median cut picks 256 (a box holding
+   mostly one color keeps that color exactly, so the marker colors stay true and only blended edge pixels shift).
+   Rows use filter 0 and the browser's own deflate (CompressionStream), so no library is needed. */
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(u,a,b){let c=0xffffffff;for(let i=a;i<b;i++)c=CRC[(c^u[i])&255]^(c>>>8);return(c^0xffffffff)>>>0;}
+function pngChunk(type,data){
+  const u=new Uint8Array(12+data.length),dv=new DataView(u.buffer);dv.setUint32(0,data.length);
+  for(let i=0;i<4;i++)u[4+i]=type.charCodeAt(i);u.set(data,8);dv.setUint32(8+data.length,crc32(u,4,8+data.length));return u;
+}
+async function encodePNG8(c){
+  const w=c.width,h=c.height,px=new Uint32Array(c.getContext('2d').getImageData(0,0,w,h).data.buffer);
+  const hist=new Map();let last=px[0],lc=0;
+  for(let i=0;i<px.length;i++){const v=px[i];if(v===last){lc++;continue;}hist.set(last,(hist.get(last)||0)+lc);last=v;lc=1;}
+  hist.set(last,(hist.get(last)||0)+lc);
+  const n=hist.size,idx=new Map(),pal=[];
+  if(n<=256)[...hist.keys()].forEach((v,i)=>{idx.set(v,i);pal.push(v);});
+  else{
+    const E=[...hist].map(([v,cnt])=>({v,r:v&255,g:v>>>8&255,b:v>>>16&255,cnt}));
+    const box=a=>{const lo=[255,255,255],hi=[0,0,0];let sum=0;for(const e of a){const q=[e.r,e.g,e.b];for(let k=0;k<3;k++){if(q[k]<lo[k])lo[k]=q[k];if(q[k]>hi[k])hi[k]=q[k];}sum+=e.cnt;}
+      const rg=[hi[0]-lo[0],hi[1]-lo[1],hi[2]-lo[2]],ax=rg.indexOf(Math.max(...rg));return{a,ax,pri:rg[ax]*sum,sum};};
+    const boxes=[box(E)];
+    while(boxes.length<256){
+      let bi=-1,bp=0;boxes.forEach((b,i)=>{if(b.a.length>1&&b.pri>bp){bp=b.pri;bi=i;}});if(bi<0)break;
+      const b=boxes[bi],ch=['r','g','b'][b.ax];b.a.sort((p,q)=>p[ch]-q[ch]);
+      let acc=0,m=1;for(;m<b.a.length-1;m++){acc+=b.a[m-1].cnt;if(acc>=b.sum/2)break;}
+      boxes.splice(bi,1,box(b.a.slice(0,m)),box(b.a.slice(m)));
+    }
+    boxes.forEach((b,i)=>{
+      let top=b.a[0],r=0,g=0,bl=0;for(const e of b.a){if(e.cnt>top.cnt)top=e;r+=e.r*e.cnt;g+=e.g*e.cnt;bl+=e.b*e.cnt;}
+      pal.push(top.cnt*2>b.sum?top.v:(Math.round(r/b.sum)|Math.round(g/b.sum)<<8|Math.round(bl/b.sum)<<16));
+      for(const e of b.a)idx.set(e.v,i);
+    });
+  }
+  const raw=new Uint8Array(h*(w+1));let lv=-1,li=0;
+  for(let y=0,o=0,p=0;y<h;y++){raw[o++]=0;for(let x=0;x<w;x++,p++){const v=px[p];if(v!==lv){lv=v;li=idx.get(v);}raw[o++]=li;}}
+  const z=new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate'))).arrayBuffer());
+  const ih=new Uint8Array(13),dv=new DataView(ih.buffer);dv.setUint32(0,w);dv.setUint32(4,h);ih[8]=8;ih[9]=3;
+  const pl=new Uint8Array(pal.length*3);pal.forEach((v,i)=>{pl[i*3]=v&255;pl[i*3+1]=v>>>8&255;pl[i*3+2]=v>>>16&255;});
+  const sig=new Uint8Array([137,80,78,71,13,10,26,10]);
+  return{blob:new Blob([sig,pngChunk('IHDR',ih),pngChunk('PLTE',pl),pngChunk('IDAT',z),pngChunk('IEND',new Uint8Array(0))],{type:'image/png'}),n};
+}
 $('#save').onclick=()=>{
-  commitPending();
-  const c=flatten(2);
-  $('#shot').src=c.toDataURL('image/png');$('#modal').hidden=false;
-  $('#share').hidden=true;$('#dl').hidden=false;$('#dl').disabled=true;shotBlob=null;
-  $('#saveMsg').textContent=dl||touch?'Tap Save image, then choose Save Image to put it in Photos.':'Save image downloads it as a PNG.';
-  c.toBlob(b=>{if(b){shotBlob=b;$('#dl').disabled=false;}},'image/png');
+  commitPending();exCache={};exCur=null;
+  const pv=flatten(Math.min(2,1400/Math.max(W,H)));$('#shot').src=pv.toDataURL('image/png');pv.width=pv.height=0;
+  fillSizes();const f=store.get('licorice-exfmt');if(f&&$('#exFmt option[value="'+f+'"]'))$('#exFmt').value=f;
+  $('#modal').hidden=false;makeExport();
 };
 $('#dl').onclick=async()=>{
-  if(!shotBlob)return;
+  const e=exCur;if(!e)return;
+  const name='licorice-'+stampNow()+(e.fmt==='svg'?'':'-'+e.label.toLowerCase())+'.'+FMT[e.fmt].ext;
   try{
-    const r=await deliver(shotBlob,'licorice-'+stampNow()+'.png','image/png');
+    const r=await deliver(e.blob,name,FMT[e.fmt].type);
     $('#saveMsg').textContent=r==='saved'||r==='shared'?'Saved.':r==='downloaded'?'Downloaded. It’s in your Downloads folder.'
-      :r==='busy'?'A save prompt is already open. Finish that one first.':'Not saved. Tap Save image to try again.';
+      :r==='busy'?'A save prompt is already open. Finish that one first.':'Not saved. Tap '+$('#dl').textContent+' to try again.';
   }catch(_){$('#saveMsg').textContent='Saving isn’t available in this view. Press and hold the picture to save it.';}
 };
 $('#closeModal').onclick=()=>{$('#modal').hidden=true;};
@@ -2212,16 +2338,6 @@ function buildSVG(){
   o.push('</svg>');
   return o.join('\n');
 }
-$('#svg').onclick=async()=>{
-  commitPending();
-  const blob=new Blob([buildSVG()],{type:'image/svg+xml'});
-  try{
-    const r=await deliver(blob,'licorice-'+stampNow()+'.svg','image/svg+xml');
-    $('#saveMsg').textContent=r==='saved'||r==='shared'?'SVG saved.':r==='downloaded'?'SVG downloaded. It’s in your Downloads folder.'
-      :r==='busy'?'A save prompt is already open. Finish that one first.':'Not saved. Tap Save SVG to try again.';
-  }catch(_){$('#saveMsg').textContent='Saving isn’t available in this view.';}
-};
-
 /* ---------- layout ---------- */
 function fit(){
   const r=wrap.getBoundingClientRect(),s=Math.max(.05,Math.min((r.width-20)/W,(r.height-12)/H));
