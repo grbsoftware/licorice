@@ -47,7 +47,7 @@ button{font:inherit;color:inherit}
   grid-template-areas:"opts opts opts" "rail wrap panel" "stat stat stat"}
 
 /* ---- options bar ---- */
-#opts{grid-area:opts;display:flex;align-items:center;gap:10px;padding:0 10px;background:var(--panel);
+#opts{grid-area:opts;display:flex;align-items:center;gap:8px;padding:0 10px;background:var(--panel);
   border-bottom:1px solid var(--line);overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
 #opts::-webkit-scrollbar{display:none}
 #tname{font-weight:600;min-width:52px;color:var(--bright)}
@@ -100,8 +100,12 @@ svg.glyph .dotc{fill:currentColor;stroke:none}
 #fly .flyh{grid-column:1/-1;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:0 3px 5px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 #fly .flyh span{flex:1 0 auto}
 #fly .flyh select{text-transform:none;letter-spacing:0;color:var(--ink)}
-#seedBox{font:12px/1 var(--mono);width:78px;padding:4px 6px;border-radius:3px;border:1px solid var(--edge);background:var(--stage);color:var(--ink);-webkit-user-select:text;user-select:text}
-#dice svg{width:15px;height:15px}
+#seedBox{font:12px/1 var(--mono);width:62px;padding:4px 6px;border-radius:3px;border:1px solid var(--edge);background:var(--stage);color:var(--ink);-webkit-user-select:text;user-select:text}
+#dice svg,#seedAuto svg{width:15px;height:15px}
+#seedAuto[aria-pressed=true]{background:var(--sel);border-color:var(--sel2);color:var(--bright)}
+#opts input[type=range]{width:72px}
+@media (max-width:1439px){#tname,#tname+.vsep{display:none}} /* the rail already shows the tool */
+#seedUI,#shapePlace{display:inline-flex;align-items:center;gap:6px}
 #fly button{flex-direction:column;justify-content:center;gap:4px;height:60px;padding:4px 2px;background:none;border-color:transparent;
   font-size:10px;line-height:1.15;color:var(--dim);white-space:normal;text-align:center}
 #fly button:hover{background:var(--hover);color:var(--ink)}
@@ -279,17 +283,25 @@ label.btnlike:hover{background:#3d3d3d}
   <div class="grp" id="ofill">
     <span class="cnow" id="optChip"></span><span class="lb">tap a shape to fill it</span>
   </div>
+  <!-- grouped by what they change: which shape, how it looks, how big, where it goes -->
   <div class="grp" id="oshape" hidden>
     <button class="sm" id="shapePick" title="Choose a shape" aria-haspopup="true"><span id="shapePickGlyph"></span><span id="shapeName">Dot</span> &#9662;</button>
-    <span id="seedUI" hidden><label for="seedBox" title="The same seed always draws the same one: write it down to get it back">seed</label><input id="seedBox" spellcheck="false" autocomplete="off" maxlength="24" title="Type a number or any word (a name always gives the same one)"><button class="sm" id="dice" title="Roll a new one" aria-label="Roll a new one"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="15" r="1.2"/><circle cx="15" cy="9" r="1.2"/><circle cx="9" cy="15" r="1.2"/></svg></button></span>
-    <label class="chk" title="Center the shape on the page around the whole design, to use as a frame or border (the rectangle takes its width and height from your drag)"><input type="checkbox" id="frameChk">frame</label>
-    <label class="chk" title="Put the shape behind the design: it shows only outside it, like a border the design sits on"><input type="checkbox" id="underChk">behind</label>
-    <label for="fitBox" id="fitL" title="0 shrinks the shape to fit its field; 100 lets it flatten against the ink">fit to field</label><input type="range" id="fitBox" min="0" max="100" value="50"><span class="num" id="fitN">50</span>
+    <span id="seedUI" hidden><label for="seedBox" title="The same seed always draws the same one: write it down to get it back">seed</label><input id="seedBox" spellcheck="false" autocomplete="off" maxlength="24" title="Type a number or any word (a name always gives the same one)"><button class="sm" id="dice" title="Roll a new one" aria-label="Roll a new one"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="15" r="1.2"/><circle cx="15" cy="9" r="1.2"/><circle cx="9" cy="15" r="1.2"/></svg></button><button class="sm" id="seedAuto" aria-pressed="false" title="New each time: roll a new seed after each one you place, so every one comes out different" aria-label="New seed each time"><svg viewBox="0 0 24 24"><path d="M4 7h3c5 0 5 10 10 10h3M4 17h3c2 0 3-1.5 4-3.3M13.5 9.3c1-1.8 2-3.3 4-3.3H20"/><path d="m17 4 3 2-3 2M17 15l3 2-3 2"/></svg></button></span>
+  </div>
+  <div class="grp" id="olook" hidden>
+    <span class="vsep"></span>
+    <label for="fitBox" id="fitL" title="0 shrinks the shape to fit its field; 100 lets it flatten against the ink">fit</label><input type="range" id="fitBox" min="0" max="100" value="50"><span class="num" id="fitN">50</span>
     <label for="inkFx">ink</label><select id="inkFx" title="Marker ink for shape line work (filled shapes stay plain)"><option value="">Plain</option><option value="glitter">Glitter</option><option value="pearl">Pearl</option><option value="gold">Gold</option><option value="silver">Silver</option><option value="copper">Copper</option><option value="bronze">Bronze</option><option value="bismuth">Bismuth</option></select>
     <span id="pearlUI" class="pearlui" hidden><input type="color" id="pt0" title="Pearl base"><input type="color" id="pt1" title="Pearl flip: where it starts to catch the light"><input type="color" id="pt2" title="Pearl highlight: the brightest points"><select id="pearlPre" title="Pearl combos"><option value="">combos</option></select></span>
   </div>
   <div class="grp" id="ostroke" hidden>
+    <span class="vsep"></span>
     <label for="size">size</label><input type="range" id="size" min="2" max="18" value="4"><span class="num" id="sizeN">4</span>
+  </div>
+  <div class="grp" id="oplace" hidden>
+    <span class="vsep"></span>
+    <span id="shapePlace" hidden><label class="chk" title="Center the shape on the page around the whole design, to use as a frame or border (the rectangle takes its width and height from your drag)"><input type="checkbox" id="frameChk">frame</label>
+    <label class="chk" title="Put the shape behind the design: it shows only outside it, like a border the design sits on"><input type="checkbox" id="underChk">behind</label></span>
     <label class="chk" id="wallL" title="Strokes and shapes become walls the fill can't cross (W)"><input type="checkbox" id="wall">wall</label>
   </div>
   <div class="spacer"></div>
@@ -2150,6 +2162,7 @@ function startAim(p){
   aim=!c?null:c.edge?{cell:c,p,q:null,free:true}:{cell:c,p,q:null,o:sh.snap?null:raysFrom(c,p.x,p.y)};showAim();
 }
 function aimStamp(a){const st=aimStamp0(a),sh=shapeById(S.stamp);if(st&&sh.seeded)st.seed=S.seed;if(st&&S.under)st.under=true;return st;}
+function setSeedAuto(v){S.seedAuto=!!v;$('#seedAuto').setAttribute('aria-pressed',S.seedAuto);store.set('licorice-seedauto',S.seedAuto?'1':'0');}
 function setUnder(v){S.under=!!v;$('#underChk').checked=S.under;store.set('licorice-under',S.under?'1':'0');}
 function aimStamp0(a){
   const sh=shapeById(S.stamp),c=a.cell;
@@ -2178,9 +2191,9 @@ function clearHover(){aim=null;if(hover){hover=null;drawPreview();}}
    same one. Any word works too (it is turned into a number), so a name always gives the same snowflake. */
 function seedFrom(t){t=String(t).trim();if(/^\d{1,9}$/.test(t))return +t||1;let h=2166136261;for(const ch of t.toLowerCase()){h^=ch.codePointAt(0);h=Math.imul(h,16777619);}return(h>>>0)||1;}
 let lastPlaced=null; // {st, aim, id}: the newest shape, so a new seed can redraw it in place
-function setSeed(t){
+function setSeed(t,keep){ // keep: the next one only, leave the one just placed as it is
   t=String(t).trim().slice(0,24)||'1';S.seedTxt=t;S.seed=seedFrom(t);$('#seedBox').value=t;store.set('licorice-seed',t);
-  const L=lastPlaced,arr=S.stamps||[];
+  const L=keep?null:lastPlaced,arr=S.stamps||[];
   const wl=L&&L.st.wall&&L.u&&undoStack[undoStack.length-1]===L.u&&L.u.layers.find(l=>l.c===O);
   if(L&&arr.length&&arr[arr.length-1]===L.st&&(!L.st.wall||wl)&&L.id===S.stamp&&shapeById(L.id).seeded){
     const st=aimStamp(L.aim);if(st){Object.assign(st,{color:L.st.color,size:L.st.size,fx:L.st.fx,pt:L.st.pt,wall:L.st.wall,under:L.st.under});
@@ -2304,7 +2317,8 @@ function up(e){
   const o=one;one=null;hideLoupe();
   if(e.type==='pointercancel'){drag=null;clearHover();drawPreview();return;}
   if(o.mode==='tap'||o.mode==='aim'){
-    if(isStampTool()){if(aim){const st=aimStamp(aim);placeStamp(st);lastPlaced=st?{st,aim,id:S.stamp,u:undoStack[undoStack.length-1]}:null;}clearHover();}
+    if(isStampTool()){if(aim){const st=aimStamp(aim);placeStamp(st);lastPlaced=st?{st,aim,id:S.stamp,u:undoStack[undoStack.length-1]}:null;
+      if(st&&S.seedAuto&&shapeById(S.stamp).seeded)setSeed(String(1+Math.floor(Math.random()*99999)),true);}clearHover();}
     else fillAt(o.p.x,o.p.y);
     return;
   }
@@ -2321,7 +2335,7 @@ wrap.addEventListener('pointerup',up);wrap.addEventListener('pointercancel',up);
 function setTool(t){
   commitPending();S.tool=t;
   document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('on',b.dataset.tool===t));$('#shapeTool').classList.toggle('on',t==='shape');
-  $('#tname').textContent=TOOLNAMES[t];$('#ofill').hidden=t!=='fill';$('#ostroke').hidden=t==='fill';$('#oshape').hidden=t!=='shape';$('#wallL').hidden=false;
+  $('#tname').textContent=TOOLNAMES[t];$('#ofill').hidden=t!=='fill';$('#ostroke').hidden=$('#oplace').hidden=t==='fill';$('#oshape').hidden=$('#olook').hidden=$('#shapePlace').hidden=t!=='shape';$('#wallL').hidden=false;
   if(t!=='shape'){closeFly();clearHover();}
   cv.overlay.classList.toggle('fill',t==='fill');updHint();
 }
@@ -2898,7 +2912,7 @@ addEventListener('keydown',e=>{
 S.themes=['all','seasons','off'].includes(store.get('licorice-themes'))?store.get('licorice-themes'):'all';S.topic=store.get('licorice-topic')||'';
 setSeed(store.get('licorice-seed')||String(1+Math.floor(Math.random()*99999)));
 $('#seedBox').onchange=e=>setSeed(e.target.value);$('#dice').onclick=()=>setSeed(String(1+Math.floor(Math.random()*99999)));
-setStamp(store.get('dblob-stamp')||'dot');setUnder(store.get('licorice-under')==='1');$('#underChk').onchange=e=>setUnder(e.target.checked);setFrame(store.get('licorice-frame')==='1');
+setStamp(store.get('dblob-stamp')||'dot');setUnder(store.get('licorice-under')==='1');setSeedAuto(store.get('licorice-seedauto')==='1');$('#seedAuto').onclick=()=>setSeedAuto(!S.seedAuto);$('#underChk').onchange=e=>setUnder(e.target.checked);setFrame(store.get('licorice-frame')==='1');
 function setFx(v){S.fx=isInk(v)?v:'';store.set('dblob-fx',S.fx);$('#inkFx').value=S.fx;$('#pearlUI').hidden=S.fx!=='pearl';if(aim)showAim();}
 function setPearl(t){S.pearl=t.slice();store.set('dblob-pearl',JSON.stringify(S.pearl));[0,1,2].forEach(i=>{$('#pt'+i).value=S.pearl[i];});if(aim)showAim();}
 [0,1,2].forEach(i=>{$('#pt'+i).oninput=e=>{const t=S.pearl.slice();t[i]=e.target.value;setPearl(t);};});
