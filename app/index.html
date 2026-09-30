@@ -1411,10 +1411,13 @@ function stampAt(c,o,sh,q,free){
   ls=ls.map(l=>l.map(([x,y])=>{x-=bx;y-=by;return[x*cs-y*sn,x*sn+y*cs];}));
   let ext=0;ls.forEach(l=>l.forEach(([x,y])=>{ext=Math.max(ext,Math.hypot(x,y));}));
   const want=dragged?Math.hypot(q.x-o.x,q.y-o.y):8+3*S.size,u=want/ext,k=fitOf(sh);
-  if(free){ // outside the design: nothing to fit, it goes where it's pressed at the dragged size
-    ls=subdiv(ls,1.5/u);
-    return{d:linesToD(ls.map(l=>l.map(([x,y])=>[o.x+x*u,o.y+y*u]))),fill:!!sh.fill,color:S.color,size:S.size,ax:o.x,ay:o.y,shape:sh.id,...inkOf(),
-      dot:sh.dotC?[f1s(o.x),f1s(o.y),f1s(Math.max(2,.12*u))]:undefined};
+  if(free){ // outside the design, drawn like a paint program's shape tool: the press is one corner of the shape's box and
+    // the pointer the opposite corner, so it grows down and away from the press and stretches to the box (a tap: a small one)
+    let l2=sh.make(),x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;l2.forEach(l=>l.forEach(([x,y])=>{x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}));
+    const d0=8+3*S.size,Q=dragged?q:{x:o.x+d0,y:o.y+d0},bx=Math.min(o.x,Q.x),by=Math.min(o.y,Q.y),bw=Math.max(2,Math.abs(Q.x-o.x)),bh=Math.max(2,Math.abs(Q.y-o.y));
+    const sx=bw/((x1-x0)||1),sy=bh/((y1-y0)||1);l2=subdiv(l2,1.5/Math.max(sx,sy,1e-6));
+    return{d:linesToD(l2.map(l=>l.map(([x,y])=>[bx+(x-x0)*sx,by+(y-y0)*sy]))),fill:!!sh.fill,color:S.color,size:S.size,ax:bx+bw/2,ay:by+bh/2,shape:sh.id,...inkOf(),
+      dot:sh.dotC?[f1s(bx+(0-x0)*sx),f1s(by+(0-y0)*sy),f1s(Math.max(2,.12*Math.min(bw,bh)/2))]:undefined};
   }
   const L=roomRing(o.R,6);
   ls=subdiv(ls,1.5/u);
