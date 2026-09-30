@@ -97,7 +97,11 @@ svg.glyph .dotc{fill:currentColor;stroke:none}
 #shapePick .glyph{width:15px;height:15px}
 #fly{position:fixed;z-index:40;background:var(--panel);border:1px solid var(--edge2);border-radius:6px;padding:8px;
   box-shadow:0 16px 40px -10px rgba(0,0,0,.8);display:grid;grid-template-columns:repeat(5,64px);gap:3px}
-#fly .flyh{grid-column:1/-1;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:0 3px 5px}
+#fly .flyh{grid-column:1/-1;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:0 3px 5px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+#fly .flyh span{flex:1 0 auto}
+#fly .flyh select{text-transform:none;letter-spacing:0;color:var(--ink)}
+#seedBox{font:12px/1 var(--mono);width:78px;padding:4px 6px;border-radius:3px;border:1px solid var(--edge);background:var(--stage);color:var(--ink);-webkit-user-select:text;user-select:text}
+#dice svg{width:15px;height:15px}
 #fly button{flex-direction:column;justify-content:center;gap:4px;height:60px;padding:4px 2px;background:none;border-color:transparent;
   font-size:10px;line-height:1.15;color:var(--dim);white-space:normal;text-align:center}
 #fly button:hover{background:var(--hover);color:var(--ink)}
@@ -277,6 +281,7 @@ label.btnlike:hover{background:#3d3d3d}
   </div>
   <div class="grp" id="oshape" hidden>
     <button class="sm" id="shapePick" title="Choose a shape" aria-haspopup="true"><span id="shapePickGlyph"></span><span id="shapeName">Dot</span> &#9662;</button>
+    <span id="seedUI" hidden><label for="seedBox" title="The same seed always draws the same one: write it down to get it back">seed</label><input id="seedBox" spellcheck="false" autocomplete="off" maxlength="24" title="Type a number or any word (a name always gives the same one)"><button class="sm" id="dice" title="Roll a new one" aria-label="Roll a new one"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="15" r="1.2"/><circle cx="15" cy="9" r="1.2"/><circle cx="9" cy="15" r="1.2"/></svg></button></span>
     <label class="chk" title="Center the shape on the page around the whole design, to use as a frame or border (the rectangle takes its width and height from your drag)"><input type="checkbox" id="frameChk">frame</label>
     <label for="fitBox" id="fitL" title="0 shrinks the shape to fit its field; 100 lets it flatten against the ink">fit to field</label><input type="range" id="fitBox" min="0" max="100" value="50"><span class="num" id="fitN">50</span>
     <label for="inkFx">ink</label><select id="inkFx" title="Marker ink for shape line work (filled shapes stay plain)"><option value="">Plain</option><option value="glitter">Glitter</option><option value="pearl">Pearl</option><option value="gold">Gold</option><option value="silver">Silver</option><option value="copper">Copper</option><option value="bronze">Bronze</option><option value="bismuth">Bismuth</option></select>
@@ -1377,6 +1382,439 @@ function roundRect(hw,hh,r){r=Math.min(r,hw,hh);const pts=[],k=[[hw-r,hh-r,0],[-
   k.forEach(([cx,cy,a0])=>{for(let i=0;i<=12;i++){const a=a0+i/12*Math.PI/2;pts.push([cx+Math.cos(a)*r,cy+Math.sin(a)*r]);}});
   pts.push(pts[0]);return densify(pts,false);}
 function arcPoly(cx,cy,r,a0,a1,n=90){return Array.from({length:n+1},(_,i)=>{const a=a0+(a1-a0)*i/n;return[cx+Math.cos(a)*r,cy+Math.sin(a)*r];});}
+/* ---------- seasonal and holiday shapes (drawn in code; same unit-disc polylines as SHAPES) ----------
+   A line flagged solid (eyes, buttons, small closed loops) is filled with ink; everything else is line work. */
+/* Seasonal / holiday shapes, drawn in code. Same format as the app's SHAPES: a list of polylines in a unit disc
+   (y down), largest reach ~0.9. Helpers are local so this file can be pasted in as one block. */
+const SZ=(()=>{
+const TAU=Math.PI*2;
+const P=(n,f)=>Array.from({length:n+1},(_,i)=>f(i/n));
+const ell=(cx,cy,rx,ry,a0=0,a1=TAU,n=96,rot=0)=>P(n,u=>{const t=a0+(a1-a0)*u,x=rx*Math.cos(t),y=ry*Math.sin(t);
+  return[cx+x*Math.cos(rot)-y*Math.sin(rot),cy+x*Math.sin(rot)+y*Math.cos(rot)];});
+const circ=(cx,cy,r,n=72)=>ell(cx,cy,r,r,0,TAU,n);
+const qb=(a,c,b,n=24)=>P(n,t=>[(1-t)**2*a[0]+2*(1-t)*t*c[0]+t*t*b[0],(1-t)**2*a[1]+2*(1-t)*t*c[1]+t*t*b[1]]);
+const cb=(a,c1,c2,b,n=32)=>P(n,t=>{const s=1-t;return[s*s*s*a[0]+3*s*s*t*c1[0]+3*s*t*t*c2[0]+t*t*t*b[0],s*s*s*a[1]+3*s*s*t*c1[1]+3*s*t*t*c2[1]+t*t*t*b[1]];});
+const ln=(...pts)=>{const out=[pts[0]];for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/.04));
+  for(let j=1;j<=n;j++)out.push([a[0]+(b[0]-a[0])*j/n,a[1]+(b[1]-a[1])*j/n]);}return out;};
+const cat=(...parts)=>parts.reduce((o,p)=>o.concat(o.length?p.slice(1):p),[]);
+const mirX=l=>l.map(([x,y])=>[-x,y]);
+const rev=l=>l.slice().reverse();
+const shift=(l,dx,dy)=>l.map(([x,y])=>[x+dx,y+dy]);
+const rotL=(l,a,cx=0,cy=0)=>l.map(([x,y])=>{const X=x-cx,Y=y-cy;return[cx+X*Math.cos(a)-Y*Math.sin(a),cy+X*Math.sin(a)+Y*Math.cos(a)];});
+// drop the parts of lines that fall inside any of the given tests (so overlapping outlines read as one silhouette)
+const cut=(ls,...inside)=>ls.flatMap(l=>{
+  const ins=p=>inside.some(f=>f(p)),edge=(a,b)=>{let lo=a,hi=b;for(let k=0;k<30;k++){const m=[(lo[0]+hi[0])/2,(lo[1]+hi[1])/2];if(ins(m))hi=m;else lo=m;}return lo;};
+  const out=[];let cur=[],prev=null,pin=false;
+  for(const p of l){const i=ins(p);
+    if(prev){if(!pin&&i){cur.push(edge(prev,p));if(cur.length>1)out.push(cur);cur=[];}
+      else if(pin&&!i)cur.push(edge(p,prev));}
+    if(!i)cur.push(p);prev=p;pin=i;}
+  if(cur.length>1)out.push(cur);return out;});
+// inside a closed polyline (even-odd)
+const inPoly=poly=>([x,y])=>{let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const[a,b]=poly[i],[e,f]=poly[j];
+  if((b>y)!==(f>y)&&x<(e-a)*(y-b)/(f-b)+a)c=!c;}return c;};
+const clipTo=(ls,poly)=>cut(ls,p=>!inPoly(poly)(p));
+const inC=(cx,cy,r)=>([x,y])=>Math.hypot(x-cx,y-cy)<r-.004;
+const inE=(cx,cy,rx,ry,rot=0)=>([x,y])=>{const X=x-cx,Y=y-cy,c=Math.cos(-rot),s=Math.sin(-rot),u=X*c-Y*s,v=X*s+Y*c;return(u/rx)**2+(v/ry)**2<.985;};
+// scale/center so the farthest point sits at 0.9
+const fit=ls=>{let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;ls.forEach(l=>l.forEach(([x,y])=>{x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}));
+  const cx=(x0+x1)/2,cy=(y0+y1)/2;let r=0;ls.forEach(l=>l.forEach(([x,y])=>{r=Math.max(r,Math.hypot(x-cx,y-cy));}));
+  return weld(ls.map(l=>keep(l,l.map(([x,y])=>[(x-cx)*.9/r,(y-cy)*.9/r]))));};
+const keep=(a,b)=>{if(a.solid)b.solid=true;if(a.hollow)b.hollow=true;return b;};
+const hollow=l=>{l.hollow=true;return l;}; // never auto-filled, even when small
+const solid=l=>{l.solid=true;return l;};
+const union=ops=>foldCut(1,ops,420,false);
+// a line end that stops just short of another line (a near miss) is moved onto it, so every cell closes.
+// Short details (eyes, smiles) and ends far from anything (stems, legs, rays) are left as they are.
+const segNear=(p,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/(dx*dx+dy*dy||1)));return[a[0]+t*dx,a[1]+t*dy];};
+const lenOf=l=>l.reduce((s,p,i)=>i?s+Math.hypot(p[0]-l[i-1][0],p[1]-l[i-1][1]):0,0);
+function weld(ls,gap=.065){
+  ls.forEach((l,li)=>{const f=l[0],e=l[l.length-1];if(Math.hypot(f[0]-e[0],f[1]-e[1])<.01||lenOf(l)<.25)return;
+    [0,l.length-1].forEach(pi=>{const p=l[pi];let best=null,bd=1e9;
+      ls.forEach((o,oi)=>{for(let k=1;k<o.length;k++){if(oi===li&&Math.abs(k-pi)<6)continue;const q=segNear(p,o[k-1],o[k]),d=Math.hypot(q[0]-p[0],q[1]-p[1]);if(d<bd){bd=d;best=q;}}});
+      if(best&&bd>.001&&bd<gap)l[pi]=best;});});
+  return ls;
+}
+// closed loops too small to color (buttons, tiny eyes, a carrot nose) are drawn as solid ink
+const tinyLoop=l=>{if(l.hollow)return false;const f=l[0],e=l[l.length-1];if(Math.hypot(f[0]-e[0],f[1]-e[1])>.01)return false;let a=0;for(let i=1;i<l.length;i++)a+=l[i-1][0]*l[i][1]-l[i][0]*l[i-1][1];return Math.abs(a/2)<Math.PI*.05*.05;};
+
+/* ---- fold and cut: paper folded into 2*sym layers, cut once, unfolded (no creases drawn) ----
+   ops are drawn in one slice's frame (the arm axis is +x); each op is repeated in every rotated and mirrored layer.
+   {add:poly|circle} adds paper, {cut:...} removes it. The result is traced back into closed outlines (the paper's edge
+   and its holes); pieces or holes too small to color are dropped. */
+function foldCut(sym,ops,res=380,mirror=true){
+  const c=document.createElement('canvas');c.width=c.height=res;const x=c.getContext('2d'),k=res/2.1;
+  for(const op of ops){
+    x.globalCompositeOperation=op.cut?'destination-out':'source-over';x.fillStyle='#000';
+    for(let i=0;i<sym;i++)for(const m of mirror?[1,-1]:[1]){
+      x.setTransform(k,0,0,k,res/2,res/2);x.rotate(i*TAU/sym);x.scale(1,m);
+      const g=op.add||op.cut;x.beginPath();
+      if(g.r!=null)x.arc(g.x||0,g.y||0,g.r,0,TAU);else g.forEach(([u,v],j)=>j?x.lineTo(u,v):x.moveTo(u,v));
+      x.closePath();x.fill();
+    }
+  }
+  const a=x.getImageData(0,0,res,res).data,n=res,al=new Float32Array(n*n);for(let i=0;i<n*n;i++)al[i]=a[i*4+3];
+  return traceLoops(al,n,128).map(l=>l.map(([px,py])=>[(px-res/2)/k,(py-res/2)/k]))
+    .filter(l=>Math.abs(areaOf(l))>.002); // specks go; small loops stay and draw solid (tinyLoop)
+}
+const areaOf=l=>{let s=0;for(let i=1;i<l.length;i++)s+=l[i-1][0]*l[i][1]-l[i][0]*l[i-1][1];return s/2;};
+// marching squares over the alpha channel; edges keyed by id so the loops chain exactly
+function traceLoops(v,n,th){
+  const pt=new Map(),adj=new Map(),link=(p,q)=>{(adj.get(p)||adj.set(p,[]).get(p)).push(q);(adj.get(q)||adj.set(q,[]).get(q)).push(p);};
+  const H=(x,y)=>{const id=2*(y*n+x);if(!pt.has(id)){const a=v[y*n+x],b=v[y*n+x+1];pt.set(id,[x+(th-a)/(b-a),y]);}return id;};
+  const V=(x,y)=>{const id=2*(y*n+x)+1;if(!pt.has(id)){const a=v[y*n+x],b=v[(y+1)*n+x];pt.set(id,[x,y+(th-a)/(b-a)]);}return id;};
+  for(let y=0;y<n-1;y++)for(let x=0;x<n-1;x++){
+    const tl=v[y*n+x]>=th,tr=v[y*n+x+1]>=th,br=v[(y+1)*n+x+1]>=th,bl=v[(y+1)*n+x]>=th,code=tl*8+tr*4+br*2+bl;
+    if(!code||code===15)continue;
+    const T=()=>H(x,y),B=()=>H(x,y+1),L=()=>V(x,y),R=()=>V(x+1,y);
+    switch(code){
+      case 1:case 14:link(L(),B());break; case 2:case 13:link(B(),R());break; case 3:case 12:link(L(),R());break;
+      case 4:case 11:link(T(),R());break; case 6:case 9:link(T(),B());break; case 7:case 8:link(T(),L());break;
+      case 5:link(T(),R());link(L(),B());break; case 10:link(T(),L());link(R(),B());break;
+    }
+  }
+  const seen=new Set(),loops=[];
+  for(const start of adj.keys()){
+    if(seen.has(start))continue;const ids=[start];seen.add(start);let prev=-1,cur=start;
+    for(;;){const nb=adj.get(cur),nx=nb[0]!==prev?nb[0]:nb[1];if(nx===undefined||nx===start)break;if(seen.has(nx))break;seen.add(nx);ids.push(nx);prev=cur;cur=nx;}
+    const l=ids.map(i=>pt.get(i));l.push(l[0]);
+    // a closed loop starts and ends on the same point: simplify it as two halves, split at the point farthest from the start
+    let m=0,md=-1;l.forEach((p,i)=>{const d=Math.hypot(p[0]-l[0][0],p[1]-l[0][1]);if(d>md){md=d;m=i;}});
+    if(l.length>6)loops.push([...rdp(l.slice(0,m+1),.45),...rdp(l.slice(m),.45).slice(1)]);
+  }
+  return loops;
+}
+function rdp(l,eps){
+  if(l.length<4)return l;const keep=new Uint8Array(l.length);keep[0]=keep[l.length-1]=1;const st=[[0,l.length-1]];
+  while(st.length){const[i,j]=st.pop();let bd=0,bi=-1;const[ax,ay]=l[i],[bx,by]=l[j],dx=bx-ax,dy=by-ay,L=Math.hypot(dx,dy)||1;
+    for(let k=i+1;k<j;k++){const d=Math.abs((l[k][0]-ax)*dy-(l[k][1]-ay)*dx)/L;if(d>bd){bd=d;bi=k;}}
+    if(bd>eps){keep[bi]=1;st.push([i,bi],[bi,j]);}}
+  return l.filter((_,i)=>keep[i]);
+}
+// a small seeded random, so a design can be kept and redrawn the same way
+const rng=seed=>()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const polar=(r,a)=>[r*Math.cos(a),r*Math.sin(a)];
+const S={};
+S.pumpkin=()=>{
+  const body=P(160,u=>{const t=u*TAU,x=.9*Math.cos(t);let y=.08+.66*Math.sin(t);const d=Math.exp(-(((x)/.22)**2));
+    y+=Math.sin(t)<0?.1*d:-.06*d;const lobe=1+.035*Math.cos(6*t);return[x*lobe,y];});
+  // ribs bow outward like ( ) and never meet, so they read as segments, not a face
+  const rib=(s,k)=>P(40,u=>{const a=u*Math.PI;return[s*(.1+k*Math.sin(a)),-.46+1.08*u];});
+  const stem=cat(qb([-.07,-.48],[-.09,-.66],[-.03,-.8]),ln([-.03,-.8],[.08,-.78]),qb([.08,-.78],[.05,-.64],[.07,-.49]));
+  const vine=qb([.08,-.72],[.3,-.9],[.36,-.66]);
+  const ribs=clipTo([rib(-1,.22),rib(1,.22),rib(-1,.52),rib(1,.52)].map(l=>[[l[0][0],l[0][1]-.2],...l,[l[l.length-1][0],l[l.length-1][1]+.2]]),body);
+  return fit([body,...ribs,stem,vine]);
+};
+S.ghost=(seed=1)=>{ // cute ghost: teardrop body with a swept tail and arm nubs, a face, maybe a hat or bow tie
+  const R=rng(seed),rr=(a,b)=>a+(b-a)*R(),ri=(a,b)=>a+Math.floor(R()*(b-a+1)),pick=a=>a[Math.floor(R()*a.length)];
+  const hy=-.32,hr=.42,hemY=rr(.3,.55),hw=rr(.42,.54),d=R()<.5?-1:1,sweep=rr(0,.2),y0=.05; // a gentle sweep: more smears the hem into slivers
+  const side=t=>hr+(hw-hr)*t*t, sh=(x,y)=>[x+(y>y0?d*sweep*((y-y0)/(hemY-y0))**2:0),y];
+  const body=[];const N=40;
+  for(let i=0;i<=N;i++){const t=i/N,y=hy+(hemY-hy)*t;body.push(sh(-side(t),y));}
+  const n=ri(2,3),dep=rr(.1,.14); /* few, round lobes */for(let i=1;i<N*2;i++){const u=i/(N*2),x=-hw+2*hw*u;body.push(sh(x,hemY+dep*Math.abs(Math.sin(Math.PI*u*n))));}
+  for(let i=N;i>=0;i--){const t=i/N,y=hy+(hemY-hy)*t;body.push(sh(side(t),y));}
+  const ops=[{add:{x:0,y:hy,r:hr}},{add:body}];
+  const arm=(sd,up)=>{const y=rr(-.02,.12),t=(y-hy)/(hemY-hy),p=sh(sd*(side(t)+.02),y),a=up?-sd*rr(.5,.9):sd*rr(.35,.7);
+    const pts=[];for(let i=0;i<=32;i++){const q=i/32*TAU,u=.14*Math.cos(q),v=.065*Math.sin(q);pts.push([p[0]+sd*(u+.06)*Math.cos(a)-v*Math.sin(a),p[1]+sd*(u+.06)*Math.sin(a)+v*Math.cos(a)]);}return pts;};
+  const arms=ri(0,3);if(arms)for(const sd of[-1,1]){if(arms===3&&sd===d)continue;ops.push({add:arm(sd,arms===2||(arms===3))});}
+  let sil=union(ops);
+  // the face
+  const fx=rr(-.05,.05),ey=hy+rr(0,.07),ex=rr(.15,.19),ls=[],E=[fx-ex,fx+ex];
+  const dot=x=>solid(ell(x,ey,.055,.08,0,TAU,28)),arcUp=x=>qb([x-.07,ey+.025],[x,ey-.08],[x+.07,ey+.025]);
+  const starAt=x=>{const p=[];for(let i=0;i<=10;i++){const a=-Math.PI/2+i*Math.PI/5,r=i%2?.048:.115;p.push([x+r*Math.cos(a),ey+r*Math.sin(a)]);}return solid(p);};
+  const heartAt=x=>solid(P(60,u=>{const t=u*TAU;return[x+.0068*16*Math.sin(t)**3,ey-.0068*(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))];}));
+  const ring=x=>hollow(ell(x,ey,.07,.085,0,TAU,32)),hol=f=>x=>{const l=f(x);delete l.solid;return hollow(l);};
+  const spiralAt=x=>P(60,u=>{const a=u*TAU*2,r=.015+.08*u;return[x+r*Math.cos(a),ey+r*Math.sin(a)];});
+  const my=ey+rr(.16,.2);
+  const mouths={smile:()=>qb([fx-.07,my-.02],[fx,my+.06],[fx+.07,my-.02]),
+    open:()=>{const w=rr(.08,.12),h=rr(.07,.1);return cat(ln([fx-w,my-.03],[fx+w,my-.03]),ell(fx,my-.03,w,h,0,Math.PI,30));},
+    o:()=>solid(ell(fx,my,.035,.045,0,TAU,24)),dash:()=>ln([fx-.05,my],[fx+.05,my]),
+    kiss:()=>cat(qb([fx-.02,my-.07],[fx+.07,my-.05],[fx,my-.01]),qb([fx,my-.01],[fx+.07,my+.03],[fx-.02,my+.05])),
+    cat:()=>cat(qb([fx-.09,my-.02],[fx-.045,my+.05],[fx,my-.02]),qb([fx,my-.02],[fx+.045,my+.05],[fx+.09,my-.02])),
+    wavy:()=>P(30,u=>[fx-.08+.16*u,my+.02*Math.sin(u*TAU*1.5)])};
+  const face=pick(['dots','dots','wink','happy','stars','hearts','dizzy','sleepy','kiss','rings','starsO','heartsO']);
+  const eyes={dots:[dot(E[0]),dot(E[1])],wink:[dot(E[0]),ln([E[1]+.05,ey-.045],[E[1]-.04,ey],[E[1]+.05,ey+.045])],happy:[arcUp(E[0]),arcUp(E[1])],
+    stars:[starAt(E[0]),starAt(E[1])],hearts:[heartAt(E[0]),heartAt(E[1])],dizzy:[spiralAt(E[0]),spiralAt(E[1])],
+    sleepy:[ln([E[0]-.05,ey],[E[0]+.05,ey]),ln([E[1]-.05,ey],[E[1]+.05,ey])],kiss:[arcUp(E[0]),arcUp(E[1])],
+    rings:[ring(E[0]),ring(E[1])],starsO:[hol(starAt)(E[0]),hol(starAt)(E[1])],heartsO:[hol(heartAt)(E[0]),hol(heartAt)(E[1])]}[face];
+  const mouth={dots:pick(['smile','o','open','dash']),wink:'smile',happy:pick(['open','cat','smile']),stars:'open',hearts:pick(['smile','cat']),
+    dizzy:'wavy',sleepy:pick(['o','dash']),kiss:'kiss',rings:pick(['smile','o','open']),starsO:'open',heartsO:pick(['smile','cat'])}[face];
+  ls.push(...eyes,mouths[mouth]());
+  if(face==='hearts'||R()<.3)for(const x of E)for(let k=-1;k<=1;k++)ls.push(ln([x+k*.035-.012,ey+.11],[x+k*.035+.012,ey+.08]));
+  // one accessory, or none
+  let acc=pick(['none','none','tophat','bowtie','glasses','bow']);if(acc==='glasses'&&!['dots','happy','sleepy','wink','rings'].includes(face))acc='none';
+  if(acc==='tophat'){const ty=hy-hr+.04,bw=.27,cw=.16,ch=.34,bh=.055,brim=ln([-bw,ty],[bw,ty],[bw,ty-bh],[-bw,ty-bh],[-bw,ty]),crown=ln([-cw,ty-bh],[-cw,ty-ch],[cw,ty-ch],[cw,ty-bh]);
+    const hat=[[-bw,ty],[bw,ty],[bw,ty-bh],[cw,ty-bh],[cw,ty-ch],[-cw,ty-ch],[-cw,ty-bh],[-bw,ty-bh]];
+    sil=cut(sil,inPoly([...hat,hat[0]]));ls.push(brim,crown,ln([-cw,ty-bh-.07],[cw,ty-bh-.07]));}
+  if(acc==='bowtie'){const by=my+.15,w=.11,h=.06;ls.push(hollow(ln([fx-.025,by],[fx-w,by-h],[fx-w,by+h],[fx-.025,by])),hollow(ln([fx+.025,by],[fx+w,by-h],[fx+w,by+h],[fx+.025,by])),solid(circ(fx,by,.028,16)));}
+  if(acc==='glasses'){for(const x of E)ls.push(circ(x,ey,.125,44));ls.push(qb([E[0]+.125,ey],[fx,ey-.04],[E[1]-.125,ey]));}
+  if(acc==='bow'){const bx=d*.26,by=hy-hr*.82,lp=sd=>cat(qb([bx,by],[bx+sd*.16,by-.13],[bx+sd*.15,by+.02]),qb([bx+sd*.15,by+.02],[bx+sd*.1,by+.06],[bx,by]));
+    const bow=[...lp(-1),...lp(1)];sil=cut(sil,p=>Math.hypot(p[0]-bx,p[1]-by)<.13&&inPoly([...lp(-1),[bx,by]])(p)||inPoly([...lp(1),[bx,by]])(p));ls.push(lp(-1),lp(1),solid(circ(bx,by,.03,16)));}
+  const tilt=rr(-.3,.3),c=Math.cos(tilt),sn=Math.sin(tilt),T=l=>keep(l,l.map(([x,y])=>[x*c-y*sn,x*sn+y*c]));
+  return fit([...sil,...ls].map(T));
+};
+S.sheetGhost=(seed=1)=>{ // recipe: hem length, smooth or torn hem, round or torn eyes, mouth, a slight lean
+  const R=rng(seed),rr=(a,b)=>a+(b-a)*R(),ri=(a,b)=>a+Math.floor(R()*(b-a+1));
+  const hw=rr(.5,.6),top=-.25,hemY=rr(.35,.85),flare=rr(0,.1),lean=rr(-.1,.1);
+  const right=cat(ell(0,top,hw,hw,-Math.PI/2,0,40),qb([hw,top],[hw+flare*.4,(top+hemY)/2],[hw+flare,hemY]));
+  const leftSide=cat(qb([-hw-flare,hemY],[-hw-flare*.4,(top+hemY)/2],[-hw,top]),ell(0,top,hw,hw,Math.PI,1.5*Math.PI,40));
+  const W=hw+flare,torn=R()<.5,hem=[];
+  if(!torn){const n=ri(3,5),d=rr(.06,.11);for(let i=0;i<=n*12;i++){const u=i/(n*12);hem.push([W-2*W*u,hemY+d*Math.sin(u*Math.PI*n)**2]);}}
+  else{const n=ri(4,7);hem.push([W,hemY]);for(let i=1;i<n*2;i++){const u=i/(n*2);hem.push([W-2*W*u+rr(-.03,.03),hemY+(i%2?rr(.1,.2):rr(0,.05))]);}hem.push([-W,hemY]);}
+  const hemL=[];for(let i=1;i<hem.length;i++)hemL.push(...ln(hem[i-1],hem[i]).slice(i>1?1:0));
+  const body=cat(right,hemL,leftSide);
+  const ex=rr(.15,.21),ey=top+rr(-.02,.06),erx=rr(.07,.09),ery=rr(.09,.12),tornEyes=R()<.5;
+  const eye=cx=>{if(!tornEyes)return ell(cx,ey,erx,ery,0,TAU,40);const n=ri(6,8),pts=[];
+    for(let i=0;i<n;i++){const a=i/n*TAU+rr(-.2,.2),k=i%2?rr(.65,.85):rr(1,1.15);pts.push([cx+Math.cos(a)*erx*k*1.1,ey+Math.sin(a)*ery*k*1.05]);}
+    pts.push(pts[0]);const o=[];for(let i=1;i<pts.length;i++)o.push(...ln(pts[i-1],pts[i]).slice(i>1?1:0));return o;};
+  const mouths=[()=>ell(0,ey+.25,.07,.055,0,TAU,32),()=>qb([-.1,ey+.22],[0,ey+.3],[.1,ey+.22]),()=>null],m=mouths[ri(0,2)]();
+  const ls=[body,eye(-ex),eye(ex)];if(m)ls.push(m);
+  return fit(ls.map(l=>l.map(([x,y])=>[x+lean*(hemY-y)*.4,y])));
+};
+S.bat=()=>{ // round cartoon bat, wings raised mid-flap, happy closed eyes (not a logo silhouette)
+  const cx=0,cy=.15,r=.28,at=a=>[cx+r*Math.cos(a),cy+r*Math.sin(a)];
+  const wing=cat(qb(at(-.35),[.5,-.42],[.9,-.58]),qb([.9,-.58],[.72,-.38],[.8,-.16]),qb([.8,-.16],[.6,-.12],[.6,.06]),qb([.6,.06],[.42,.04],at(.45)));
+  const ear=(a0,a1,tip)=>ln(at(a0),tip,at(a1));
+  const eL=ear(-2.2,-1.75,[-.2,-.34]),eR=ear(-1.39,-.94,[.2,-.34]);
+  const body=cut([circ(cx,cy,r,96)],inPoly([...eL,eL[0]]),inPoly([...eR,eR[0]]));
+  const eye=x=>qb([x-.06,.1],[x,.04],[x+.06,.1]);
+  return fit([...body,eL,eR,wing,mirX(wing),eye(-.1),eye(.1),qb([-.05,.22],[0,.26],[.05,.22])]);
+};
+S.spider=()=>{ // bigger body, fewer bends, legs spread wide so nothing is cramped
+  const B=[0,.18,.34],Hd=[0,-.3,.2];
+  const ls=[circ(...B,96),...cut([circ(...Hd,72)],inC(...B))];
+  for(const s of[-1,1])[[-2.5,-.55],[-2.85,-.1],[2.9,.3],[2.45,.62]].forEach(([a,fy],i)=>{
+    const ang=s>0?Math.PI-a:a,x0=B[0]+B[2]*Math.cos(ang),y0=B[1]+B[2]*Math.sin(ang),kx=s*(.62+.04*(i%2)),ky=y0-.2+i*.02;
+    ls.push(cat(qb([x0,y0],[(x0+kx)/2,ky-.04],[kx,ky]),ln([kx,ky],[s*.9,fy+.2])));});
+  ls.push(ln([0,-.5],[0,-.95]));
+  return fit(ls);
+};
+S.witchHat=()=>{
+  const brim=ell(0,.62,.92,.17);
+  const cone=cat(qb([-.46,.6],[-.28,.0],[-.08,-.45]),qb([-.08,-.45],[.12,-.8],[.42,-.86]),qb([.42,-.86],[.2,-.62],[.14,-.3]),qb([.14,-.3],[.3,.2],[.46,.6]));
+  const coneCut=cut([cone],inE(0,.62,.92,.17));
+  const band=[qb([-.4,.42],[0,.52],[.41,.42])],buckle=[ln([-.08,.38],[.08,.38],[.08,.53],[-.08,.53],[-.08,.38])];
+  return fit([brim,...coneCut,...band,...buckle]);
+};
+S.cat=()=>{ // sitting cat, seen from behind-ish, curled tail
+  const body=cat(qb([-.18,-.28],[-.5,.1],[-.42,.78]),ln([-.42,.78],[.42,.78]),qb([.42,.78],[.5,.1],[.18,-.28]));
+  const head=cut([circ(0,-.45,.28)],([x,y])=>y>-.3&&Math.abs(x)<.2);
+  const ears=[ln([-.24,-.58],[-.22,-.86],[-.06,-.71]),ln([.24,-.58],[.22,-.86],[.06,-.71])];
+  const tail=cat(qb([.42,.7],[.85,.62],[.78,.2]),qb([.78,.2],[.74,.02],[.62,.08]));
+  return fit([body,...head,...ears,tail]);
+};
+S.leafMaple=()=>{
+  const R=[[0,-.92],[.1,-.6],[.28,-.7],[.24,-.42],[.64,-.6],[.52,-.32],[.84,-.18],[.5,-.02],[.58,.24],[.2,.12],[.08,.3],[0,.28]];
+  const half=[];for(let i=1;i<R.length;i++)half.push(...ln(R[i-1],R[i]).slice(i>1?1:0));
+  const outline=cat(half,rev(mirX(half)).slice(1));
+  const veins=[ln([0,.28],[0,-.8]),ln([0,.2],[.58,-.52]),ln([0,.2],[-.58,-.52]),ln([0,.24],[.74,-.18]),ln([0,.24],[-.74,-.18])];
+  return fit([outline,ln([0,.28],[.04,.9]),...veins]);
+};
+S.acorn=()=>{
+  const cap=cat(qb([-.6,-.05],[-.62,-.55],[0,-.58]),qb([0,-.58],[.62,-.55],[.6,-.05]),qb([.6,-.05],[0,.08],[-.6,-.05]));
+  const nut=cut([cat(qb([-.5,0],[-.55,.55],[0,.88]),qb([0,.88],[.55,.55],[.5,0]))],inPoly(cap));
+  const stem=qb([0,-.58],[.02,-.78],[.14,-.86]);
+  const hatch=[];for(let k=-1;k<=1;k++){hatch.push(ln([k*.46-.5,-.8],[k*.46+.5,.2]),ln([k*.46+.5,-.8],[k*.46-.5,.2]));} // wide diamonds, big enough to color
+  return fit([cap,...nut,stem,...clipTo(hatch,cap)]);
+};
+S.apple=()=>{
+  const half=cat(qb([0,-.42],[.35,-.72],[.72,-.35]),qb([.72,-.35],[.95,.2],[.5,.72]),qb([.5,.72],[.25,.9],[0,.74]));
+  const stem=qb([0,-.42],[-.02,-.66],[.08,-.84]),L0=stem[12],leaf=cat(qb(L0,[.25,-.9],[.46,-.72]),qb([.46,-.72],[.25,-.52],L0));
+  return fit([cat(rev(mirX(half)),half.slice(1)),stem,leaf]);
+};
+S.snowflake=(seed=7)=>{ // folded paper, cut and unfolded (no creases): a plate, six arms, branches, a few holes
+  const R=rng(seed),rr=(a,b)=>a+(b-a)*R(),W=Math.PI/6,ops=[];
+  // a bar from r0 to r1 along angle a, half-widths w0 -> w1, pointed end
+  const bar=(r0,r1,a,w0,w1,tip=.08)=>{const c=Math.cos(a),s=Math.sin(a),P=(u,v)=>[u*c-v*s,u*s+v*c];
+    return[P(r0,-w0),P(r1,-w1),P(r1+tip,0),P(r1,w1),P(r0,w0)];};
+  const rc=rr(.2,.3);ops.push({add:Array.from({length:6},(_,i)=>polar(rc,i*TAU/6+W))});        // center plate
+  const L=rr(.74,.84),aw0=rr(.075,.1),aw1=rr(.06,.075);ops.push({add:bar(0,L,0,aw0,aw1,rr(.06,.12))}); // the arm
+  const nb=1+Math.floor(R()*2),ang=rr(.8,1.05);                                                 // side branches
+  for(let i=0;i<nb;i++){const r0=rc*.7+(i+.5+rr(-.15,.15))*(L-rc*.7)/(nb+.4),len=rr(.14,.26)*(1-i*.25),bw=rr(.055,.07);
+    const bx=r0,a=ang;ops.push({add:bar(0,len,0,bw,bw*.85,.07).map(([u,v])=>[bx+u*Math.cos(a)-v*Math.sin(a),u*Math.sin(a)+v*Math.cos(a)])});}
+  if(R()<.6){const pr=rr(.42,.6),ps=rr(.12,.16);ops.push({add:Array.from({length:6},(_,i)=>{const p=polar(ps,i*TAU/6);return[pr+p[0],p[1]];})}); // a plate on the arm
+    ops.push({cut:R()<.5?{x:pr,y:0,r:ps*.45}:[[pr-ps*.6,0],[pr,ps*.35],[pr+ps*.6,0],[pr,-ps*.35]]});}
+  const ch=rr(.07,.11);ops.push({cut:R()<.5?{r:ch}:Array.from({length:6},(_,i)=>polar(ch*1.15,i*TAU/6))});   // center hole
+  if(R()<.5)ops.push({cut:{x:rc*.72,y:0,r:rr(.035,.05)}});                                          // a ring of small holes
+  return fit(foldCut(6,ops));
+};
+S.beanie=()=>{
+  const dome=ell(0,.3,.72,.78,Math.PI,TAU,72);
+  const cuff=[ln([-.78,.3],[.78,.3]),ln([-.78,.3],[-.78,.62],[.78,.62],[.78,.3])];
+  const pom=circ(0,-.56,.2);
+  const ribs=[-.52,-.26,0,.26,.52].map(x=>ln([x,.3],[x,.62]));
+  return fit([...cut([dome],inC(0,-.56,.2)),...cuff,pom,...ribs]);
+};
+S.mitten=()=>{
+  const out=cat(ln([-.42,.88],[-.42,.5]),qb([-.42,.5],[-.5,.2],[-.55,-.02]),qb([-.55,-.02],[-.72,-.3],[-.6,-.42]),qb([-.6,-.42],[-.48,-.5],[-.36,-.24]),
+    qb([-.36,-.24],[-.4,-.88],[.02,-.88]),qb([.02,-.88],[.48,-.86],[.48,-.2]),qb([.48,-.2],[.5,.2],[.42,.5]),ln([.42,.5],[.42,.88],[-.42,.88]));
+  return fit([out,ln([-.42,.56],[.42,.56]),...[-.21,0,.21].map(x=>ln([x,.56],[x,.88]))]);
+};
+S.snowman=()=>{
+  const H=[0,-.62,.2],B=[0,-.17,.28],L=[0,.46,.38];
+  const ls=cut([circ(...H)],inC(...B)).concat(cut([circ(...B)],inC(...H),inC(...L)),cut([circ(...L)],inC(...B)));
+  ls.push(ln([-.26,-.25],[-.62,-.42]),ln([-.5,-.36],[-.58,-.52]),ln([.26,-.25],[.62,-.42]),ln([.5,-.36],[.58,-.52]));
+  ls.push(circ(0,-.2,.03,14),circ(0,-.05,.03,14),circ(-.07,-.66,.025,12),circ(.07,-.66,.025,12));
+  ls.push(ln([0,-.61],[.15,-.575],[0,-.54],[0,-.61]));
+  return fit(ls);
+};
+S.pineTree=()=>{
+  const half=[[0,-.9],[.3,-.5],[.16,-.5],[.5,-.08],[.3,-.08],[.7,.42],[.12,.42]];
+  const r=[];for(let i=1;i<half.length;i++)r.push(...ln(half[i-1],half[i]).slice(i>1?1:0));
+  const outline=cat(rev(mirX(r)),r.slice(1));
+  return fit([outline,ln([-.12,.42],[-.12,.72],[.12,.72],[.12,.42])]);
+};
+S.gift=()=>{
+  const box=ln([-.62,-.12],[.62,-.12],[.62,.8],[-.62,.8],[-.62,-.12]);
+  const lid=ln([-.72,-.12],[-.72,-.36],[.72,-.36],[.72,-.12],[-.72,-.12]);
+  const rib=[ln([-.1,-.36],[-.1,.8]),ln([.1,-.36],[.1,.8])];
+  const bow=[cat(qb([0,-.36],[-.55,-.95],[-.5,-.52]),qb([-.5,-.52],[-.45,-.36],[0,-.36])),cat(qb([0,-.36],[.55,-.95],[.5,-.52]),qb([.5,-.52],[.45,-.36],[0,-.36]))];
+  return fit([box,lid,...cut(rib,([x,y])=>false),...bow]);
+};
+S.candyCane=()=>{
+  const c=cat(ln([.12,.92],[.12,-.35]),ell(-.18,-.35,.3,.3,0,-Math.PI,48),ln([-.48,-.35],[-.48,-.18]));
+  const off=(l,d)=>l.map((p,i)=>{const a=l[Math.max(0,i-1)],b=l[Math.min(l.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],m=Math.hypot(dx,dy)||1;return[p[0]-dy/m*d,p[1]+dx/m*d];});
+  const w=.12,A=off(c,w),B=off(c,-w);
+  const stripes=[];for(let i=4;i<c.length-4;i+=7){stripes.push(ln(A[i],B[Math.min(c.length-1,i+3)]));}
+  return fit([cat(A,ln(A[A.length-1],B[B.length-1]),rev(B),ln(B[0],A[0])),...stripes]);
+};
+S.candle=()=>{
+  const body=ln([-.22,-.2],[.22,-.2],[.22,.85],[-.22,.85],[-.22,-.2]);
+  const flame=cat(qb([0,-.3],[-.24,-.47],[0,-.9]),qb([0,-.9],[.24,-.47],[0,-.3]));
+  return fit([body,flame,ln([0,-.2],[0,-.3])]);
+};
+S.bunny=()=>{ // big eyes and nose, closed shapes you can fill
+  const head=[0,.38,.44];
+  const earL=ell(-.2,-.35,.14,.44,0,TAU,72,-.18),earR=ell(.2,-.35,.14,.44,0,TAU,72,.18);
+  const ls=cut([circ(...head,120)],inE(-.2,-.35,.14,.44,-.18),inE(.2,-.35,.14,.44,.18));
+  ls.push(...cut([earL,earR],inC(...head)));
+  ls.push(...cut([ell(-.2,-.33,.06,.3,0,TAU,48,-.18),ell(.2,-.33,.06,.3,0,TAU,48,.18)],inC(...head)));
+  const nose=cat(qb([-.09,.43],[0,.38],[.09,.43]),qb([.09,.43],[.06,.53],[0,.55]),qb([0,.55],[-.06,.53],[-.09,.43]));
+  ls.push(ell(-.17,.28,.075,.095,0,TAU,40),ell(.17,.28,.075,.095,0,TAU,40),nose,
+    qb([0,.55],[-.04,.66],[-.14,.63]),qb([0,.55],[.04,.66],[.14,.63]));
+  return fit(ls);
+};
+S.egg=()=>{
+  const egg=P(120,u=>{const t=u*TAU,y=-.9*Math.cos(t);return[.66*Math.sin(t)*(1+.12*(y/.9)),y+.05];});
+  const w=y=>{const c=(y-.05)/.9;return .66*Math.sqrt(Math.max(0,1-c*c))*(1+.12*c)-.02;};
+  const zig=[];const y0=-.1;const W0=w(y0);for(let i=0;i<=8;i++){zig.push([-W0+2*W0*i/8,y0+(i%2?-.1:.1)]);}
+  const zz=cat(...zig.slice(1).map((p,i)=>ln(zig[i],p)));
+  const wave=P(40,u=>{const y=.3,W=w(y);return[-W+2*W*u,y+.05*Math.sin(u*TAU*3)];});
+  return fit([egg,zz,wave]);
+};
+S.tulip=()=>{
+  const cup=cat(qb([-.42,-.62],[-.5,.05],[0,.12]),qb([0,.12],[.5,.05],[.42,-.62]),ln([.42,-.62],[.22,-.36],[0,-.7],[-.22,-.36],[-.42,-.62]));
+  const stem=qb([0,.12],[.04,.5],[0,.92]),leaf=cat(qb([.02,.8],[.42,.62],[.46,.25]),qb([.46,.25],[.15,.42],[.02,.8]));
+  return fit([cup,stem,leaf]);
+};
+S.bird=()=>{
+  const body=cat(qb([-.5,.1],[-.45,-.42],[0,-.4]),qb([0,-.4],[.28,-.4],[.38,-.2]),ln([.38,-.2],[.62,-.14],[.4,-.06]),qb([.4,-.06],[.42,.4],[-.1,.42]),
+    ln([-.1,.42],[-.62,.52],[-.8,.3],[-.5,.1]));
+  const wing=cat(qb([-.28,.02],[.0,-.1],[.18,.08]),qb([.18,.08],[-.05,.3],[-.28,.02]));
+  return fit([body,wing,circ(.18,-.22,.035,14),ln([-.08,.42],[-.1,.62]),ln([.06,.4],[.06,.62])]);
+};
+S.butterfly=()=>{
+  const up=cat(qb([.04,-.1],[.4,-.9],[.85,-.55]),qb([.85,-.55],[.8,-.05],[.04,-.02]));
+  const lo=cat(qb([.04,.02],[.7,.1],[.6,.6]),qb([.6,.6],[.3,.72],[.04,.12]));
+  const body=ell(0,0,.05,.42,0,TAU,40);
+  return fit([up,lo,mirX(up),mirX(lo),body,qb([-.02,-.4],[-.08,-.62],[-.22,-.7]),qb([.02,-.4],[.08,-.62],[.22,-.7])]);
+};
+S.clover=()=>{
+  // three hearts, points meeting in the middle, lobes outward
+  const heart=a=>rotL(P(80,u=>{const t=u*TAU;return[.018*16*Math.sin(t)**3,-.018*(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))-.306];}),a);
+  return fit([heart(0),heart(TAU/3),heart(-TAU/3),qb([0,0],[.12,.5],[.32,.85])]);
+};
+S.umbrella=()=>{
+  const top=ell(0,0,.85,.65,Math.PI,TAU,64);
+  const scal=[];for(let i=0;i<4;i++){const x0=-.85+i*.425;scal.push(...qb([x0,0],[x0+.2125,-.12],[x0+.425,0]).slice(i?1:0));}
+  const ribs=[-.425,0,.425].map(x=>qb([0,-.65],[x*.6,-.4],[x,0]));
+  const handle=cat(ln([0,-.65],[0,-.78]),[],ln([0,0],[0,.7]),ell(-.14,.7,.14,.14,0,Math.PI,20));
+  return fit([cat(top,rev(scal)),...ribs,ln([0,-.65],[0,-.8]),cat(ln([0,0],[0,.7]),ell(-.14,.7,.14,.14,0,Math.PI,20))]);
+};
+S.iceCream=()=>{
+  const a=.73,scoop=ell(0,-.35,.45,.45,Math.PI-a,TAU+a,72);
+  const drip=P(48,u=>[.335-.67*u,-.05+.08*Math.abs(Math.sin(u*Math.PI*3))]);
+  
+  const inTri=([x,y])=>y>-.02&&Math.abs(x)<.3*(1-(y+.02)/.94);
+  // a coarse waffle: few, wide diamonds (a fine grid leaves cells too small to color near the tip)
+  const hatch=[];for(let k=-1;k<=1;k++){hatch.push(ln([k*.3-.62,-.3],[k*.3+.62,1.1]),ln([k*.3+.62,-.3],[k*.3-.62,1.1]));}
+  const dripY=x=>{const u=(.335-x)/.67;return -.05+.08*Math.abs(Math.sin(u*Math.PI*3));};
+  const inCone=([x,y])=>y<.92&&Math.abs(x)<.3*(1-(y+.02)/.94)*(y<-.02?1:1)&&y>dripY(x);
+  return fit([cat(scoop,drip),ln([-.3,dripY(-.3)],[0,.92],[.3,dripY(.3)]),...cut(hatch,p=>!inCone(p))]);
+};
+S.sailboat=()=>{
+  const hull=cat(ln([-.8,.35],[.8,.35]),qb([.8,.35],[.6,.72],[.4,.72]),ln([.4,.72],[-.4,.72]),qb([-.4,.72],[-.6,.72],[-.8,.35]));
+  const sail=ln([.02,-.9],[.02,.22],[-.62,.22],[.02,-.9]),jib=ln([.12,-.72],[.12,.22],[.6,.22],[.12,-.72]);
+  return fit([hull,sail,jib,ln([.02,.22],[.02,.35])]);
+};
+S.fish=()=>{
+  const body=cat(qb([-.45,0],[.0,-.55],[.62,0]),qb([.62,0],[0,.55],[-.45,0]));
+  const tail=ln([-.45,0],[-.85,-.35],[-.78,0],[-.85,.35],[-.45,0]);
+  return fit([body,tail,circ(.36,-.06,.045,16),qb([.18,-.2],[.28,0],[.18,.2])]);
+};
+S.shell=()=>{
+  const a0=Math.PI*1.08,a1=Math.PI*1.92,E=a=>[.85*Math.cos(a),.35+1.05*Math.sin(a)];
+  const fanTop=ell(0,.35,.85,1.05,a0,a1,60),a=fanTop[0],b=fanTop[fanTop.length-1];
+  const outline=cat(fanTop,qb(b,[.35,.5],[.18,.6]),ln([.18,.6],[-.18,.6]),qb([-.18,.6],[-.35,.5],a));
+  // ribs from the hinge line to the rim, each end exactly on a line
+  const ribs=[1,2,3,4,5].map(i=>{const t=i/6,hx=-.18+.36*t,ang=a0+(a1-a0)*t,e=E(ang);return qb([hx,.6],[hx+(e[0]-hx)*.35,.2],e);});
+  return fit([outline,...ribs]);
+};
+S.turkey=()=>{ // body with a fan of feathers behind
+  const feathers=[];for(let i=0;i<7;i++){const a=Math.PI*(1.05+i*.9/6),c=[Math.cos(a)*.62,Math.sin(a)*.62+.2];
+    feathers.push(ell(c[0],c[1],.14,.3,0,TAU,40,a+Math.PI/2));}
+  const body=circ(0,.3,.34),head=circ(0,-.12,.17);
+  const ls=cut(feathers,inC(0,.3,.34),inC(0,-.12,.17)).concat(cut([body],inC(0,-.12,.17)),[head]);
+  ls.push(ln([-.04,-.1],[0,-.02],[.04,-.1]),circ(-.06,-.16,.025,12),circ(.06,-.16,.025,12),ln([-.12,.64],[-.14,.82]),ln([.12,.64],[.14,.82]));
+  return fit(ls);
+};
+S.firework=(seed=3)=>{ // a burst: center ring, rays with their heavy end outward, sparks between (small ones go solid)
+  const R=rng(seed),rr=(a,b)=>a+(b-a)*R(),W=Math.PI/6;
+  const ray=(a,r0,r1,w)=>{const pts=[];for(let i=0;i<=28;i++){const t=i/28,r=r0+(r1-r0)*t,hw=w*Math.sin(Math.PI*Math.pow(t,2.2));pts.push(polar(r,a+hw/r));}
+    for(let i=28;i>=0;i--){const t=i/28,r=r0+(r1-r0)*t,hw=w*Math.sin(Math.PI*Math.pow(t,2.2));pts.push(polar(r,a-hw/r));}return pts;};
+  const rc=rr(.17,.24),ops=[{add:{r:rc}},{cut:{r:rc*rr(.4,.55)}},{add:ray(0,rc+.08,.95,rr(.07,.09))},{add:ray(W,rc+.08,rr(.62,.78),rr(.055,.07))}];
+  const sr=rr(.66,.8),sz=rr(.035,.06);ops.push({add:[polar(sr-sz*1.6,W/2),polar(sr,W/2+sz/sr),polar(sr+sz*1.6,W/2),polar(sr,W/2-sz/sr)]});
+  return fit(foldCut(6,ops));
+};
+S.candyCorn=()=>{ // rounded top, as the real candy is
+  const out=cat(qb([-.52,.7],[-.42,-.1],[-.14,-.7]),qb([-.14,-.7],[0,-.95],[.14,-.7]),qb([.14,-.7],[.42,-.1],[.52,.7]),qb([.52,.7],[0,.92],[-.52,.7]));
+  const band=(y,bend)=>clipTo([ln([-.8,y],[0,y+bend],[.8,y])],out);
+  return fit([out,...band(.28,.1),...band(-.26,.06)]);
+};
+S._tinyLoop=tinyLoop;
+return S;
+})();
+const SEASONAL=[
+  ['pumpkin','Pumpkin'],['ghost','Ghost'],['sheetGhost','Sheet ghost'],['bat','Bat'],['spider','Spider'],['witchHat','Witch hat'],['cat','Cat'],['candyCorn','Candy corn'],
+  ['leafMaple','Maple leaf'],['acorn','Acorn'],['apple','Apple'],['turkey','Turkey'],
+  ['snowflake','Snowflake'],['beanie','Winter hat'],['mitten','Mitten'],['snowman','Snowman'],['pineTree','Pine tree'],['gift','Gift'],['candyCane','Candy cane'],['candle','Candle'],
+  ['bunny','Bunny'],['egg','Egg'],['tulip','Tulip'],['bird','Bird'],['butterfly','Butterfly'],['clover','Clover'],['umbrella','Umbrella'],
+  ['iceCream','Ice cream'],['sailboat','Sailboat'],['fish','Fish'],['shell','Shell'],['firework','Firework']];
+const SEEDED=new Set(['ghost','sheetGhost','snowflake','firework']); // these draw a different one for every seed
+const TOPICS=[
+  {id:'basic',name:'Basic shapes'},
+  {id:'autumn',name:'Autumn',kind:'season',ids:['leafMaple','acorn','apple','pumpkin']},
+  {id:'winter',name:'Winter',kind:'season',ids:['snowflake','beanie','mitten','snowman','pineTree']},
+  {id:'spring',name:'Spring',kind:'season',ids:['tulip','bird','butterfly','umbrella','bunny','clover']},
+  {id:'summer',name:'Summer',kind:'season',ids:['iceCream','sailboat','fish','shell']},
+  {id:'halloween',name:'Halloween',kind:'holiday',ids:['ghost','sheetGhost','pumpkin','bat','spider','witchHat','cat','candyCorn']},
+  {id:'harvest',name:'Thanksgiving',kind:'holiday',ids:['turkey','pumpkin','apple','acorn','leafMaple']},
+  {id:'winterHol',name:'Winter holidays',kind:'holiday',ids:['gift','candyCane','candle','pineTree','snowflake','snowman']},
+  {id:'easter',name:'Easter',kind:'holiday',ids:['egg','bunny','tulip','clover','bird','butterfly']},
+  {id:'party',name:'Celebrations',kind:'holiday',ids:['firework','gift','candle']}];
+// the topic that fits today's date (northern seasons), used until someone picks one
+function dateTopic(){const m=new Date().getMonth(),h=S.themes==='all';
+  return['winter','winter','spring',h?'easter':'spring','spring','summer','summer','summer','autumn',h?'halloween':'autumn',h?'harvest':'autumn',h?'winterHol':'winter'][m];}
+const szCache=new Map();
+function szLines(id){
+  const seed=SEEDED.has(id)?S.seed:0,key=id+':'+seed;let ls=szCache.get(key);
+  if(!ls){try{ls=SZ[id](SEEDED.has(id)?seed:undefined);}catch(_){ls=[circ(.5)];}
+    ls.forEach(l=>{if(SZ._tinyLoop(l))l.solid=true;});if(szCache.size>80)szCache.clear();szCache.set(key,ls);}
+  return ls;
+}
+const SZSHAPES=SEASONAL.map(([id,name])=>({id:'sz-'+id,name,k:0,sz:id,seeded:SEEDED.has(id),make:()=>szLines(id)}));
+// a stamp's path data: every line is stroked (d); the solid ones are also filled (sd)
+function shapeD(lines,sol){const o={d:linesToD(lines)};if(sol&&sol.some(Boolean))o.sd=linesToD(lines.filter((_,i)=>sol[i]));return o;}
 const SHAPES=[
   {id:'dot',name:'Dot',k:.25,fill:true,make:()=>[circ(.42)]},
   {id:'circle',name:'Circle',k:.15,make:()=>[circ(.74)]},
@@ -1406,7 +1844,7 @@ const SHAPES=[
   {id:'waves',name:'Waves',k:1,make:()=>[-.6,-.2,.2,.6].map(y0=>{const w=Math.sqrt(.88**2-y0*y0),out=[];for(let i=0;i<=90;i++){const x=-w+2*w*i/90;out.push([x,y0+.07*Math.sin(x*10)]);}return out;})},
   {id:'fan',name:'Fan',drag:true}
 ];
-const shapeById=id=>SHAPES.find(s=>s.id===id)||SHAPES[0];
+const ALLSHAPES=[...SHAPES,...SZSHAPES],shapeById=id=>ALLSHAPES.find(s=>s.id===id)||SHAPES[0];
 let fitFor={};try{fitFor=JSON.parse(store.get('dblob-fit')||'{}')||{};}catch(_){fitFor={};}
 const fitOf=sh=>sh.lockFit?1:fitFor[sh.id]!=null?fitFor[sh.id]:sh.k;
 const f1s=v=>Math.round(v*10)/10;
@@ -1421,19 +1859,22 @@ const UPDIR={ang:-Math.PI/2}; // a shape with no base of its own grows from its 
    the directions where it comes near the ink. A whole direction eases in together, so nested lines (rings, a sun's
    rays) keep their spacing, and the easing is smoothed around the pivot so the shape bends without kinks. */
 function stampAt(c,o,sh,q,free){
-  let ls=sh.make(),bx=0,by=0;
+  let ls=sh.make(),bx=0,by=0;const sol=ls.map(l=>!!l.solid);
   const dir=sh.dir||UPDIR,dragged=q&&Math.hypot(q.x-o.x,q.y-o.y)>6,rot=dragged?Math.atan2(q.y-o.y,q.x-o.x)-dir.ang:0;
   if(sh.dir)[bx,by]=sh.dir.base(ls);
   const cs=Math.cos(rot),sn=Math.sin(rot);
   ls=ls.map(l=>l.map(([x,y])=>{x-=bx;y-=by;return[x*cs-y*sn,x*sn+y*cs];}));
   let ext=0;ls.forEach(l=>l.forEach(([x,y])=>{ext=Math.max(ext,Math.hypot(x,y));}));
-  const want=dragged?Math.hypot(q.x-o.x,q.y-o.y):8+3*S.size,u=want/ext,k=fitOf(sh);
+  const want=dragged?Math.hypot(q.x-o.x,q.y-o.y):sh.sz&&o.R?Math.max(8,...o.R):8+3*S.size,u=want/ext,k=fitOf(sh); // a tap: a picture as big as fits there
   if(free){ // outside the design, drawn like a paint program's shape tool: the press is one corner of the shape's box and
     // the pointer the opposite corner, so it grows down and away from the press and stretches to the box (a tap: a small one)
     let l2=sh.make(),x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;l2.forEach(l=>l.forEach(([x,y])=>{x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}));
-    const d0=8+3*S.size,Q=dragged?q:{x:o.x+d0,y:o.y+d0},bx=Math.min(o.x,Q.x),by=Math.min(o.y,Q.y),bw=Math.max(2,Math.abs(Q.x-o.x)),bh=Math.max(2,Math.abs(Q.y-o.y));
-    const sx=bw/((x1-x0)||1),sy=bh/((y1-y0)||1);l2=subdiv(l2,1.5/Math.max(sx,sy,1e-6));
-    return{d:linesToD(l2.map(l=>l.map(([x,y])=>[bx+(x-x0)*sx,by+(y-y0)*sy]))),fill:!!sh.fill,color:S.color,size:S.size,ax:bx+bw/2,ay:by+bh/2,shape:sh.id,...inkOf(),
+    const d0=sh.sz?90:8+3*S.size,Q=dragged?q:{x:o.x+d0,y:o.y+d0};let bx=Math.min(o.x,Q.x),by=Math.min(o.y,Q.y);const bw=Math.max(2,Math.abs(Q.x-o.x)),bh=Math.max(2,Math.abs(Q.y-o.y));
+    let sx=bw/((x1-x0)||1),sy=bh/((y1-y0)||1);
+    if(sh.sz){ // a picture keeps its proportions: as big as fits the box, centered in it
+      const k=Math.min(sx,sy);bx+=(bw-(x1-x0)*k)/2;by+=(bh-(y1-y0)*k)/2;sx=sy=k;}
+    l2=subdiv(l2,1.5/Math.max(sx,sy,1e-6));
+    return{...shapeD(l2.map(l=>l.map(([x,y])=>[bx+(x-x0)*sx,by+(y-y0)*sy])),sol),fill:!!sh.fill,color:S.color,size:S.size,ax:bx+bw/2,ay:by+bh/2,shape:sh.id,...inkOf(),
       dot:sh.dotC?[f1s(bx+(0-x0)*sx),f1s(by+(0-y0)*sy),f1s(Math.max(2,.12*Math.min(bw,bh)/2))]:undefined};
   }
   const L=roomRing(o.R,6);
@@ -1449,7 +1890,7 @@ function stampAt(c,o,sh,q,free){
   const sig=smoothRing(sg,8),a0=u0/u;
   const f=(x,y)=>{const r=Math.hypot(x,y);if(r<1e-9)return[o.x,o.y];
     const R=r*u*(a0+(ringAt(sig,Math.atan2(y,x))-a0)*k);return[o.x+x/r*R,o.y+y/r*R];};
-  const st={d:linesToD(ls.map(l=>l.map(([x,y])=>f(x,y)))),fill:!!sh.fill,color:S.color,size:S.size,ax:o.x,ay:o.y,shape:sh.id,...inkOf()};
+  const st={...shapeD(ls.map(l=>l.map(([x,y])=>f(x,y))),sol),fill:!!sh.fill,color:S.color,size:S.size,ax:o.x,ay:o.y,shape:sh.id,...inkOf()};
   if(sh.dotC){const q0=f(0,0),t=f(0,-.8),r=Math.max(2,.12/.8*Math.hypot(t[0]-q0[0],t[1]-q0[1]));st.dot=[f1s(q0[0]),f1s(q0[1]),f1s(r)];}
   return st;
 }
@@ -1464,16 +1905,16 @@ function designReach(){
   return r?{hx,hy,r}:null;
 }
 function frameStamp(sh,q){
-  const cx=W/2,cy=H/2,dx=q?q.x-cx:0,dy=q?q.y-cy:0,dragged=q&&Math.hypot(dx,dy)>12,dr=designReach(),pad=(S.outW||6)/2+S.size+10;let ls;
+  const cx=W/2,cy=H/2,dx=q?q.x-cx:0,dy=q?q.y-cy:0,dragged=q&&Math.hypot(dx,dy)>12,dr=designReach(),pad=(S.outW||6)/2+S.size+10;let ls,sol=null;
   if(sh.id==='rect'){
     const hw=dragged?Math.max(12,Math.abs(dx)):Math.min(W/2-18-S.size,dr?dr.hx+pad:1e9),hh=dragged?Math.max(12,Math.abs(dy)):Math.min(H/2-18-S.size,dr?dr.hy+pad:1e9);
     ls=[roundRect(hw,hh,Math.min(hw,hh)*.12)].map(l=>l.map(([x,y])=>[cx+x,cy+y]));
   }else{
-    ls=sh.make();let ext=0;ls.forEach(l=>l.forEach(([x,y])=>{ext=Math.max(ext,Math.hypot(x,y));}));
+    ls=sh.make();sol=ls.map(l=>!!l.solid);let ext=0;ls.forEach(l=>l.forEach(([x,y])=>{ext=Math.max(ext,Math.hypot(x,y));}));
     const u=(dragged?Math.hypot(dx,dy):dr?Math.min(dr.r+pad,Math.hypot(W,H)/2):Math.min(W,H)/2-18-S.size)/ext,rot=dragged?Math.atan2(dy,dx)-(sh.dir||UPDIR).ang:0,cs=Math.cos(rot),sn=Math.sin(rot);
     ls=subdiv(ls,1.5/u).map(l=>l.map(([x,y])=>[cx+(x*cs-y*sn)*u,cy+(x*sn+y*cs)*u]));
   }
-  const st={d:linesToD(ls),fill:!!sh.fill,color:S.color,size:S.size,ax:cx,ay:cy,shape:sh.id,...inkOf()};
+  const st={...shapeD(ls,sol),fill:!!sh.fill,color:S.color,size:S.size,ax:cx,ay:cy,shape:sh.id,...inkOf()};
   if(sh.dotC)st.dot=[f1s(cx),f1s(cy),f1s(Math.max(3,Math.min(W,H)*.02))];
   return st;
 }
@@ -1575,6 +2016,9 @@ function walkLines(ls,step,fn){
 function paintStamp(c,st,part){
   c.save();c.lineCap='round';c.lineJoin='round';c.strokeStyle=c.fillStyle=st.color;c.lineWidth=st.size;
   const fx=st.fill?'':st.fx,w=st.size;  // inks are for line work only: filled shapes stay plain
+  if(st.sd&&part!=='tex'){ // solid parts (eyes, buttons) in the ink's base color, under the line work
+    c.fillStyle=fx==='bismuth'?bismuthPaint(c,stampBox(stampPolys(st))):isMetal(fx)?METALS[fx][1]:fx==='pearl'?(st.pt||pearlTones(st.color))[0]:st.color;
+    c.fill(new Path2D(st.sd));c.fillStyle=st.color;}
   if(isMetal(fx)){
     const ls=stampPolys(st),m=METALS[fx],R=rng(Math.round(st.ax*83492791^st.ay*2654435^st.d.length)),bis=fx==='bismuth';
     if(part!=='tex'){c.strokeStyle=bis?bismuthPaint(c,stampBox(ls)):m[1];c.stroke(new Path2D(st.d));}
@@ -1659,7 +2103,7 @@ function viewMoved(){
 }
 // with wall on, a shape is also drawn into the walls, so fills stop at it (fill inside a circle, around a star...)
 function wallStamp(c,st){c.save();c.lineCap='round';c.lineJoin='round';c.strokeStyle=c.fillStyle=st.color;c.lineWidth=st.size;
-  const p=stampPath(st);if(st.fill)c.fill(p);else c.stroke(p);c.restore();}
+  const p=stampPath(st);if(st.fill)c.fill(p);else c.stroke(p);if(st.sd)c.fill(new Path2D(st.sd));c.restore();}
 function placeStamp(st){
   if(!st)return;
   if(S.wall)st.wall=true;
@@ -1670,7 +2114,7 @@ function placeStamp(st){
 const validStamp=o=>o&&typeof o.d==='string'&&/^[ML0-9 .\-]+$/.test(o.d)&&/^#[0-9a-f]{6}$/i.test(o.color)&&isFinite(o.ax)&&isFinite(o.ay);
 function cleanStamp(o){return{d:o.d,fill:!!o.fill,color:o.color,size:clamp(+o.size||4,2,18),ax:+o.ax,ay:+o.ay,shape:String(o.shape||''),
   dot:Array.isArray(o.dot)&&o.dot.length===3&&o.dot.every(isFinite)?o.dot.map(Number):undefined,
-  fx:isInk(o.fx)?o.fx:undefined,pt:Array.isArray(o.pt)&&o.pt.length===3&&o.pt.every(h=>/^#[0-9a-f]{6}$/i.test(h))?o.pt.slice():undefined,es:isFinite(o.es)?clamp(+o.es,0,1):undefined,wall:o.wall?true:undefined};}
+  fx:isInk(o.fx)?o.fx:undefined,pt:Array.isArray(o.pt)&&o.pt.length===3&&o.pt.every(h=>/^#[0-9a-f]{6}$/i.test(h))?o.pt.slice():undefined,es:isFinite(o.es)?clamp(+o.es,0,1):undefined,wall:o.wall?true:undefined,sd:typeof o.sd==='string'&&/^[ML0-9 .\-]+$/.test(o.sd)?o.sd:undefined,seed:isFinite(o.seed)&&o.seed>0?o.seed>>>0:undefined};}
 
 /* aim: while the pointer is held, show the shape it would place. aim = {cell, o (rays from the press), q (pointer once dragged)} */
 let hover=null,hoverRaf=0,aim=null;
@@ -1682,7 +2126,8 @@ function startAim(p){
   // on the page around the design (the background) a shape is placed freely; inside, it fits its field
   aim=!c?null:c.edge?{cell:c,p,q:null,free:true}:{cell:c,p,q:null,o:sh.snap?null:raysFrom(c,p.x,p.y)};showAim();
 }
-function aimStamp(a){
+function aimStamp(a){const st=aimStamp0(a),sh=shapeById(S.stamp);if(st&&sh.seeded)st.seed=S.seed;return st;}
+function aimStamp0(a){
   const sh=shapeById(S.stamp),c=a.cell;
   if(a.frame)return frameStamp(sh,a.q);
   if(a.free)return stampAt(c,{x:a.p.x,y:a.p.y},sh,a.q,true);
@@ -1705,11 +2150,23 @@ function showAim(){
 }
 function clearHover(){aim=null;if(hover){hover=null;drawPreview();}}
 
+/* seeds: a generated shape (ghost, snowflake, firework) is drawn from a number, and the same number always draws the
+   same one. Any word works too (it is turned into a number), so a name always gives the same snowflake. */
+function seedFrom(t){t=String(t).trim();if(/^\d{1,9}$/.test(t))return +t||1;let h=2166136261;for(const ch of t.toLowerCase()){h^=ch.codePointAt(0);h=Math.imul(h,16777619);}return(h>>>0)||1;}
+let lastPlaced=null; // {st, aim, id}: the newest shape, so a new seed can redraw it in place
+function setSeed(t){
+  t=String(t).trim().slice(0,24)||'1';S.seedTxt=t;S.seed=seedFrom(t);$('#seedBox').value=t;store.set('licorice-seed',t);
+  const L=lastPlaced,arr=S.stamps||[];
+  if(L&&arr.length&&arr[arr.length-1]===L.st&&!L.st.wall&&L.id===S.stamp&&shapeById(L.id).seeded){
+    const st=aimStamp(L.aim);if(st){Object.assign(st,{color:L.st.color,size:L.st.size,fx:L.st.fx,pt:L.st.pt});S.stamps=[...arr.slice(0,-1),st];L.st=st;renderStamps();}}
+  if(!fly.hidden)renderFly();if(aim)showAim();
+  $('#shapeGlyph').innerHTML=$('#shapePickGlyph').innerHTML=glyphSVG(shapeById(S.stamp));
+}
 /* little pictures of the shapes for the rail and the picker */
 function glyphSVG(sh){
   if(sh.id==='fan')return'<svg viewBox="-1.1 -1.1 2.2 2.2" class="glyph"><path d="M-.8 .8Q-.9 -.2 -.55 -.85M-.8 .8Q-.4 -.35 .05 -.9M-.8 .8L.55 -.55M-.8 .8Q.35 .4 .9 -.05M-.8 .8Q.2 .9 .85 .55"/></svg>';
-  const ls=sh.make(),d=ls.map(l=>l.filter((_,i)=>i%3===0||i===l.length-1).map(([x,y],i)=>(i?'L':'M')+x.toFixed(2)+' '+y.toFixed(2)).join('')).join('');
-  return'<svg viewBox="-1.1 -1.1 2.2 2.2" class="glyph'+(sh.fill?' solid':'')+'"><path d="'+d+'"/>'+(sh.dotC?'<circle r=".1" class="dotc"/>':'')+'</svg>';
+  const ls=sh.make(),pd=ls=>ls.map(l=>l.filter((_,i)=>i%3===0||i===l.length-1).map(([x,y],i)=>(i?'L':'M')+x.toFixed(2)+' '+y.toFixed(2)).join('')).join(''),so=ls.filter(l=>l.solid);
+  return'<svg viewBox="-1.1 -1.1 2.2 2.2" class="glyph'+(sh.fill?' solid':'')+'"><path d="'+pd(ls)+'"/>'+(so.length?'<path class="dotc" d="'+pd(so)+'"/>':'')+(sh.dotC?'<circle r=".1" class="dotc"/>':'')+'</svg>';
 }
 
 /* ---------- zoom ---------- */
@@ -1820,7 +2277,7 @@ function up(e){
   const o=one;one=null;hideLoupe();
   if(e.type==='pointercancel'){drag=null;clearHover();drawPreview();return;}
   if(o.mode==='tap'||o.mode==='aim'){
-    if(isStampTool()){if(aim)placeStamp(aimStamp(aim));clearHover();}
+    if(isStampTool()){if(aim){const st=aimStamp(aim);placeStamp(st);lastPlaced=st?{st,aim,id:S.stamp}:null;}clearHover();}
     else fillAt(o.p.x,o.p.y);
     return;
   }
@@ -1849,9 +2306,16 @@ function updHint(){
 /* ---------- the shapes tool: a Photoshop-style group, hold (or right-click) for the picker ---------- */
 const fly=$('#fly'),shapeBtn=$('#shapeTool');
 function renderFly(){
-  fly.innerHTML='<div class="flyh">Shapes</div>';
-  SHAPES.forEach(sh=>{const b=document.createElement('button');b.className=sh.id===S.stamp?'on':'';b.setAttribute('role','menuitem');b.title=sh.name;
+  const tl=TOPICS.filter(t=>t.id==='basic'||S.themes==='all'||S.themes==='seasons'&&t.kind==='season');
+  if(!tl.some(t=>t.id===S.topic))S.topic=tl.some(t=>t.id===dateTopic())?dateTopic():'basic';
+  const opt=(v,n,on)=>`<option value="${v}"${on?' selected':''}>${n}</option>`;
+  fly.innerHTML='<div class="flyh"><span>Shapes</span>'+(tl.length>1?'<select id="topicSel" aria-label="Shape topic">'+tl.map(t=>opt(t.id,t.name,t.id===S.topic)).join('')+'</select>':'')+
+    '<select id="themeSel" aria-label="Themed shapes" title="Which themed shapes to offer">'+[['all','Seasons + holidays'],['seasons','Seasons only'],['off','No themes']].map(([v,n])=>opt(v,n,v===S.themes)).join('')+'</select></div>';
+  const list=S.topic==='basic'?SHAPES:TOPICS.find(t=>t.id===S.topic).ids.map(id=>shapeById('sz-'+id));
+  list.forEach(sh=>{const b=document.createElement('button');b.className=sh.id===S.stamp?'on':'';b.setAttribute('role','menuitem');b.title=sh.name;
     b.innerHTML=glyphSVG(sh)+'<span>'+sh.name.replace(', leaning',' &middot;').replace(', ',' &middot; ')+'</span>';b.onclick=()=>{setStamp(sh.id);closeFly();};fly.appendChild(b);});
+  const ts=$('#topicSel');if(ts)ts.onchange=e=>{S.topic=e.target.value;store.set('licorice-topic',S.topic);openFly();};
+  $('#themeSel').onchange=e=>{S.themes=e.target.value;store.set('licorice-themes',S.themes);openFly();};
 }
 function openFly(){
   renderFly();fly.hidden=false;const b=shapeBtn.getBoundingClientRect();
@@ -1863,7 +2327,7 @@ function setStamp(id){
   const sh=shapeById(id);S.stamp=sh.id;store.set('dblob-stamp',sh.id);setTool('shape');
   $('#shapeGlyph').innerHTML=glyphSVG(sh);$('#shapePickGlyph').innerHTML=glyphSVG(sh);$('#shapeName').textContent=sh.name;
   const v=Math.round(fitOf(sh)*100);$('#fitBox').value=v;$('#fitN').textContent=v;
-  $('#fitBox').hidden=$('#fitL').hidden=$('#fitN').hidden=!!(sh.drag||sh.lockFit);
+  $('#fitBox').hidden=$('#fitL').hidden=$('#fitN').hidden=!!(sh.drag||sh.lockFit);$('#seedUI').hidden=!sh.seeded;
   clearHover();updHint();
 }
 let lpT=0,lpFired=false;
@@ -2326,7 +2790,7 @@ function buildSVG(){
           Array.from({length:13},(_,i)=>`<stop offset="${pn(i/12)}" stop-color="${h[i%h.length]}"/>`).join('')+'</linearGradient>';col=`url(#${id})`;}
       else col=METALS[fx][1];
     }else if(fx==='pearl')col=(st.pt||pearlTones(st.color))[0];
-    let s=`<path d="${esc(st.d)}" fill="none" stroke="${col}" stroke-width="${st.size}"/>`;
+    let s=(st.sd?`<path d="${esc(st.sd)}" fill="${col}"/>`:'')+`<path d="${esc(st.d)}" fill="none" stroke="${col}" stroke-width="${st.size}"/>`;
     if(st.dot)s+=`<circle cx="${pn(st.dot[0])}" cy="${pn(st.dot[1])}" r="${pn(st.dot[2])}" fill="${st.color}"/>`;
     return s;
   });
@@ -2383,7 +2847,7 @@ $('#modal').addEventListener('pointerdown',e=>{if(e.target.id==='modal')$('#moda
 const KEYTOOLS={f:'fill',l:'line',c:'curve',s:'shape'};
 addEventListener('keydown',e=>{
   if(e.key==='Escape'){if(!help.hidden)showHelp(false);else if(!$('#modal').hidden)$('#modal').hidden=true;else closePanel();return;}
-  if(e.target.id==='pkHex')return;
+  if(e.target.id==='pkHex'||e.target.id==='seedBox')return;
   if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'){e.preventDefault();undo();return;}
   if(e.ctrlKey||e.metaKey||e.altKey||!help.hidden||!$('#modal').hidden)return;
   const k=e.key.toLowerCase();
@@ -2401,6 +2865,9 @@ addEventListener('keydown',e=>{
   else return;
   e.preventDefault();
 });
+S.themes=['all','seasons','off'].includes(store.get('licorice-themes'))?store.get('licorice-themes'):'all';S.topic=store.get('licorice-topic')||'';
+setSeed(store.get('licorice-seed')||String(1+Math.floor(Math.random()*99999)));
+$('#seedBox').onchange=e=>setSeed(e.target.value);$('#dice').onclick=()=>setSeed(String(1+Math.floor(Math.random()*99999)));
 setStamp(store.get('dblob-stamp')||'dot');setFrame(store.get('licorice-frame')==='1');
 function setFx(v){S.fx=isInk(v)?v:'';store.set('dblob-fx',S.fx);$('#inkFx').value=S.fx;$('#pearlUI').hidden=S.fx!=='pearl';if(aim)showAim();}
 function setPearl(t){S.pearl=t.slice();store.set('dblob-pearl',JSON.stringify(S.pearl));[0,1,2].forEach(i=>{$('#pt'+i).value=S.pearl[i];});if(aim)showAim();}
