@@ -192,6 +192,9 @@ svg.glyph .dotc{fill:currentColor;stroke:none}
 .inkc{position:relative;display:inline-block;overflow:hidden;background:conic-gradient(#e33,#ec3,#3c6,#3be,#63e,#e3a,#e33)}
 .inkc input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
 
+#panel[data-style=knot] .blobonly,#panel:not([data-style=knot]) .knotonly{display:none}
+#knotSeed{flex:1 1 auto;min-width:0;width:6em}
+#knotDice svg{width:15px;height:15px}
 .gal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
 .thumb{position:relative;border:1px solid var(--edge);border-radius:3px;overflow:hidden;aspect-ratio:1;background:var(--well)}
 .thumb img{width:100%;height:100%;object-fit:contain;display:block;cursor:pointer}
@@ -374,11 +377,13 @@ label.btnlike:hover{background:#3d3d3d}
   <div class="sec" id="drawsec">
     <button class="sech" data-sec="drawsec"><span class="cv">&#9660;</span><span class="ti">Drawing</span></button>
     <div class="secb">
-      <div class="prow"><label for="gBlobs">Blobs</label><input type="range" id="gBlobs" min="1" max="3" value="2"><output id="oBlobs">2</output></div>
-      <div class="prow"><label for="gLines" title="How many strokes cross the blobs in each direction (0: none)">Lines</label><input type="range" id="gLines" min="0" max="14" value="8"><output id="oLines">8</output></div>
-      <div class="prow"><span class="lb">Blob shape</span><div class="seg"><button class="sm" id="shpSplat">Splat</button><button class="sm" id="shpFlower">Flower</button></div><span></span></div>
-      <div class="prow"><label for="gOrg">Hand-drawn</label><input type="range" id="gOrg" min="0" max="10" value="5"><output id="oOrg">5</output></div>
-      <div class="prow"><label for="gWeight">Outline</label><input type="range" id="gWeight" min="3" max="12" value="6"><output id="oWeight">6</output></div>
+      <div class="prow"><span class="lb">Style</span><div class="seg"><button class="sm" id="styBlob">Blobs</button><button class="sm" id="styKnot">Knot</button></div><span></span></div>
+      <div class="prow knotonly"><label for="knotSeed" title="The same seed always draws the same knot: write it down to get it back">Seed</label><input id="knotSeed" spellcheck="false" autocomplete="off" maxlength="24" title="Type a number or any word, then Enter"><button class="sm" id="knotDice" title="Roll a new knot" aria-label="Roll a new knot"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="15" r="1.2"/><circle cx="15" cy="9" r="1.2"/><circle cx="9" cy="15" r="1.2"/></svg></button></div>
+      <div class="prow blobonly"><label for="gBlobs">Blobs</label><input type="range" id="gBlobs" min="1" max="3" value="2"><output id="oBlobs">2</output></div>
+      <div class="prow blobonly"><label for="gLines" title="How many strokes cross the blobs in each direction (0: none)">Lines</label><input type="range" id="gLines" min="0" max="14" value="8"><output id="oLines">8</output></div>
+      <div class="prow blobonly"><span class="lb">Blob shape</span><div class="seg"><button class="sm" id="shpSplat">Splat</button><button class="sm" id="shpFlower">Flower</button></div><span></span></div>
+      <div class="prow blobonly"><label for="gOrg">Hand-drawn</label><input type="range" id="gOrg" min="0" max="10" value="5"><output id="oOrg">5</output></div>
+      <div class="prow blobonly"><label for="gWeight">Outline</label><input type="range" id="gWeight" min="3" max="12" value="6"><output id="oWeight">6</output></div>
       <div class="prow"><label for="gMin">Smallest cell</label><input type="range" id="gMin" min="0" max="3" value="2"><output id="oMin">Medium</output></div>
       <div class="prow"><span class="lb">Ink</span><div class="inks" id="inks"></div><span></span></div>
       <div class="prow"><span class="lb">Paper</span><div class="seg"><button class="sm" id="paperLight">Light</button><button class="sm" id="paperDark">Dark</button></div><span></span></div>
@@ -435,6 +440,7 @@ label.btnlike:hover{background:#3d3d3d}
     <p>Pick from the palette grid, or mix your own with Hue, Color and Light and add it to My colors (six are kept). <b>New mix</b> rolls a fresh palette from a code number; <b>Keep</b> saves that code in the list.</p>
     <h3>Drawing</h3>
     <p><b>Smallest cell</b> keeps the generator from making cells too small to color; leftover crumbs become solid ink knots. The crossing lines are drawn like a marker that never lifts: one back-and-forth pass leaning top left to bottom right, then one leaning bottom left to top right. Each stroke swings from the elbow, so it bows to the left. <b>Hand-drawn</b> sets how strong that swing is (0 draws with a ruler) and how much the hand wobbles. The page takes the shape of the stage when you press New.</p>
+    <p><b>Style</b> (under Drawing) switches between <b>Blobs</b> and <b>Knot</b>. A knot is nests of bands wrapped around a few centers (rings, ribbons, squares, diamonds, flowers, combs, spirals) that push into each other where they meet. Its <b>seed</b> decides everything about it: the same seed always draws the same knot, and any word works as a seed too. New rolls a fresh one.</p>
     <h3>Auto color</h3>
     <p><b>Rings</b> spreads one color family per ring of grid squares out from the center, alternating light and dark. <b>Random</b> uses any palette color, never the same as a touching cell.</p>
     <h3>Saving</h3>
@@ -474,6 +480,7 @@ for(const k in cv){cv[k].width=W;cv[k].height=H;cx[k]=cv[k].getContext('2d',{wil
 const P=cx.paint,O=cx.outline,K=cx.knots,D=cx.deco,V=cx.overlay;
 // O holds every wall (generated lines, knots, wall strokes) for filling and is never shown. K shows the knots.
 // Line work itself is vector (S.blobPaths/S.latPaths, S.strokes, S.stamps), drawn sharp at any zoom on #view.
+// A knot's line work is S.inkFills instead: the ink as filled outlines (holes by even-odd), not strokes.
 // Drawings saved before v20 have their line work only as pixels: S.legacyInk shows them from K instead.
 
 const CURATED=[
@@ -514,7 +521,7 @@ function genPalette(seed){
 }
 const HINTS={fill:'Tap a shape to fill. Pinch to zoom.',aim:'Touch, slide to aim, lift to fill',line:'Drag to draw a line',curve:'Drag, then pull the dot to bend',fan:'Press where the fan starts and drag toward the far side; drag farther to reach farther'};
 
-const S={outW:6,frame:false,strokes:[],legacyInk:false,pearl:['#3b1470','#d0379a','#e6b33d'],fx:'',stamp:'dot',stamps:[],shape:'splat',organic:.5,autoArea:'all',autoStyle:'rings',latPaths:[],dark:false,inkIdx:0,inkC:'',palId:'markers',pal:null,minCell:2,tool:'fill',color:'#f7c613',size:4,wall:false,blobs:2,lines:8,weight:6,ink:INKS_LIGHT[0],blobPaths:[]};
+const S={style:'blob',knotTxt:'1',knotSeed:1,inkFills:[],outW:6,frame:false,strokes:[],legacyInk:false,pearl:['#3b1470','#d0379a','#e6b33d'],fx:'',stamp:'dot',stamps:[],shape:'splat',organic:.5,autoArea:'all',autoStyle:'rings',latPaths:[],dark:false,inkIdx:0,inkC:'',palId:'markers',pal:null,minCell:2,tool:'fill',color:'#f7c613',size:4,wall:false,blobs:2,lines:8,weight:6,ink:INKS_LIGHT[0],blobPaths:[]};
 const PAPER=()=>S.dark?'#1d1a25':'#fffefb';
 const store={get(k){try{return localStorage.getItem(k);}catch(_){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(_){}}};
 {const c=store.get('licorice-inkc');if(/^#[0-9a-f]{6}$/i.test(c||''))S.inkC=c.toLowerCase();} // last own line color, offered in the picker
@@ -981,7 +988,159 @@ function setSize(w,h){
   fit();return true;
 }
 const aspectOff=([w,h],t=.08)=>Math.abs(w/h-W/H)/(W/H)>t;
+// the page a new drawing wants: the stage's shape for blobs, square for a knot (same pixel budget)
+function wantSize(){if(S.style!=='knot')return desiredSize();const n=Math.round(Math.sqrt(1800000));return[n,n];}
 let busy=false;
+/* ---------- Knot: nests of bands around seeded centers (prototyped in knot-lab.html) ---------- */
+const KG=(()=>{
+const TAU=Math.PI*2;
+function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+// distance from p to a polyline
+function segDist(px,py,L){let best=1e9;for(let i=0;i+1<L.length;i++){const ax=L[i][0],ay=L[i][1],bx=L[i+1][0]-ax,by=L[i+1][1]-ay,l2=bx*bx+by*by||1;
+  let t=((px-ax)*bx+(py-ay)*by)/l2;t=t<0?0:t>1?1:t;const dx=px-ax-bx*t,dy=py-ay-by*t,d=dx*dx+dy*dy;if(d<best)best=d;}return Math.sqrt(best);}
+
+function genome(seed){
+  const rnd=mulberry32(seed>>>0),R=(a,b)=>a+(b-a)*rnd(),RI=(a,b)=>Math.floor(R(a,b+1)),pick=a=>a[Math.floor(rnd()*a.length)],chance=p=>rnd()<p;
+  const symR=rnd(),sym=symR<.5?{n:1,mirror:false}:symR<.65?{n:1,mirror:true}:{n:pick([3,4,5,6,6,8]),mirror:chance(.65)};
+  // which kinds of center this knot likes (a seed leans toward a few, so knots have characters)
+  const kinds=['ring','ring','ribbon','ribbon','ribbon','square','diamond','flower','comb','oval'];
+  const fav=[pick(kinds),pick(kinds),pick(kinds)];
+  const g={sym,fav,
+    lw:R(10,15),                    // marker width
+    s:R(38,60),                     // band spacing
+    full:chance(.18),               // fill the whole page instead of a cluster
+    Rc:R(70,150),                   // how far nests reach past their centers
+    warp:chance(.3)?0:R(3,10),      // hand wobble
+    spiralP:R(0,.45),pupilP:R(.2,.8),
+    angular:chance(.25),
+  };
+  const nBase=sym.n>1?RI(1,3):g.full?RI(5,10):RI(3,8);
+  const C=500,rad=g.full?560:R(240,330),sector=sym.n>1?TAU/sym.n:TAU;
+  // symmetry: every center is copied around the middle (and mirrored)
+  const T=(x,y,rot,mir)=>{let dx=x-C,dy=y-C;if(mir)dy=-dy;const c=Math.cos(rot),s=Math.sin(rot);return[C+dx*c-dy*s,C+dx*s+dy*c];};
+  const copies=n=>{const out=[];for(let k=0;k<sym.n;k++)for(const mir of sym.mirror?[false,true]:[false]){
+    const rot=k*sector,[x,y]=T(n.x,n.y,rot,mir),m={...n,x,y,rot:mir?-n.rot+rot:n.rot+rot,spiral:mir?-n.spiral:n.spiral};
+    if(n.L)m.L=n.L.map(([px,py])=>T(px,py,rot,mir));out.push(m);}return out;};
+  const ptsOf=m=>m.L||[[m.x,m.y]];
+  const gap=(A,B)=>{let d=1e9;for(const p of A)for(const q of B)d=Math.min(d,Math.hypot(p[0]-q[0],p[1]-q[1]));return d;};
+  // centers too close together share a border everywhere and ink solid, so every center (and copy) keeps its distance
+  const minD=Math.max(g.s*2.2,95),all=[];
+  for(let i=0;i<nBase;i++)for(let tries=0;tries<40;tries++){
+    const a=sym.n>1?R(.08,.92)*sector/(sym.mirror?2:1):R(0,TAU),r=(sym.n>1?R(.25,1):Math.sqrt(rnd()))*rad;
+    const x=C+Math.cos(a)*r,y=C+Math.sin(a)*r,kind=chance(.75)?pick(fav):pick(kinds);
+    const n={kind,x,y,w:R(-40,60),s:g.s*R(.85,1.25),core:R(.3,.9),pupil:chance(g.pupilP),spiral:chance(g.spiralP)?(chance(.5)?1:-1):0,
+      rot:R(0,TAU),k:RI(3,8),amp:R(.08,.22),ax:R(1.3,2.1)};
+    if(kind==='ribbon'){ // a curving or angular spine for U-shaped bands
+      const L=[[x,y]];let h=R(0,TAU),px=x,py=y;const segs=RI(2,5),len=R(50,140);
+      for(let j=0;j<segs;j++){h+=g.angular?pick([-1,1])*pick([Math.PI/4,Math.PI/2]):R(-1.1,1.1);px+=Math.cos(h)*len;py+=Math.sin(h)*len;L.push([px,py]);}
+      if(!g.angular){ // smooth the spine
+        const S=[];for(let j=0;j+1<L.length;j++)for(let t=0;t<8;t++){const u=t/8,a0=L[Math.max(0,j-1)],a1=L[j],a2=L[j+1],a3=L[Math.min(L.length-1,j+2)];
+          const q=u*u,c=q*u;S.push([.5*(2*a1[0]+(-a0[0]+a2[0])*u+(2*a0[0]-5*a1[0]+4*a2[0]-a3[0])*q+(-a0[0]+3*a1[0]-3*a2[0]+a3[0])*c),
+            .5*(2*a1[1]+(-a0[1]+a2[1])*u+(2*a0[1]-5*a1[1]+4*a2[1]-a3[1])*q+(-a0[1]+3*a1[1]-3*a2[1]+a3[1])*c)]);}
+        S.push(L[L.length-1]);n.L=S;}else n.L=L;
+      n.pupil=false;
+    }
+    const cs=copies(n);let ok=true;
+    for(let u=0;u<cs.length&&ok;u++){const P=ptsOf(cs[u]);
+      for(let v=u+1;v<cs.length&&ok;v++)if(gap(P,ptsOf(cs[v]))<minD)ok=false;
+      for(const m of all)if(ok&&gap(P,ptsOf(m))<minD)ok=false;}
+    if(ok){all.push(...cs);break;}
+  }
+  g.nuc=all;g.C=C;g.rad=rad;
+  // keep the knot in one piece: every nest reaches past halfway to its nearest neighbor
+  if(!g.full&&all.length>1){let far=0;all.forEach(a=>{let nn=1e9;all.forEach(b=>{if(a!==b)nn=Math.min(nn,Math.hypot(a.x-b.x,a.y-b.y));});far=Math.max(far,nn);});
+    g.Rc=Math.max(g.Rc,far*.62+20);}
+  // silhouette spikes (a crown) for some clusters
+  g.crown=!g.full&&chance(.3)?{k:sym.n>1?sym.n*RI(1,3):RI(5,13),amp:R(25,60),ph:R(0,TAU)}:null;
+  g.wph=[R(0,TAU),R(0,TAU),R(0,TAU),R(0,TAU)];g.wf=[R(.006,.012),R(.006,.012),R(.014,.024),R(.014,.024)];
+  // fit the page: how far each nest can reach (its shape stretches some directions), then scale the whole
+  // design toward the middle until it clears the margin. The marker width stays; spacing never drops below 30.
+  if(!g.full&&all.length){
+    const reachOf=n=>{const rf={oval:2*n.ax/(1+n.ax),square:Math.SQRT2,diamond:1/.75,flower:1/(1-n.amp)}[n.kind]||1;
+      return(g.Rc+n.w+(g.crown?g.crown.amp:0))*rf+(n.kind==='comb'?60:0)+g.lw;};
+    let ext=0;all.forEach(n=>{const r=reachOf(n);ptsOf(n).forEach(([x,y])=>{ext=Math.max(ext,Math.abs(x-C)+r,Math.abs(y-C)+r);});});
+    const room=C-40;
+    if(ext>room){const z=Math.max(room/ext,30/g.s);
+      all.forEach(n=>{n.x=C+(n.x-C)*z;n.y=C+(n.y-C)*z;n.w*=z;n.s=Math.max(30,n.s*z);if(n.L)n.L=n.L.map(([x,y])=>[C+(x-C)*z,C+(y-C)*z]);});
+      g.Rc*=z;if(g.crown)g.crown.amp*=z;g.zoom=z;}
+  }
+  return g;
+}
+
+// the distance from a point to a center's shape (its contour lines are the bands)
+function dist(n,x,y){
+  const dx=x-n.x,dy=y-n.y,c=Math.cos(n.rot),s=Math.sin(n.rot),u=dx*c+dy*s,v=-dx*s+dy*c;
+  switch(n.kind){
+    case'ring':return Math.hypot(dx,dy);
+    case'oval':return Math.hypot(u/n.ax,v)*(1+n.ax)/2;
+    case'square':return Math.max(Math.abs(u),Math.abs(v));
+    case'diamond':return(Math.abs(u)+Math.abs(v))*.75;
+    case'flower':{const r=Math.hypot(dx,dy),a=Math.atan2(v,u);return r*(1+n.amp*Math.cos(n.k*a));}
+    case'comb':return Math.abs(v)+Math.max(0,Math.abs(u)-60)*1.5;
+    case'ribbon':return segDist(x,y,n.L);
+  }
+  return Math.hypot(dx,dy);
+}
+
+// sample the ink field on a grid: E<0 is ink
+function field(g,G){
+  const k=1000/G,E=new Float32Array((G+1)*(G+1)),nuc=g.nuc,lw=g.lw/2,C=g.C;
+  for(let j=0;j<=G;j++)for(let i=0;i<=G;i++){
+    let x=i*k,y=j*k;
+    if(g.warp){x+=g.warp*(Math.sin(y*g.wf[0]+g.wph[0])+.5*Math.sin(y*g.wf[2]+x*.004+g.wph[2]));y+=g.warp*(Math.sin(x*g.wf[1]+g.wph[1])+.5*Math.sin(x*g.wf[3]-y*.004+g.wph[3]));}
+    let m1=1e9,m2=1e9,b=-1,d1=0;
+    for(let q=0;q<nuc.length;q++){const n=nuc[q],d=dist(n,x,y),m=d-n.w;if(m<m1){m2=m1;m1=m;b=q;d1=d;}else if(m<m2)m2=m;}
+    // the cluster's edge: nests reach Rc past their centers (plus a crown, if any)
+    let edge=g.Rc;
+    if(g.crown){const a=Math.atan2(y-C,x-C),t=((a*g.crown.k/TAU+g.crown.ph)%1+1)%1;edge+=g.crown.amp*(1-Math.abs(2*t-1));}
+    let e;
+    if(!g.full&&m1>edge)e=m1-edge-lw;                 // outside: only the outline near the edge
+    else{
+      const n=nuc[b];let f=(d1-n.core*n.s)/n.s;
+      if(n.spiral){f-=n.spiral*Math.atan2(y-n.y,x-n.x)/TAU;}
+      const band=Math.abs(f-Math.round(f))*n.s,core=d1<n.core*n.s;
+      e=Math.min(band-lw,(m2-m1)/2-lw,g.full?1e9:Math.abs(m1-edge)-lw);
+      const pr=Math.min(n.core*n.s*.9,n.s*.42,28);
+      if(n.pupil&&d1<pr)e=Math.min(e,d1-pr);   // solid pupil
+      else if(core&&!n.spiral&&n.kind!=='ribbon')e=Math.min(e,Math.abs(d1-n.core*n.s)-lw); // just its ring
+      if(n.kind==='ribbon'&&core)e=Math.max(e,lw-.01-Math.abs(d1-n.core*n.s)+0); // the spine itself stays clear
+    }
+    if(x<12||y<12||x>988||y>988)e=Math.max(e,.5);      // keep a margin
+    E[j*(G+1)+i]=e;
+  }
+  return E;
+}
+
+// marching squares: closed outlines where E crosses 0
+function trace(E,G){
+  const k=1000/G,N=G+1,seg=new Map(),key=(a,b)=>a+','+b;
+  const pt=(i0,j0,i1,j1)=>{const a=E[j0*N+i0],b=E[j1*N+i1],t=a/(a-b);return[(i0+(i1-i0)*t)*k,(j0+(j1-j0)*t)*k];};
+  const edges=[];
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){
+    const a=E[j*N+i]<0,b=E[j*N+i+1]<0,c=E[(j+1)*N+i+1]<0,d=E[(j+1)*N+i]<0,id=(a?8:0)|(b?4:0)|(c?2:0)|(d?1:0);
+    if(id===0||id===15)continue;
+    const T=['t',i,j],Rr=['r',i+1,j],B=['t',i,j+1],L=['r',i,j];
+    const P={t:[i,j,i+1,j],r:[i+1,j,i+1,j+1],b:[i,j+1,i+1,j+1],l:[i,j,i,j+1]};
+    const S={1:[['l','b']],2:[['b','r']],3:[['l','r']],4:[['r','t']],5:[['l','t'],['r','b']],6:[['b','t']],7:[['l','t']],
+      8:[['t','l']],9:[['t','b']],10:[['t','r'],['b','l']],11:[['t','r']],12:[['r','l']],13:[['r','b']],14:[['b','l']]}[id];
+    S.forEach(([e0,e1])=>edges.push([P[e0].join(','),P[e1].join(','),P[e0],P[e1]]));
+  }
+  // join segments into loops: every crossing point on a grid edge is shared by exactly two segments
+  const adj=new Map(),pos=new Map();
+  const link=(a,b)=>{let l=adj.get(a);if(!l)adj.set(a,l=[]);l.push(b);};
+  edges.forEach(([a,b,pa,pb])=>{link(a,b);link(b,a);if(!pos.has(a))pos.set(a,pt(...pa));if(!pos.has(b))pos.set(b,pt(...pb));});
+  const loops=[],seen=new Set();
+  for(const s of adj.keys()){
+    if(seen.has(s))continue;const L=[];let prev=null,c=s;
+    while(c!==undefined&&!seen.has(c)){seen.add(c);L.push(pos.get(c));const nb=adj.get(c);const n=nb[0]!==prev?nb[0]:nb[1];prev=c;c=n;}
+    if(L.length>2)loops.push(L);
+  }
+  return loops;
+}
+function make(seed,G=420){const g=genome(seed),E=field(g,G),loops=trace(E,G);return{g,loops};}
+return{make,genome};
+})();
+
 async function generate(first){
   if(busy)return;busy=true;
   $('#busy').hidden=false;$('#new').disabled=true;$('#genGo').disabled=true;
@@ -989,19 +1148,25 @@ async function generate(first){
   try{
     commitPending();
     S.ink=pickInk();
-    const want=desiredSize();
+    const want=wantSize();
     if(aspectOff(want)){setSize(want[0],want[1]);first=true;}
     const lim=MINCELL[S.minCell];
-    const cand=await buildGrid(lim);
+    let cand,knot=null;
+    if(S.style==='knot'){
+      const {g,loops}=KG.make(S.knotSeed,640),k=W/1000,f1=v=>(+(v*k).toFixed(1)).toString();
+      knot=mkPath(loops.map(l=>'M'+l.map(([x,y])=>f1(x)+' '+f1(y)).join('L')+'Z').join(''));
+      cand={blobs:[],lines:[]};S.outW=clamp(Math.round(g.lw*k),3,40);
+    }else cand=await buildGrid(lim);
     if(!first)pushUndo([P,O,K,D]);
     [P,O,K,D,V].forEach(c=>c.clearRect(0,0,W,H));
-    drawCand(O,cand);S.outW=S.weight;
+    if(knot){O.save();O.fillStyle=S.ink;O.fill(knot,'evenodd');O.restore();}
+    else{drawCand(O,cand);S.outW=S.weight;}
     if(lim){
       const m=wallMask(),an=analyze(m,W,H),ids=[];
       for(let i=1;i<=an.id;i++)if(an.areas[i]<KNOT.a||an.rmax[i]<KNOT.r*3)ids.push(i);
       if(ids.length)inkFill(an,m,ids);
     }
-    S.blobPaths=cand.blobs;S.latPaths=cand.lines;S.stamps=[];S.strokes=[];S.legacyInk=false;renderStamps();bumpWalls();S.dirty=false;
+    S.blobPaths=cand.blobs;S.latPaths=cand.lines;S.inkFills=knot?[knot]:[];S.stamps=[];S.strokes=[];S.legacyInk=false;renderStamps();bumpWalls();S.dirty=false;
   }finally{
     busy=false;$('#busy').hidden=true;$('#new').disabled=false;$('#genGo').disabled=false;
   }
@@ -1011,7 +1176,7 @@ async function generate(first){
 const undoStack=[];
 function pushUndo(list){
   S.dirty=true;
-  undoStack.push({layers:list.map(c=>({c,d:c.getImageData(0,0,W,H)})),blobs:S.blobPaths,lat:S.latPaths,stamps:S.stamps,strokes:S.strokes,
+  undoStack.push({layers:list.map(c=>({c,d:c.getImageData(0,0,W,H)})),blobs:S.blobPaths,lat:S.latPaths,fills:S.inkFills,outW:S.outW,stamps:S.stamps,strokes:S.strokes,
     leg:S.legacyInk,ink:S.ink,inkIdx:S.inkIdx});bumpWalls();
   if(undoStack.length>12)undoStack.shift();
   $('#undo').disabled=false;
@@ -1019,7 +1184,7 @@ function pushUndo(list){
 function undo(){
   if(pending){pending=null;drawPreview();return;}
   const e=undoStack.pop();if(!e)return;
-  e.layers.forEach(l=>l.c.putImageData(l.d,0,0));S.blobPaths=e.blobs;S.latPaths=e.lat;S.stamps=e.stamps||[];S.strokes=e.strokes||[];S.legacyInk=!!e.leg;
+  e.layers.forEach(l=>l.c.putImageData(l.d,0,0));S.blobPaths=e.blobs;S.latPaths=e.lat;S.inkFills=e.fills||[];if(e.outW)S.outW=e.outW;S.stamps=e.stamps||[];S.strokes=e.strokes||[];S.legacyInk=!!e.leg;
   if(e.ink&&e.ink!==S.ink){S.ink=e.ink;S.inkIdx=e.inkIdx;if(S.inkIdx<0)S.inkC=S.ink;renderInks();}
   renderStamps();bumpWalls();drawPreview();
   $('#undo').disabled=!undoStack.length;
@@ -1137,7 +1302,8 @@ function cellGraph(){
   for(let i=1;i<=id;i++){
     cx[i]=sx[i]/areas[i];cy[i]=sy[i]/areas[i];
     const p=seeds[i],x=p%W,y=(p/W)|0;
-    inside[i]=areas[i]>=30&&(S.autoArea==='all'?!edge[i]:S.blobPaths.some(b=>O.isPointInPath(b,x+.5,y+.5)))?1:0;
+    inside[i]=areas[i]>=30&&(S.inkFills.length?!edge[i]||(S.autoArea==='all'&&areas[i]<N*.2)
+      :S.autoArea==='all'?!edge[i]:S.blobPaths.some(b=>O.isPointInPath(b,x+.5,y+.5)))?1:0;
   }
   const d=Math.ceil(S.outW*1.5)+4;
   const adj=adjLists(contacts(lab,[[d,0],[0,d]]),id,8);
@@ -1913,7 +2079,7 @@ function stampAt(c,o,sh,q,free){
 // how far the design reaches from the page center: its box half-sizes and its farthest point
 function designReach(){
   const cx=W/2,cy=H/2;let hx=0,hy=0,r=0;
-  [...(S.blobPaths||[]),...(S.latPaths||[])].forEach(p=>{const m=(p.d||'').match(/-?\d+(?:\.\d+)?/g)||[];
+  [...(S.blobPaths||[]),...(S.latPaths||[]),...(S.inkFills||[])].forEach(p=>{const m=(p.d||'').match(/-?\d+(?:\.\d+)?/g)||[];
     for(let i=0;i+1<m.length;i+=2){const x=Math.abs(m[i]-cx),y=Math.abs(m[i+1]-cy);if(x>hx)hx=x;if(y>hy)hy=y;const d=Math.hypot(x,y);if(d>r)r=d;}});
   return r?{hx,hy,r}:null;
 }
@@ -2086,7 +2252,8 @@ function renderStamps(){requestView();}
 function drawVectors(c){
   (S.stamps||[]).forEach(st=>{if(st.under)paintStampClip(c,st);}); // shapes set behind: under the drawing's own lines, outside the design
   c.save();c.lineCap='round';c.lineJoin='round';
-  if(!S.legacyInk){c.strokeStyle=S.ink;c.lineWidth=S.outW;(S.blobPaths||[]).forEach(b=>c.stroke(b));(S.latPaths||[]).forEach(l=>c.stroke(l));}
+  if(!S.legacyInk){c.strokeStyle=c.fillStyle=S.ink;c.lineWidth=S.outW;(S.blobPaths||[]).forEach(b=>c.stroke(b));(S.latPaths||[]).forEach(l=>c.stroke(l));
+    (S.inkFills||[]).forEach(f=>c.fill(f,'evenodd'));}
   (S.strokes||[]).forEach(st=>{c.strokeStyle=st.color;c.lineWidth=st.size;c.stroke(strokePath(st));});
   c.restore();
   (S.stamps||[]).forEach(st=>{if(!st.under)paintStamp(c,st);});
@@ -2135,11 +2302,11 @@ function cleanStamp(o){return{d:o.d,fill:!!o.fill,color:o.color,size:clamp(+o.si
    the page outside it, as if the design were paper laid over the shape. Traced once per design (and only when needed). */
 let holeKey=null,hole=null;
 function designHole(){
-  const key=[S.blobPaths,S.latPaths,S.outW,W,H];
+  const key=[S.blobPaths,S.latPaths,S.inkFills,S.outW,W,H];
   if(holeKey&&key.every((v,i)=>v===holeKey[i]))return hole;
-  holeKey=key;hole=null;const ps=[...(S.blobPaths||[]),...(S.latPaths||[])];if(!ps.length||S.legacyInk)return null;
+  holeKey=key;hole=null;const ps=[...(S.blobPaths||[]),...(S.latPaths||[])],fs=S.inkFills||[];if(!ps.length&&!fs.length||S.legacyInk)return null;
   const k=Math.min(1,1100/Math.max(W,H)),n=Math.ceil(Math.max(W,H)*k)+4,c=mkCanvas(n,n),x=c.getContext('2d');
-  x.setTransform(k,0,0,k,2,2);x.lineCap=x.lineJoin='round';x.lineWidth=S.outW+2;x.strokeStyle='#000';ps.forEach(p=>x.stroke(p));
+  x.setTransform(k,0,0,k,2,2);x.lineCap=x.lineJoin='round';x.lineWidth=S.outW+2;x.strokeStyle=x.fillStyle='#000';ps.forEach(p=>x.stroke(p));fs.forEach(f=>x.fill(f,'evenodd'));
   const a=x.getImageData(0,0,n,n).data,out=new Uint8Array(n*n),q=new Int32Array(n*n);let h=0,t=0;
   const push=i=>{if(!out[i]&&a[i*4+3]<128){out[i]=1;q[t++]=i;}};
   for(let i=0;i<n;i++){push(i);push((n-1)*n+i);push(i*n);push(i*n+n-1);}
@@ -2392,7 +2559,7 @@ $('#frameChk').onchange=e=>setFrame(e.target.checked);
 $('#wall').onchange=e=>setWall(e.target.checked);
 $('#autoGo').onclick=()=>{autoColor();closePanel();};
 $('#undo').onclick=undo;
-$('#new').onclick=()=>generate(false);
+$('#new').onclick=newDrawing;
 function setSizeV(v){S.size=clamp(v,2,18);$('#size').value=S.size;$('#sizeN').textContent=S.size;drawPreview();}
 $('#size').oninput=e=>setSizeV(+e.target.value);
 
@@ -2539,7 +2706,18 @@ function setDark(v,init){
 }
 $('#paperLight').onclick=()=>{if(S.dark)setDark(false);};$('#paperDark').onclick=()=>{if(!S.dark)setDark(true);};
 
-$('#genGo').onclick=()=>{generate(false);closePanel();};
+$('#genGo').onclick=()=>{newDrawing();closePanel();};
+function setStyle(v){S.style=v==='knot'?'knot':'blob';$('#styBlob').classList.toggle('on',S.style==='blob');$('#styKnot').classList.toggle('on',S.style==='knot');
+  $('#panel').dataset.style=S.style;store.set('licorice-style',S.style);}
+function setKnotSeed(t){t=String(t).trim().slice(0,24)||'1';S.knotTxt=t;S.knotSeed=seedFrom(t);$('#knotSeed').value=t;store.set('licorice-knotseed',t);}
+const rollKnot=()=>setKnotSeed(String(1+Math.floor(Math.random()*999999)));
+// New: blobs draw fresh; a knot rolls a new seed first (typing a seed and pressing Enter redraws that exact one)
+function newDrawing(){if(S.style==='knot')rollKnot();generate(false);}
+$('#styBlob').onclick=()=>setStyle('blob');$('#styKnot').onclick=()=>setStyle('knot');
+$('#knotSeed').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();setKnotSeed(e.target.value);setStyle('knot');generate(false);}};
+$('#knotSeed').onchange=e=>setKnotSeed(e.target.value);
+$('#knotDice').onclick=()=>{rollKnot();generate(false);};
+setStyle(store.get('licorice-style')||'blob');setKnotSeed(store.get('licorice-knotseed')||'1');
 function setShape(v){S.shape=v;$('#shpSplat').classList.toggle('on',v==='splat');$('#shpFlower').classList.toggle('on',v==='flower');store.set('dblob-shape',v);}
 $('#shpSplat').onclick=()=>setShape('splat');$('#shpFlower').onclick=()=>setShape('flower');
 setShape(store.get('dblob-shape')==='flower'?'flower':'splat');
@@ -2577,7 +2755,7 @@ function snapshot(){
   commitPending();
   return{app:'licorice',v:2,W,H,paint:cv.paint.toDataURL('image/png'),outline:cv.outline.toDataURL('image/png'),deco:cv.deco.toDataURL('image/png'),stamps:S.stamps,
     knots:cv.knots.toDataURL('image/png'),strokes:S.strokes||[],legacyInk:S.legacyInk||undefined,
-    blobs:(S.blobPaths||[]).map(p=>p.d).filter(Boolean),lat:(S.latPaths||[]).map(p=>p.d).filter(Boolean),
+    blobs:(S.blobPaths||[]).map(p=>p.d).filter(Boolean),lat:(S.latPaths||[]).map(p=>p.d).filter(Boolean),fills:(S.inkFills||[]).map(p=>p.d).filter(Boolean),
     dark:S.dark,inkIdx:S.inkIdx,inkC:S.inkIdx<0?S.ink:undefined,palId:S.palId,weight:S.outW};
 }
 function thumbURL(){
@@ -2597,7 +2775,7 @@ function flatten(k){
 // the line work at page size, cached until the drawing changes (for the loupe when the drawing is heavy)
 let vecC=null,vecKey=null;
 function vecDoc(){
-  const key=[S.blobPaths,S.latPaths,S.strokes,S.stamps,S.ink,S.legacyInk,S.outW,W,H];
+  const key=[S.blobPaths,S.latPaths,S.inkFills,S.strokes,S.stamps,S.ink,S.legacyInk,S.outW,W,H];
   if(!vecC||!vecKey||key.some((v,i)=>v!==vecKey[i])){vecC=vecC&&vecC.width===W&&vecC.height===H?vecC:mkCanvas(W,H);
     const x=vecC.getContext('2d');x.clearRect(0,0,W,H);drawVectors(x);vecKey=key;}
   return vecC;
@@ -2612,14 +2790,14 @@ async function restore(st){
   else{S.inkIdx=clamp(st.inkIdx|0,0,3);S.ink=currentInks()[S.inkIdx];}
   renderInks();
   if(typeof st.palId==='string')setPalette(st.palId);
-  S.outW=st.weight?clamp(+st.weight,3,12):6;
+  S.outW=st.weight?clamp(+st.weight,3,40):6;
   [P,O,D].forEach((c,k)=>{c.clearRect(0,0,W,H);c.drawImage(imgs[k],0,0);});
   // before v20 the line work was only pixels: show it as it was saved (from K), and don't draw the outline again on top
   S.legacyInk=!knots||!!st.legacyInk;K.clearRect(0,0,W,H);K.drawImage(S.legacyInk?imgs[1]:knots,0,0);
   S.strokes=Array.isArray(st.strokes)?st.strokes.filter(validStroke).slice(0,5000).map(cleanStroke):[];
   S.stamps=Array.isArray(st.stamps)?st.stamps.filter(validStamp).slice(0,2000).map(cleanStamp):[];renderStamps();bumpWalls();
   const ok=d=>typeof d==='string'&&/^[MLCZ0-9 .\-]+$/.test(d);
-  S.blobPaths=(st.blobs||[]).filter(ok).map(mkPath);S.latPaths=(st.lat||[]).filter(ok).map(mkPath);
+  S.blobPaths=(st.blobs||[]).filter(ok).map(mkPath);S.latPaths=(st.lat||[]).filter(ok).map(mkPath);S.inkFills=(st.fills||[]).filter(ok).map(mkPath);
   drawPreview();
 }
 async function renderGallery(){
@@ -2818,6 +2996,7 @@ function buildSVG(){
     `<g id="fills">${img(layerPNG([cv.paint,cv.knots]))}</g>`];
   if(!S.legacyInk)o.push(`<g id="outline" fill="none" stroke="${S.ink}" stroke-width="${S.outW}" stroke-linecap="round" stroke-linejoin="round">`+
     [...(S.blobPaths||[]),...(S.latPaths||[])].filter(p=>p.d).map(p=>`<path d="${esc(p.d)}"/>`).join('')+'</g>');
+  if(!S.legacyInk&&(S.inkFills||[]).length)o.push(`<g id="page-ink" fill="${S.ink}" fill-rule="evenodd">`+S.inkFills.filter(p=>p.d).map(p=>`<path d="${esc(p.d)}"/>`).join('')+'</g>');
   const deco=layerPNG([cv.deco]);if(deco)o.push(`<g id="older-lines">${img(deco)}</g>`);
   o.push('<g id="lines" fill="none" stroke-linecap="round" stroke-linejoin="round">'+(S.strokes||[]).map(st=>
     `<path d="${esc(st.d)}" stroke="${st.color}" stroke-width="${st.size}"/>`).join('')+'</g>');
@@ -2860,7 +3039,7 @@ if(document.fullscreenEnabled&&document.documentElement.requestFullscreen){
 let reshapeT=0;
 new ResizeObserver(()=>{
   fit();clearTimeout(reshapeT);
-  reshapeT=setTimeout(()=>{if(!S.dirty&&!busy&&aspectOff(desiredSize(),.15))generate(true);},500);
+  reshapeT=setTimeout(()=>{if(!S.dirty&&!busy&&aspectOff(wantSize(),.15))generate(true);},500);
 }).observe(wrap);fit();
 
 let saved=null;try{saved=localStorage.getItem('dblob-loupe');}catch(_){}
