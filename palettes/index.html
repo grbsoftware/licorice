@@ -1,0 +1,1303 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Licorice · color palettes for coloring pages</title>
+<meta name="theme-color" content="#9447cf">
+<meta name="description" content="Licorice palettes: places, skies, fades and pairs, or make your own. Take up to three into the coloring app.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Licorice">
+<meta property="og:url" content="https://grbsoftware.github.io/licorice/palettes/">
+<meta property="og:title" content="Licorice palettes">
+<meta property="og:description" content="Browse palettes drawn from places, skies and fades, or make your own, then take up to three into Licorice.">
+<meta property="og:image" content="https://grbsoftware.github.io/licorice/img/social.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Licorice logo next to a colorful page colored in with the app">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="icon" type="image/png" href="../img/favicon.png">
+<link rel="canonical" href="https://grbsoftware.github.io/licorice/palettes/">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Licorice palettes", "url": "https://grbsoftware.github.io/licorice/palettes/", "description": "Browse coloring palettes drawn from places, skies, fades and pairs, sort them by a color, or make your own, then take up to three into the Licorice coloring app.", "applicationCategory": "DesignApplication", "operatingSystem": "Any (runs in a web browser)", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}}</script>
+<style>
+/* the app's own interface colors (double-blob-v29.html :root): the UI is always dark; only the PAPER switches */
+:root{--bar:48px;color-scheme:dark;--paper:#131313;--ink:#d8d8d8;--bright:#fff;--mute:#8a8a8a;--line:#262626;--panel:#252525;--rule:#3a3a3a;--sel:#5d82ac;--btn:#2b2b2b;--edge:#4a4a4a;--hover:#333;--on:#2e3a4c}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:2px solid var(--sel);outline-offset:1px}
+/* the page's own bar: the way back to the drawing, and what this page is for */
+.bar{height:var(--bar);display:flex;align-items:center;gap:8px;padding:0 12px 0 4px;background:var(--panel);border-bottom:1px solid var(--rule)}
+.bar h1{font-size:16px;font-weight:600;color:var(--bright);margin:0;white-space:nowrap}
+.bar .home{min-height:44px;display:flex;align-items:center;padding:0 10px;color:var(--sel);font-weight:600;text-decoration:none;border-radius:6px;white-space:nowrap}
+.bar .home:hover{background:var(--hover)}
+.bar .why{margin-left:auto;font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:520px){.bar .why{display:none}}
+.app{display:grid;grid-template-columns:1fr clamp(380px,26vw,480px);height:calc(100vh - var(--bar));height:calc(100dvh - var(--bar))}
+.page{display:flex;align-items:center;justify-content:flex-start;padding:12px 0 0;min-height:0;overflow:hidden}
+.page{flex-direction:column;gap:10px}
+.toggles{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.page svg{flex:1 1 auto;width:100%;min-height:0;display:block} /* the cells fill the frame, cut off at the edges like a real page */
+.page .seg{color:#6d655c}
+.panel{background:var(--panel);border-left:1px solid var(--rule);display:flex;flex-direction:column;max-height:calc(100vh - var(--bar));max-height:calc(100dvh - var(--bar));overflow:auto}
+.cur{padding:14px 16px 10px;border-bottom:1px solid var(--rule)}
+.cur h2{font-size:13px;font-weight:600;color:var(--mute);margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}
+.cur .nm{font-weight:600;margin-bottom:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.grid button{all:unset;height:44px;cursor:pointer;box-shadow:inset 1px 0 0 var(--line),inset 0 1px 0 var(--line)}
+.grid button.on{outline:3px solid #fff;outline-offset:-6px}
+.nav{flex:1;overflow:auto;padding:6px 0 20px;min-height:240px}
+.crumb{display:flex;align-items:center;gap:6px;padding:4px 10px;position:sticky;top:0;background:var(--panel);z-index:1}
+.back{all:unset;cursor:pointer;min-height:44px;padding:0 10px;display:flex;align-items:center;font-weight:600;color:var(--sel);border-radius:6px}
+.back:hover{background:var(--hover)}
+.title{font-weight:600;font-size:16px;padding:4px 16px 6px;color:var(--bright)}
+.rowb{all:unset;cursor:pointer;display:block;width:100%;padding:10px 16px;min-height:48px;box-sizing:border-box}
+.rowb:hover{background:var(--hover)}
+.rowb.on{background:var(--on)}
+.rowb .t{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+.rowb .t b{font-weight:600;color:var(--bright)}
+.rowb .t span{color:var(--mute);font-size:12px;white-space:nowrap}
+.rowb .s{color:var(--mute);font-size:12px;margin:-4px 0 6px}
+.strip{display:flex;height:26px;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.strip i{flex:1;min-width:0;border-left:1px solid var(--line)}
+.strip i:first-child{border-left:0}
+.mini{display:grid;gap:3px}
+.mini .strip{height:12px}
+.more{color:var(--sel);font-size:12px;font-weight:600}
+.lbl{font-size:12px;color:var(--mute);margin-bottom:4px}
+.note{font-size:12px;color:var(--mute);padding:10px 16px}
+/* the up-to-3 palettes taken to the app */
+.picks{padding:10px 16px 12px;border-bottom:1px solid var(--rule);flex:0 1 auto;min-height:120px;max-height:42%;overflow:auto}
+.picks h2{font-size:13px;font-weight:600;color:var(--mute);margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}
+.slot{display:flex;align-items:center;gap:6px;margin-top:4px}
+.slot .pk{all:unset;cursor:pointer;flex:1;min-width:0;min-height:44px;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:0 6px;border-radius:6px}
+.slot .pk:hover{background:var(--hover)}.slot .pk.on{background:var(--on)}
+.slot .pk span{font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .pk .strip{height:14px}
+.slot.empty{min-height:44px;border:1px dashed var(--edge);border-radius:6px;justify-content:center;color:var(--mute);font-size:12px}
+.tag{font-size:11px;color:#9fc3ea;font-weight:600}
+/* the app's palette bar, previewed over the sample page */
+.appbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;max-width:820px;width:calc(100% - 24px);background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:6px 8px}
+.appbar select{font:inherit;font-size:13px;min-height:44px;padding:0 8px;border:1px solid var(--edge);background:var(--btn);color:var(--ink);border-radius:6px}
+.appbar .ap{all:unset;cursor:pointer;flex:1;min-width:80px;min-height:44px;display:flex;align-items:center;padding:0 6px;border-radius:6px;border:1px solid var(--edge)}
+.appbar .ap.on{border-color:var(--sel);background:var(--on)}.appbar .ap .strip{flex:1;height:20px}
+.appbar .lbl{margin:0 4px 0 2px;color:var(--mute)}
+.share{width:100%;font:inherit;font-size:12px;min-height:44px;padding:0 8px;border:1px solid var(--edge);border-radius:6px;background:var(--paper);color:var(--ink)}
+.gift{margin:8px 0;padding:8px;border:1px solid var(--sel);border-radius:6px}
+.sortbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:0 16px 8px}
+.sortbar .sw{width:44px;height:44px;border:1px solid var(--edge);border-radius:6px;cursor:pointer;padding:0}
+.sets{margin-top:12px}.sets h2{margin-top:4px}
+.set{display:flex;align-items:center;gap:6px;margin-top:4px}
+.set .pk{all:unset;cursor:pointer;flex:1;min-width:0;min-height:44px;padding:4px 6px;border-radius:6px;display:flex;flex-direction:column;gap:3px}
+.set .pk:hover{background:var(--hover)}.set .pk.on{background:var(--on)}
+.set .pk b{font-size:13px;font-weight:600;color:var(--bright)}.set .pk .strip{height:8px}
+@media (max-width:760px){.app{grid-template-columns:1fr;height:auto}.page{height:78vh}.panel{border-left:0;border-top:1px solid var(--rule);max-height:none;overflow:visible}.picks{max-height:none;overflow:visible;min-height:0}.nav{min-height:0;overflow:visible}}
+.minerow{display:flex;align-items:center}.minerow .rowb{flex:1;min-width:0;width:auto}
+.b:disabled.pri{background:var(--btn);border-color:var(--edge);color:var(--ink);font-weight:400}
+.b{font:inherit;font-size:13px;min-height:44px;padding:0 12px;border:1px solid var(--edge);background:var(--btn);border-radius:6px;cursor:pointer;color:var(--ink)}
+.b:disabled{opacity:.4;cursor:default}
+.b.pri{background:var(--sel);border-color:var(--sel);color:#fff;font-weight:600}
+.meta{font-size:12px;color:var(--mute)}
+.mk-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:6px 16px}
+.mk-name{font:inherit;min-height:44px;width:100%;padding:0 10px;border:1px solid var(--edge);border-radius:6px;background:var(--btn);color:var(--bright)}
+.fam{margin:10px 0;padding:6px 0;border-top:1px solid var(--rule)}
+.fam-h{display:flex;align-items:center;gap:8px;padding:4px 16px}
+.fam-h span{color:var(--mute);font-size:12px;flex:1}
+.x{all:unset;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--mute);border-radius:6px}
+.x:hover{background:var(--hover)}
+.cols{display:flex;height:64px;margin:4px 16px;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.col{flex:1;min-width:0;border-left:1px solid var(--line)}
+.col:first-child{border-left:0}
+button.col{all:unset;flex:1.5;min-width:0;cursor:pointer;position:relative;border-left:1px solid var(--line)}
+button.col:first-child{border-left:0}
+button.col::before{content:'';position:absolute;top:8px;left:50%;width:9px;height:9px;margin-left:-6px;border-radius:50%;border:2px solid currentColor}
+.seg{display:inline-flex;align-items:center;gap:2px;font-size:12px;color:var(--mute)}
+.seg button{font:inherit;font-size:13px;min-width:40px;min-height:44px;border:1px solid var(--edge);background:var(--btn);cursor:pointer;color:var(--ink)}
+.seg button:first-of-type{border-radius:6px 0 0 6px;margin-left:4px}.seg button:last-of-type{border-radius:0 6px 6px 0}
+.seg button.on{background:var(--sel);color:#fff;border-color:var(--sel)}
+.sugg{display:flex;flex-wrap:wrap;gap:6px;padding:4px 16px}
+.sg{all:unset;cursor:pointer;display:flex;align-items:center;gap:6px;min-height:44px;padding:0 8px 0 4px;border:1px solid var(--edge);border-radius:6px;font-size:12px}
+.sg span{width:32px;height:32px;border-radius:4px;border:1px solid var(--line)}
+.make{border-bottom:1px solid var(--rule)}
+.cur-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+</style></head>
+<body>
+<header class="bar"><a class="home" id="toApp" href="../app/">‹ Back to coloring</a><h1>Palettes</h1><span class="why">Take up to 3 palettes to the app</span></header>
+<div class="app">
+  <div class="page"><div class="appbar" id="appbar"></div><div class="toggles"><div class="seg" role="group" aria-label="Paper">Paper <button id="paperLight" class="on">Light</button><button id="paperDark">Dark</button></div><div class="seg" role="group" aria-label="Fill">Fill <button id="fillScatter">Scatter</button><button id="fillCluster">Cluster</button><button id="fillPattern">Pattern</button></div></div><div class="toggles" id="repWrap" style="display:none"><div class="seg" role="group" aria-label="Repeat">Repeat <button data-rep="free">Free</button><button data-rep="weave">Weave</button><button data-rep="quad">Four</button><button data-rep="flower">Flower</button><button data-rep="ripple">Ripple</button><button data-rep="motif">Motif</button></div><button class="b" id="reroll" style="display:none">Reroll</button><button class="b" id="cycle" style="display:none" aria-pressed="false">Auto cycle: off</button></div><label class="meta" id="touchWrap" style="display:none;align-items:center;gap:8px;justify-content:center">Neighbors at least <input type="range" id="touch" min="0" max="100" step="10" style="width:140px;min-height:44px"> <b id="touchVal"></b> opposite</label><div class="meta" id="fillNote" style="text-align:center;min-height:1.4em"></div><svg id="sample"></svg></div>
+  <div class="panel">
+    <div class="cur"><h2>Your palette</h2><div class="cur-top"><div class="nm" id="curName" style="margin:0"></div><button class="b" id="editCur">Edit in maker</button></div><div class="grid" id="grid"></div><div class="mk-row" style="padding:8px 0 0"><button class="b" id="takeCur"></button></div></div>
+    <div class="picks" id="picks"></div>
+    <div class="nav" id="nav"></div>
+    <input type="color" id="picker" aria-label="Choose a color" tabindex="-1" style="position:absolute;left:-9999px">
+  </div>
+</div>
+<script>/* vendor/radiance-color.js (copied in by build_palettes.py; edit the source file) */
+/* vendored: shared/radiance-color v1.0.0 — do not edit here; change it in Radiance and re-vendor */
+// radiance-color -- Radiance's colour engine.
+//
+// sRGB <-> OKLab / OKLCH, the gamut hull, bridge midpoints, ink and contrast.
+// Radiance (github.com/grbsoftware/Radiance) owns this file and loads it as
+// is; other projects carry a pinned copy. Change it HERE, never in a copy.
+//
+// Everything is pure: hex strings and plain numbers in, the same out, no DOM
+// and no state. Load it with a <script> tag, paste it into a script, or
+// require() it -- it defines one name, RadianceColor.
+const RadianceColor = (() => {
+    'use strict';
+
+    // HSL to Hex
+    function hslToHex(h, s, l) {
+        s /= 100;
+        l /= 100;
+        const a = s * Math.min(l, 1 - l);
+        const f = n => {
+            const k = (n + h / 30) % 12;
+            const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+            return Math.round(255 * color).toString(16).padStart(2, '0');
+        };
+        return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
+    }
+
+    // Parse hex to RGB
+    function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
+    }
+
+    // RGB to hex
+    function rgbToHex(r, g, b) {
+        return '#' + [r, g, b].map(x => {
+            const hex = Math.round(x).toString(16);
+            return hex.length === 1 ? '0' + hex : hex;
+        }).join('').toUpperCase();
+    }
+
+    // --- OKLab -------------------------------------------------------
+    // A bridge is only a bridge if it LOOKS halfway between its anchors,
+    // and HSL cannot promise that. HSL's "L" is not perceived lightness:
+    // averaging green (#00FF00) and blue (#0000FF) in HSL gives cyan
+    // (#00FFFF), which is LIGHTER than both colors it sits between. It
+    // does not bridge, it spikes. Measured in perceptual lightness the
+    // anchors are 0.866 and 0.452, so the midpoint should read 0.659 --
+    // HSL puts it at 0.905, off by 0.246.
+    //
+    // OKLab is built so that equal numeric steps look like equal steps.
+    // The same pair midpoints to #00AABF at 0.675, which is where the eye
+    // expects it. Same idea for the anchors themselves: evenly spaced HSL
+    // hues range over 0.41 in perceived lightness (red 0.628, green 0.866,
+    // blue 0.452), which is why a "smooth" ramp never looked smooth.
+    //
+    // hslToHex stays, for the initial evenly-spaced anchors. HSL is a fine
+    // thing to SPECIFY a starting color in. It is just not a thing to
+    // average in, and nothing averages in it any more.
+
+    function srgbToLinear(c) {
+        c /= 255;
+        return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    }
+
+    function linearToSrgb(c) {
+        const v = c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+        return Math.max(0, Math.min(255, v * 255));
+    }
+
+    function hexToOklab(hex) {
+        const rgb = hexToRgb(hex);
+        const r = srgbToLinear(rgb.r), g = srgbToLinear(rgb.g), b = srgbToLinear(rgb.b);
+
+        const l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b;
+        const m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b;
+        const s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b;
+
+        const l_ = Math.cbrt(l), m_ = Math.cbrt(m), s_ = Math.cbrt(s);
+
+        return {
+            L: 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
+            a: 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
+            b: 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+        };
+    }
+
+    function oklabToLinear(lab) {
+        const l_ = lab.L + 0.3963377774 * lab.a + 0.2158037573 * lab.b;
+        const m_ = lab.L - 0.1055613458 * lab.a - 0.0638541728 * lab.b;
+        const s_ = lab.L - 0.0894841775 * lab.a - 1.2914855480 * lab.b;
+
+        const l = l_ * l_ * l_, m = m_ * m_ * m_, s = s_ * s_ * s_;
+
+        return [
+            +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+            -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+            -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+        ];
+    }
+
+    // The tolerance is not slop, it is the accuracy of the transform. The
+    // OKLab matrices are fitted approximations, so a colour that sits
+    // exactly ON the sRGB hull round-trips to a channel a few ten-thousandths
+    // the wrong side of zero.
+    //
+    // At 1e-4 that broke an assumption every bisection here depends on --
+    // that the ray out from neutral is in gamut up to one boundary and out
+    // after it. Measured along pure blue's ray (L 0.452, H 264.05): in gamut
+    // at 85% of its chroma, OUT at 90%, 95% and 99% where linear red reads
+    // -0.00063, and in again at 100% where it is exactly 0. A hole in the
+    // middle, and a bisection walks straight into it -- maxChroma returned
+    // 0.2674 for a colour whose chroma is 0.3132, a 15% underestimate, and
+    // oklabToHex used the same pattern to desaturate bridges further than
+    // the gamut actually required.
+    //
+    // 1e-3 clears the transform's own error. In linear light that is well
+    // under a quarter of an 8-bit step, and the clamp at the end of
+    // oklabToHex catches whatever rounds past the edge.
+    const GAMUT_EPS = 1e-3;
+
+    function inGamut(lab) {
+        return oklabToLinear(lab).every(c => c >= -GAMUT_EPS && c <= 1 + GAMUT_EPS);
+    }
+
+    // OKLab is bigger than sRGB, so a midpoint can land somewhere the screen
+    // cannot show. SOMETHING has to give, and the choice of what decides
+    // whether the bridge still reads as a bridge.
+    //
+    // Clamping each channel at the end -- the obvious way, and what this did
+    // -- gives away lightness and hue, the two properties the whole OKLab
+    // change was made to protect. Measured over every bridge the presets
+    // produce, 23 land outside sRGB and clamping moved them up to 3.6 deg in
+    // hue and 0.014 in L. The green -> blue midpoint from the notes above
+    // came out at L 0.676 against a target of 0.659; that residual was
+    // blamed on "gamut clipping" and this is the clipping it meant.
+    //
+    // Reducing CHROMA instead gives away saturation, which is the one thing
+    // a bridge does not promise. Same 23 colors: worst hue shift 0.9 deg,
+    // worst L error 0.0009 -- fifteen times closer. Green -> blue now lands
+    // at 0.659 exactly, so the residual is gone rather than explained.
+    function oklabToHex(lab) {
+        let out = lab;
+        if (!inGamut(lab)) {
+            let lo = 0, hi = 1;
+            for (let i = 0; i < 24; i++) {
+                const mid = (lo + hi) / 2;
+                if (inGamut({ L: lab.L, a: lab.a * mid, b: lab.b * mid })) lo = mid;
+                else hi = mid;
+            }
+            out = { L: lab.L, a: lab.a * lo, b: lab.b * lo };
+        }
+        // Still clamp: chroma reduction cannot rescue an L outside [0,1],
+        // and rounding leaves channels a hair over.
+        return rgbToHex(...oklabToLinear(out).map(c => linearToSrgb(Math.max(0, Math.min(1, c)))));
+    }
+
+    // --- Bridge policy ----------------------------------------------
+    // Both midpoints below are in OKLab and both are perceptually honest.
+    // They differ in what they treat as the thing being halved.
+    //
+    // BLEND averages a and b as coordinates: the true midpoint of the two
+    // colors as POINTS. a and b are signed, so as the anchors' hues diverge
+    // the two vectors point apart and partly cancel -- gold and navy are
+    // both strongly colored and their blend is #7E7D70, a drab olive grey.
+    // Nothing is out of gamut there; the saturation was destroyed by the
+    // arithmetic. Across the shipped presets, 12 bridges lose more than half
+    // their anchors' chroma this way.
+    //
+    // WHEEL averages lightness and chroma as scalars and walks hue around
+    // the shorter arc: the midpoint of the two HUES. Chroma at the bridge is
+    // the mean of the two chromas by construction, so it cannot collapse and
+    // cannot exceed the colors it sits between. Gold -> navy becomes #009083.
+    //
+    // Neither is a better version of the other, which is the test a setting
+    // has to pass to deserve existing. Blend answers "what color is halfway
+    // between these two", wheel answers "what color is halfway around from
+    // one to the other". Blend stays the default because it is what every
+    // saved palette was built with.
+    //
+    // NOT OFFERED: pushing chroma out to the gamut hull. It was measured and
+    // it is a trap -- the headroom is largest exactly where hue means least.
+    // Two pale neutrals whose midpoint chroma is 0.002 have 89x of it, and
+    // spending it turns a soft grey into #C3FF3B. At C near zero the hue is
+    // arbitrary, so amplifying it invents a color rather than finding one.
+
+    function midpointColor(hex1, hex2, mode = 'blend') {
+        const c1 = hexToOklab(hex1);
+        const c2 = hexToOklab(hex2);
+        const L = (c1.L + c2.L) / 2;
+
+        if (mode === 'blend') {
+            return oklabToHex({ L, a: (c1.a + c2.a) / 2, b: (c1.b + c2.b) / 2 });
+        }
+
+        const k1 = Math.hypot(c1.a, c1.b), k2 = Math.hypot(c2.a, c2.b);
+        let h1 = Math.atan2(c1.b, c1.a), h2 = Math.atan2(c2.b, c2.a);
+        // A grey has no hue -- CSS Color 4 calls it powerless. atan2(0,0) is
+        // 0, which is red, so averaging against it would drag every bridge
+        // out of a neutral anchor toward pink. Borrow the other end's hue.
+        if (k1 < 1e-6) h1 = h2;
+        if (k2 < 1e-6) h2 = h1;
+        const d = ((h2 - h1 + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+        const h = h1 + d / 2, c = (k1 + k2) / 2;
+        return oklabToHex({ L, a: c * Math.cos(h), b: c * Math.sin(h) });
+    }
+
+    // --- Ink on a bar -------------------------------------------------
+    // This used to weight the GAMMA-ENCODED channels 0.299/0.587/0.114 and
+    // switch at 0.5. Two things wrong with that, and they compound: the NTSC
+    // weights are for analogue luma, not for contrast, and the channels have
+    // to be linearised before any weighting means anything.
+    //
+    // The switch point is not a matter of taste either. White beats black
+    // exactly while 1.05/(L+0.05) > (L+0.05)/0.05, so the crossover is
+    // sqrt(0.0525) - 0.05 = 0.1791 -- nowhere near the midpoint, because
+    // contrast is a ratio and black has the shorter run to the floor.
+    //
+    // Measured over the 114 colors in the preset library, the old test put
+    // the wrong ink on 14 of them. The worst was #FF00FF, which got white at
+    // 3.14:1 where black scores 6.70:1. Worst case anywhere goes 3.14 -> 4.72,
+    // so every hex code on screen now clears AA at normal size.
+    const INK_CROSSOVER = Math.sqrt(0.0525) - 0.05;
+
+    function relativeLuminance(hex) {
+        const rgb = hexToRgb(hex);
+        return 0.2126 * srgbToLinear(rgb.r)
+             + 0.7152 * srgbToLinear(rgb.g)
+             + 0.0722 * srgbToLinear(rgb.b);
+    }
+
+    function inkOn(hex) {
+        return relativeLuminance(hex) > INK_CROSSOVER ? '#000' : '#fff';
+    }
+
+
+    const DEG = 180 / Math.PI;
+
+    function hexToOklch(hex) {
+        const { L, a, b } = hexToOklab(hex);
+        const C = Math.hypot(a, b);
+        // A neutral has no hue -- CSS Color 4 calls it powerless. Reported
+        // as null rather than as atan2(0, 0), which is red and would put a
+        // grey into the harmony maths as though it pointed somewhere.
+        const H = C < 1e-6 ? null : ((Math.atan2(b, a) * DEG) % 360 + 360) % 360;
+        return { L, C, H };
+    }
+
+    function oklchToHex({ L, C, H }) {
+        const h = (H === null ? 0 : H) / DEG;
+        return oklabToHex({ L, a: C * Math.cos(h), b: C * Math.sin(h) });
+    }
+
+    // The most chroma sRGB can actually show at this lightness and hue.
+    // The hull is nothing like a circle -- yellow reaches far further out
+    // than blue -- so "hold chroma constant across these hues" is only a
+    // request that can be granted up to the SMALLEST hull among them.
+    function maxChroma(L, H) {
+        if (H === null) return 0;
+        const h = H / DEG, cos = Math.cos(h), sin = Math.sin(h);
+        let lo = 0, hi = 0.4;
+        for (let i = 0; i < 24; i++) {
+            const mid = (lo + hi) / 2;
+            if (inGamut({ L, a: mid * cos, b: mid * sin })) lo = mid; else hi = mid;
+        }
+        return lo;
+    }
+
+    function contrast(hex1, hex2) {
+        const a = relativeLuminance(hex1), b = relativeLuminance(hex2);
+        return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    }
+
+    // Perceptual distance, so "widest gap" means the gap that LOOKS widest.
+    // Hue distance would call red->green and green->blue equal at 120
+    // degrees each when the eye does not read them that way at all.
+    function oklabDistance(hex1, hex2) {
+        const c1 = hexToOklab(hex1);
+        const c2 = hexToOklab(hex2);
+        return Math.hypot(c1.L - c2.L, c1.a - c2.a, c1.b - c2.b);
+    }
+
+    // Signed shortest arc, so a palette walking one way round the wheel
+    // reads as consistent rather than as alternating +350/-10.
+    function hueDelta(from, to) {
+        return ((to - from + 180) % 360 + 360) % 360 - 180;
+    }
+
+    return Object.freeze({
+        hslToHex, hexToRgb, rgbToHex, srgbToLinear, linearToSrgb,
+        hexToOklab, oklabToLinear, GAMUT_EPS, inGamut, oklabToHex,
+        midpointColor, INK_CROSSOVER, relativeLuminance, inkOn, DEG,
+        hexToOklch, oklchToHex, maxChroma, contrast, oklabDistance,
+        hueDelta,
+    });
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = RadianceColor;
+/* end vendored: shared/radiance-color */
+
+</script>
+<script>/* gen/palette-sets.js (copied in by build_palettes.py; edit the source file) */
+/* Licorice's palette sets: Classic, Places (biomes: land / flora / fauna), Skies (day / sunset), Fades, Pairs
+   (duotones / tritones), and the five seeded methods behind New mix. Built on Radiance's engine
+   (vendor/radiance-color.js, global RadianceColor); the recipes and the named colours are Licorice's own.
+   One namespace (PSETS) because the app has its own globals (mulberry32, clamp, ...).
+   PSETS.catalog() -> [{id, name, items:[{id, name, sub, lines:[{id, label, colors:[[hex, why], ...]}]}]}] */
+const PSETS=(()=>{
+const RC=RadianceColor;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const wrap=h=>((h%360)+360)%360;
+function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+/* ---- colour helpers on the vendored engine ---- */
+function lch(L,C,H){H=wrap(H);return RC.oklchToHex({L,C:Math.min(C,RC.maxChroma(L,H)),H});}
+// dark yellow-greens read as olive: slide them to ochre/brown or to green (same guard as mix@2)
+function guard(L,H){H=wrap(H);if(H>85&&H<140&&L<.8){const k=Math.min(1,(.8-L)/.3);H=H<112?H+(65-H)*k:H+(150-H)*k;}return H;}
+function vivid(L,H,k=.85,cap=.25){H=guard(L,H);return lch(L,Math.min(cap,RC.maxChroma(L,H)*k),H);}
+const cuspCache={};
+// the lightness where a hue reaches its strongest colour: yellow peaks light, blue and violet peak dark
+function cuspL(H){const h=Math.round(wrap(H));if(cuspCache[h]!=null)return cuspCache[h];
+  let best=.6,bc=0;for(let L=.3;L<=.97;L+=.01){const c=RC.maxChroma(L,h);if(c>bc){bc=c;best=L;}}return cuspCache[h]=best;}
+// hue shift along a ramp: lighter leans to yellow, darker leans to blue (sunlight and shade)
+function shifted(H,L,amt=16){const t=clamp((L-.6)/.33,-1,1),target=t>0?95:268;
+  const d=RC.hueDelta(H,target);return wrap(H+clamp(d,-amt,amt)*Math.abs(t));}
+function ramp(H,L0,L1,n,k=.8,why=''){const o=[];for(let i=0;i<n;i++){const L=L0+(L1-L0)*(n>1?i/(n-1):.5);
+  const Hs=shifted(H,L);o.push([vivid(L,Hs,k),why]);}return o;}
+function neutralRamp(H,L0,L1,n,C=.018,why=''){const o=[];for(let i=0;i<n;i++){const L=L0+(L1-L0)*(n>1?i/(n-1):.5);o.push([lch(L,C,H),why]);}return o;}
+const grey=hex=>{const L=RC.hexToOklab(hex).L;return RC.oklchToHex({L,C:0,H:0});};
+function closest(p){let m=9;for(let i=0;i<p.length;i++)for(let j=i+1;j<p.length;j++)m=Math.min(m,RC.oklabDistance(p[i],p[j]));return m;}
+// one line, ordered round the wheel starting after the widest hue gap; light before dark inside a family; greys last
+function lineOrder(items){
+  const ch=[],ne=[];items.forEach(it=>{const o=RC.hexToOklch(it[0]);(o.C<.035?ne:ch).push({it,o});});
+  ch.sort((a,b)=>a.o.H-b.o.H);let start=0,gap=-1;
+  for(let i=0;i<ch.length;i++){const g=wrap(ch[(i+1)%ch.length].o.H-ch[i].o.H)||360;if(g>gap){gap=g;start=(i+1)%ch.length;}}
+  const rot=ch.slice(start).concat(ch.slice(0,start));
+  // group into 30-degree families along the rotated order, light to dark inside each
+  const fam=[];rot.forEach(x=>{const f=fam[fam.length-1];if(f&&RC.hueDelta(f[0].o.H,x.o.H)<30)f.push(x);else fam.push([x]);});
+  return fam.flatMap(f=>f.sort((a,b)=>b.o.L-a.o.L)).concat(ne.sort((a,b)=>b.o.L-a.o.L)).map(x=>x.it);
+}
+
+/* ---- 1. today's presets (from double-blob-v29.html CURATED) ---- */
+const PRESETS=[
+ ['Markers',['#e0262f','#f06aa6','#c2185b','#f58a1f','#f7c613','#9ccc3c','#3f9142','#1f5e3a','#1aa6a0','#53b8ee','#2f6fd6','#1f2a7a','#7b4bc4','#b9a3e8','#8a5a35','#f4c7a1']],
+ ['Sunset',['#2b1b3f','#4b2a5e','#7a2e6e','#b23a6f','#e0506b','#f2786a','#f79d65','#fbc36b','#ffe29a','#fff3d6','#8e5c9e','#c97fb0','#e8a9c5','#3d5a80','#98c1d9','#5a3d7a']],
+ ['Ocean',['#03224c','#063970','#0b5394','#1c7fb6','#34a0c9','#6cc3d5','#a8e0e0','#e0f5f1','#0e6b62','#148f77','#40b59a','#8fd4b7','#f2e8cf','#e0b872','#c9824b','#7a4a2a']],
+ ['Candy',['#ffadad','#ffd6a5','#fdffb6','#caffbf','#9bf6ff','#a0c4ff','#bdb2ff','#ffc6ff','#ff8fab','#fb6f92','#ffb3c6','#cdb4db','#a2d2ff','#bde0fe','#f1faee','#8d99ae']],
+ ['Earth',['#3d2b1f','#6b4226','#8c5a3c','#b07d52','#d4a373','#e9c46a','#f4e3c1','#606c38','#283618','#8a9a5b','#bc6c25','#dda15e','#9c6644','#a3b18a','#588157','#7f5539']],
+ ['Neon',['#ff006e','#fb5607','#ffbe0b','#8338ec','#3a86ff','#00f5d4','#00bbf9','#f15bb5','#fee440','#9b5de5','#06d6a0','#ef476f','#ffd166','#118ab2','#7bff00','#ff4d00']],
+ ['Jewel',['#0b3954','#087e8b','#bfd7ea','#ff5a5f','#c81d25','#6a0572','#ab83a1','#1b998b','#2d3047','#fffd82','#ff9b71','#e84855','#3c1642','#086375','#1dd3b0','#affc41']]
+];
+
+/* ---- 2. biomes, built like the Ocean preset: one big family, one supporting family, one small accent.
+   Each family is a run of NAMED control colours (dark to light, named after things in that place, the Werner 1814
+   idea); one bridge between each pair fills it out (Radiance wheel midpoint). 4+3+2 controls = 7+5+3 = 15 colours. */
+const BIOMES=[
+ ['Rain forest','Pacific Northwest: firs, moss, cedar bark, fog',
+  [['fir shadow','#0e2a26'],['Douglas fir','#1f5048'],['cedar bough','#3b7d5e'],['sword fern','#8fbf72']],
+  [['wet soil','#2e2119'],['cedar bark','#6b3f2a'],['nurse log','#b48a64']],
+  [['rain cloud','#7f939b'],['fog','#e2e9e8']]],
+ ['Jungle','tropical: deep greens, bark, one bright bird',
+  [['canopy shade','#0f2e1a'],['leaf','#1f6b3a'],['fern','#4caf50'],['new shoot','#b8e07a']],
+  [['root','#3a2418'],['bark','#7a4a2c'],['dry leaf','#c49a6c']],
+  [['macaw','#d7263d'],['toucan beak','#f6a623']]],
+ ['Coral reef','water over sand, coral in between',
+  [['deep reef','#0f3460'],['reef water','#1b6fb3'],['lagoon','#2fb7c9'],['shallows','#bdeee8']],
+  [['red coral','#b8354a'],['pink coral','#ff8c94'],['polyp','#ffd6cc']],
+  [['wet sand','#c9a575'],['white sand','#fbf0d9']]],
+ ['Desert','sun-baked rock, big sky, a little cactus',
+  [['canyon shadow','#4f2618'],['mesa','#a5482b'],['terracotta','#d9774b'],['dune','#f0c88e']],
+  [['dusk','#4d4a7a'],['noon sky','#7fb3d5'],['haze','#dcecf3']],
+  [['cactus','#2f5e45'],['sagebrush','#9db3a0']]],
+ ['Tundra','stone and snow, ice-blue, small red berries',
+  [['peat','#3b2e26'],['rock','#6e6a63'],['lichen','#bdb592'],['snow','#f3f6f8']],
+  [['glacial lake','#2f5d7c'],['melt water','#5aa9c9'],['ice','#c7e4f0']],
+  [['bearberry','#a0233a'],['cloudberry','#f08a24']]],
+ ['Savanna','gold grass, red earth, flat-top trees',
+  [['grass root','#7a5420'],['tall grass','#c9962f'],['dry grass','#e2c06b'],['straw','#f5e6b5']],
+  [['red earth shade','#5a2618'],['red earth','#b4532a'],['dust','#e08f5c']],
+  [['acacia','#3f6b3a'],['acacia leaf','#8bab6a']]],
+ ['Deep sea','dark water, things that glow',
+  [['midnight','#05081c'],['abyss','#14215a'],['twilight water','#2d4fa0'],['last light','#6f9ad8']],
+  [['glow shadow','#0e6f78'],['glow','#2de2e6'],['glow edge','#b9fbf5']],
+  [['jelly','#a0306a'],['comb jelly','#ff6fb5']]],
+ ['Autumn woods','turning leaves, bark, a few evergreens',
+  [['maple shadow','#6e1a14'],['maple','#c62d1f'],['pumpkin','#e8731b'],['birch','#f2b134']],
+  [['wet bark','#3b2a20'],['oak leaf','#7a4a24'],['mushroom','#c9a27e']],
+  [['pine','#1f4d3a'],['pine light','#6d9a7c']]],
+ ['Alpine meadow','sky and lake, meadow, alpenrose',
+  [['lake depth','#14365a'],['gentian sky','#2f6fae'],['high sky','#7fb5e3'],['glacier','#dff2fb']],
+  [['spruce','#24543a'],['meadow','#4f8f45'],['spring grass','#a5d07a']],
+  [['alpenrose','#c2306a'],['alpenrose light','#f39ab8']]],
+ ['Wetland','still water, reeds, a lotus',
+  [['pond bottom','#23343a'],['pond','#4f7f8f'],['heron','#8eb3b8'],['morning mist','#e7ece4']],
+  [['cattail','#5a4326'],['reed','#a8894e'],['reed tip','#e0cf96']],
+  [['lotus','#c2457a'],['lotus light','#f6bfd0']]],
+ ['Polar night','night and ice, green aurora, a violet edge',
+  [['night','#0b1636'],['polar blue','#2a3f7a'],['glacier','#6fb6d9'],['snow','#f6f9fb']],
+  [['aurora deep','#0e6b55'],['aurora','#3ddc97'],['aurora light','#b7f5d8']],
+  [['aurora violet','#6a3fd0'],['aurora pink','#d84fd1']]],
+ ['Volcano','ash and basalt, fire, first regrowth',
+  [['obsidian','#121016'],['basalt','#3a3638'],['ash','#8d8a88'],['steam','#e6e9ec']],
+  [['magma','#7a0010'],['lava','#e0300b'],['ember','#ffb000']],
+  [['new fern','#2e6a2e'],['fern light','#8cc56a']]],
+];
+function family(ctrl){const o=[];ctrl.forEach(([n,h],i)=>{o.push([h,n]);
+  if(i<ctrl.length-1)o.push([RC.midpointColor(h,ctrl[i+1][1],'wheel'),'between '+n+' and '+ctrl[i+1][0]]);});return o;}
+/* ---- 2c. fades: bridges all the way. Three named controls, dark to light; wheel bridges keep colour when the
+   fade walks across hues, blend bridges take the true middle for soft fades. */
+const FADES=[
+ ['Dawn','night into first light',[['night','#1b2350'],['dawn rose','#d77a8e'],['first light','#fbe7b4']],'wheel'],
+ ['Dusk','the sun just gone',[['deep dusk','#2a1840'],['afterglow','#b4365e'],['last orange','#f39a4a']],'wheel'],
+ ['Golden hour','long warm light',[['long shadow','#4a2a1a'],['amber','#d98a2a'],['warm light','#fff0c8']],'blend'],
+ ['Deep to shore','from open water up the beach',[['abyss','#061a3a'],['sea','#1f7aa8'],['wet sand','#f2e6c4']],'wheel'],
+ ['Northern lights','green curtains into violet',[['arctic night','#0a1430'],['aurora green','#3ad69a'],['aurora haze','#e2c8ff']],'wheel'],
+ ['Lagoon','deep channel to white sand',[['channel','#0b3a44'],['turquoise','#2cc0c0'],['white sand','#f6f4e6']],'blend'],
+ ['Ember','charcoal to flame',[['charcoal','#1a0e0a'],['ember','#c0281a'],['flame tip','#ffd24a']],'wheel'],
+ ['Moonlight','blue night, silver moon',[['midnight','#0e1424'],['moonlit blue','#6a7ea8'],['moon','#eef0f4']],'blend'],
+ ['Ink wash','brush ink thinned on paper',[['ink','#15171d'],['wash','#7c8494'],['paper','#f4f1ea']],'blend'],
+ ['Plum & peach','dark fruit to soft skin',[['plum','#3a1a3a'],['mauve','#a46a8a'],['peach','#ffd2b0']],'blend'],
+ ['Lavender field','rows of lavender into haze',[['row shadow','#2a2050'],['lavender','#8a6ad0'],['lavender haze','#ece2fa']],'blend'],
+ ['Rose','deep petal to blush',[['dark rose','#4a0e22'],['rose','#d24a6a'],['blush','#fde0e6']],'blend'],
+ ['Glacier','crevasse to snow',[['crevasse','#0e2e4a'],['glacier blue','#4aa6d0'],['snow','#f4fbff']],'blend'],
+ ['Fern','shade to a new frond',[['fern shade','#0f2a1e'],['fern','#3f9a5a'],['new frond','#d8f0b0']],'blend'],
+ ['Desert heat','canyon to shimmering haze',[['canyon','#3a1a12'],['terracotta','#d0643a'],['heat haze','#fbe4c8']],'blend'],
+ ['Cherry blossom','dark bark, pink petals',[['wet bark','#2e1e22'],['blossom','#e89ab4'],['petal','#fff4f6']],'blend'],
+ ['Copper','green patina to bright copper',[['patina','#2a6a5a'],['copper','#b8642a'],['polished','#f2c09a']],'blend'],
+];
+// bridges all the way: keep the named controls, put a bridge between every pair, repeat (3 controls, 3 rounds -> 17)
+function bridgesAll(ctrl,rounds,mode='blend'){let p=ctrl.map(([n,h])=>[h,n]);
+  for(let k=0;k<rounds;k++){const q=[p[0]];for(let i=1;i<p.length;i++){q.push([RC.midpointColor(p[i-1][0],p[i][0],mode),'bridge']);q.push(p[i]);}p=q;}
+  return p;}
+function biome([n,sub,A,B,C]){return family(A).concat(family(B),family(C));}
+
+/* flora and fauna: two more lines under a biome, same build (big family, supporting family, small accent) */
+const BIOTA={
+ 'Rain forest':{
+  flora:[[['sword fern','#1d3f2c'],['salal','#2f5e3a'],['vine maple','#6f9a3e'],['licorice fern','#a6c96a']],
+         [['huckleberry','#4a1730'],['red huckleberry','#b0283f'],['salmonberry','#f08a5d']],
+         [['skunk cabbage','#e8c22e'],['trillium','#f6f0ea']]],
+  fauna:[[['raven','#16161c'],['black bear','#3a2c26'],['elk','#8a6440'],['elk rump','#d9bf95']],
+         [['Steller\'s jay','#1b2f6b'],['jay wing','#2f5fb0'],['jay light','#8fb4e4']],
+         [['sockeye salmon','#c3272b'],['banana slug','#e9c53a']]]},
+ 'Coral reef':{
+  flora:[[['deep seagrass','#1f4d36'],['seagrass','#2e7d4a'],['sea lettuce','#5fae6a'],['seagrass tip','#b6e3a6']],
+         [['red algae','#6b1a2e'],['coralline','#b8354a'],['coralline light','#f08b8b']],
+         [['sea fan','#7b2d8e'],['sea fan light','#c99be0']]],
+  fauna:[[['parrotfish deep','#0e2f6b'],['blue tang','#1d5fd0'],['damselfish','#3fb5e8'],['fin glow','#bfe8f8']],
+         [['clownfish edge','#a8340f'],['clownfish','#f26b1d'],['clownfish light','#ffd2a6']],
+         [['yellow tang','#e8b800'],['sea slug','#7b2d8e']]]},
+ 'Desert':{
+  flora:[[['cactus shadow','#22412f'],['saguaro','#3f6e4a'],['sage','#7fa37a'],['sage dust','#cfdcc2']],
+         [['prickly pear fruit','#8a1f4f'],['cactus bloom','#e05a8b'],['bloom light','#f6b3cb']],
+         [['desert marigold','#f2c12e'],['cholla straw','#e8d9a8']]],
+  fauna:[[['coyote shadow','#3a2a1e'],['jackrabbit','#7a5a3a'],['coyote','#b89064'],['pale belly','#ead7b5']],
+         [['gila black','#1f1a1a'],['gila monster','#e2683c'],['gila light','#f2a679']],
+         [['vermilion flycatcher','#d42a1f'],['mountain bluebird','#4a7fc5']]]},
+ 'Jungle':{
+  flora:[[['forest-floor fern','#163a22'],['philodendron','#2a6b35'],['banana leaf','#5aa84a'],['bamboo','#c4e08a']],
+         [['heliconia shade','#7a1222'],['heliconia','#d9302a'],['heliconia tip','#f6a03a']],
+         [['orchid','#b04fb8'],['frangipani','#f8ecd2']]],
+  fauna:[[['jaguar spot','#1f1712'],['jaguar shade','#7a4a1e'],['jaguar','#d29a3e'],['jaguar belly','#f1dfb4']],
+         [['morpho shade','#0d2f7a'],['morpho','#1e74e0'],['morpho shine','#8fd0ff']],
+         [['poison frog','#e8402a'],['tree frog','#5ccf3a']]]},
+ 'Tundra':{
+  flora:[[['crowberry leaf','#22372a'],['dwarf willow','#4f6b45'],['reindeer moss','#b3b596'],['cotton grass','#f1efe6']],
+         [['fireweed shade','#6a1f52'],['fireweed','#c2459a'],['fireweed light','#eaa6d4']],
+         [['arctic poppy','#f2d03a'],['bilberry','#3b3f8a']]],
+  fauna:[[['musk ox','#2b221d'],['caribou','#6e5a48'],['caribou light','#b8a48c'],['snowy owl','#f4f3ee']],
+         [['arctic fox blue','#4a5560'],['fox grey','#8e98a0'],['fox winter coat','#e6eaee']],
+         [['ptarmigan comb','#c4302b'],['snow bunting','#c98a3a']]]},
+ 'Savanna':{
+  flora:[[['acacia shade','#24402a'],['acacia','#4f7a3a'],['acacia leaf','#8fae5a'],['new grass','#d4e2a0']],
+         [['baobab','#5e4636'],['baobab bark','#9a7a62'],['baobab pod','#d9c4a2']],
+         [['aloe flower','#e2462a'],['flame lily','#f2a22a']]],
+  fauna:[[['lion mane','#4a2c14'],['lion','#b07a3a'],['lion light','#dcb26c'],['lion belly','#f2e2bc']],
+         [['zebra','#1a1a1c'],['wildebeest','#5c5a58'],['zebra white','#f2f0ea']],
+         [['lilac-breasted roller','#7d5ab8'],['roller blue','#2fa0d8']]]},
+ 'Deep sea':{labels:{flora:'sea floor (no plants this deep)'},
+  flora:[[['vent chimney','#1c1a1e'],['vent rock','#4a3f3a'],['bacterial mat','#c9b07a'],['mat light','#f0e6c8']],
+         [['bamboo coral','#6b2a1a'],['deep coral','#c45a2e'],['coral light','#f2a07a']],
+         [['tube worm plume','#d2283c'],['glass sponge','#d6e6ea']]],
+  fauna:[[['anglerfish','#1a1414'],['viperfish','#2e3440'],['lanternfish','#6b7d96'],['lantern glow','#c6e2f2']],
+         [['vampire squid','#3a0a1a'],['vampire squid red','#9a1a2e'],['squid light','#e2687a']],
+         [['photophore','#3ef0ff'],['dumbo octopus','#f2a2b8']]]},
+ 'Autumn woods':{
+  flora:[[['oak shade','#3a2412'],['oak','#8a5a24'],['beech','#c9862e'],['ginkgo','#f2d24a']],
+         [['sumac shade','#5a0e1a'],['sumac','#b3222a'],['sumac light','#e86a4a']],
+         [['fly agaric','#d42a1f'],['moss','#4f8a4a']]],
+  fauna:[[['moose','#2a1e18'],['deer','#7a5232'],['deer light','#b88a5c'],['deer tail','#f0e4d0']],
+         [['red fox shade','#6a2a10'],['red fox','#c8581e'],['fox light','#eaa266']],
+         [['cardinal','#c8102e'],['blue jay','#3a6ec8']]]},
+ 'Alpine meadow':{
+  flora:[[['dwarf pine','#1f3f2c'],['alpine grass','#4f8a45'],['lady\'s mantle','#93c06a'],['dew','#e2f0d2']],
+         [['gentian deep','#1a2a7a'],['gentian','#2f52c8'],['harebell','#9fb2ee']],
+         [['alpine poppy','#f4c42a'],['edelweiss','#f2f0e6']]],
+  fauna:[[['ibex horn','#2a2420'],['ibex','#6e5a46'],['chamois','#b08e64'],['mountain hare','#ece6dc']],
+         [['marmot shade','#4a3426'],['marmot','#9a7450'],['marmot light','#d6b68c']],
+         [['apollo butterfly spot','#c8202e'],['chough beak','#f2c22a']]]},
+ 'Wetland':{
+  flora:[[['sedge shade','#1f3a2a'],['sedge','#3f7a4a'],['lily pad','#6fae5a'],['duckweed','#c2e07a']],
+         [['iris deep','#2e1f6b'],['wild iris','#6a4cb3'],['iris light','#b9a8ea']],
+         [['marsh marigold','#f5c22b'],['water lily','#f6d6e2']]],
+  fauna:[[['heron shadow','#2a3038'],['great blue heron','#5f7088'],['heron grey','#9fb0c0'],['egret','#f4f4ee']],
+         [['mallard head','#0f4a3a'],['mallard green','#1f7a5a'],['mallard light','#6fc29a']],
+         [['red-winged blackbird','#d4281e'],['wing stripe','#f2c43a']]]},
+ 'Polar night':{labels:{flora:'flora: lichen and snow algae'},
+  flora:[[['crust lichen','#2e2a26'],['rock lichen','#6a6050'],['map lichen','#b6c06a'],['frost','#eef2f0']],
+         [['snow algae deep','#7a1a2e'],['snow algae','#d65a6a'],['watermelon snow','#f4b6be']],
+         [['golden lichen','#c09a3a'],['moss campion','#d45aa8']]],
+  fauna:[[['orca','#0e0f14'],['seal','#4a5058'],['harp seal','#9aa2aa'],['polar bear','#f2efe4']],
+         [['narwhal','#3a4a5a'],['beluga shadow','#8aa6b8'],['beluga','#e6f0f4']],
+         [['puffin beak','#f26b1d'],['king eider','#5aa86a']]]},
+ 'Volcano':{
+  flora:[[['regrowth shade','#1f3a22'],['new fern','#2e6a2e'],['ohia leaf','#6aa04a'],['fern curl','#c2e08a']],
+         [['lichen shade','#3f4a44'],['silversword','#8fa39a'],['silversword light','#dbe4df']],
+         [['sulphur lichen','#e8d84a'],['ohia lehua','#d4202e']]],
+  fauna:[[['lava lizard','#2a2422'],['nene goose','#5a5048'],['nene','#a8957e'],['nene cheek','#ece0c4']],
+         [['booby feet shade','#1f5f7a'],['blue-footed booby','#3aa0c8'],['booby feet light','#a6e0ee']],
+         [['amakihi','#b8c43a'],['lava lizard throat','#e2563a']]]},
+};
+/* ---- 2b. skies: weather, each as a day line and a sunset line, same build as the biomes ---- */
+const SKIES=[
+ ['Thunderstorm','dark anvil clouds, rain curtains, lightning',
+  [[['anvil base','#1c2230'],['storm cloud','#3a4558'],['shelf cloud','#6f7d92'],['cloud top','#c9d2dd']],
+   [['rain shaft','#2d3f4f'],['rain curtain','#5d7487'],['spray','#a9bccb']],
+   [['lightning violet','#a98cf0'],['lightning','#f4f1ff']]],
+  [[['storm underside','#2a1f3a'],['bruised cloud','#5a3a62'],['mammatus','#a86a86'],['lit edge','#f0b8a0']],
+   [['ember sky','#8a2a1a'],['sunset orange','#e8642a'],['gold break','#f6b84a']],
+   [['storm teal','#2f5f6a'],['lightning','#f6f2ff']]]],
+ ['Eerie storm light','the green-yellow cast before a big storm arrives',
+  [[['green-black cloud','#1d2a26'],['storm green','#3f5a4a'],['eerie teal','#6f9a8a'],['sickly light','#c9dcae']],
+   [['ochre gloom','#6a5426'],['yellow cast','#c8a440'],['eerie yellow','#efe08a']],
+   [['funnel grey','#7a7e78'],['hail','#eef2ec']]],
+  [[['dark wall','#2a2420'],['copper cloud','#7a4a2a'],['orange cast','#d0803a'],['amber glow','#f2c27a']],
+   [['green tinge','#3e5a48'],['teal break','#6a9a8a'],['pale teal','#c4ded2']],
+   [['pink flash','#f08ab0'],['lightning','#fbf6ff']]]],
+ ['Snow','flat white sky, blue shadows',
+  [[['snow cloud','#5a6470'],['flat grey sky','#8e98a2'],['snowfall','#c9d0d8'],['fresh snow','#f6f8fb']],
+   [['snow shadow','#3a5a8a'],['blue shadow','#7a9ad0'],['shadow light','#c6d6f2']],
+   [['bare branch','#2e2624'],['winter berry','#b8283a']]],
+  [[['dusk snow cloud','#3e3a5a'],['lavender sky','#8a7ab0'],['pink snow','#e2b8cc'],['alpenglow','#fbe6e6']],
+   [['cold shadow','#2f4a7a'],['blue hour','#5f7ac0'],['ice blue','#b6c8ee']],
+   [['last sun','#f2a05a'],['warm window','#f6d27a']]]],
+ ['Rain','grey sky, wet streets',
+  [[['rain cloud','#2f3a44'],['wet sky','#5a6a78'],['rain grey','#94a2ae'],['bright overcast','#d6dde2']],
+   [['wet street','#22303a'],['puddle','#3e6a7a'],['reflection','#8ab8c6']],
+   [['umbrella','#d8342a'],['raincoat','#f2c23a']]],
+  [[['rain dusk','#2e2a40'],['wet violet','#5e4a72'],['rose cloud','#b07a96'],['peach haze','#f0c2a8']],
+   [['dark street','#2a2a36'],['puddle glow','#a85a3a'],['puddle shine','#f2a05a']],
+   [['rain teal','#3f7a86'],['streetlight','#ffd68a']]]],
+ // mist is one continuous fade, so it is built the other way: three controls, then bridges of bridges (Gary)
+ ['Mist','one soft fade: a dark tree, the mist, the sun behind it',
+  [['dark tree','#2f3d3a'],['mist','#a7b4b0'],['sun in mist','#f6ecd0']],
+  [['dusk hill','#3a3550'],['rose mist','#c09aa8'],['sun glow','#fbe2c0']],'bridges'],
+ ['Drizzle','light rain, rinsed greens',
+  [[['drizzle cloud','#4e5660'],['drizzle grey','#7c8690'],['soft grey','#adb6bd'],['pale sky','#dde2e5']],
+   [['wet leaf','#2f4a3a'],['wet grass','#4f7a5a'],['rinsed green','#93b89a']],
+   [['wet brick','#9a4a3a'],['yellow raincoat','#f2d04a']]],
+  [[['drizzle dusk','#4a4256'],['mauve drizzle','#857590'],['soft pink','#c8aab4'],['pale peach','#f0d8cc']],
+   [['wet slate','#3a4250'],['blue drizzle','#6a7a96'],['silver','#aab6c8']],
+   [['low sun','#f0a060'],['window light','#f8dc90']]]],
+ ['Forest mist','Pacific Northwest: lush greens fading into mist',
+  [[['near fir','#173a2c'],['wet fir','#2f5e48'],['firs in mist','#6f8f80'],['fir ghosts','#b4c6bd']],
+   [['moss','#3f7a3a'],['lush moss','#6fa84a'],['wet fern','#b2d48a']],
+   [['mist','#dfe6e3'],['wet cedar','#7a4a32']]],
+  [[['dusk fir','#1f2e2a'],['fir in gold mist','#4a5a40'],['gold mist','#b8a878'],['lit mist','#f2e2b8']],
+   [['moss in shade','#2f5030'],['moss','#5f8a3a'],['backlit fern','#c2d86a']],
+   [['sunbeam','#f8d27a'],['rose mist','#e2b8b0']]]],
+];
+
+/* ---- 3. duotones / tritones: families, one led dark, one led light ---- */
+// hue numbers are OKLCH degrees
+const DUOS=[
+ ['Navy & Marigold',265,75,'blue with gold/orange: the best-liked pair in the 2025 pairing study'],
+ ['Teal & Coral',195,35,'a warm colour with cyan: popular in O\'Donovan\'s 2011 palette data'],
+ ['Indigo & Apricot',282,62,'cool dark with warm light, the way light falls outdoors'],
+ ['Plum & Butter',325,100,'natural order: yellow lives light, violet lives dark'],
+ ['Rust & Sky',42,236,'roles swapped: the warm family carries the darks'],
+ ['Pine & Peach',158,52,'green and orange-pink, opposite temperatures'],
+ ['Forest & Rose',150,5,'near-complements, kept apart by lightness'],
+ ['Ink & Tomato',null,30,'print duotone: black ink plus one colour'],
+];
+const TRIS=[
+ ['Navy, Gold & Coral',265,85,30],
+ ['Teal, Sand & Tomato',200,80,28],
+ ['Plum, Peach & Mint',320,58,165],
+ ['Forest, Butter & Berry',150,100,355],
+ ['Indigo, Apricot & Turquoise',282,62,200],
+ ['Ink, Paper & Vermilion',null,80,32],
+];
+function duo([name,a,b,why]){
+  const A=a==null?neutralRamp(60,.2,.62,5,.012,'family 1 (dark-led): neutral ink'):ramp(a,.27,.72,5,.85,'family 1, led dark');
+  const B=ramp(b,.58,.95,5,.85,'family 2, led light');
+  return A.concat(B);
+}
+function tri([name,a,b,c]){
+  const A=a==null?neutralRamp(60,.2,.6,5,.012,'family 1: neutral ink'):ramp(a,.27,.7,5,.85,'family 1, led dark');
+  const B=ramp(b,.6,.95,4,.8,'family 2, led light');
+  const C=ramp(c,.5,.78,3,.9,'family 3: the accent, small amounts');
+  return A.concat(B,C);
+}
+
+/* ---- 4. methods (seeded) ---- */
+const METHODS=[
+ {id:'wheel',name:'Wheel rules',src:'Adobe Color / Itten: hues placed by angle (analogous, split complement, triad, complement), each at a few lightnesses. O\'Donovan 2011: these templates alone don\'t predict which palettes people like. Shown as the baseline.',
+  make(r){const H=r()*360,rules=[['analogous',[0,30,60]],['split complement',[0,150,210]],['triad',[0,120,240]],['complement',[0,180]]],[rn,off]=rules[Math.floor(r()*rules.length)];
+   const out=[];off.forEach(d=>{const n=off.length==2?5:4;for(let i=0;i<n;i++){const L=.42+.46*i/(n-1);out.push([vivid(L,H+d,.75),rn+' '+(d?'+'+d+'°':'base')]);}});return{items:out,tag:rn};}},
+ {id:'natural',name:'Natural order',src:'Judd / Munsell: each hue sits at its own natural lightness, where it is strongest (yellow light, orange mid, blue and violet dark). Pairs that follow this order look right; reversed (dark yellow, pale navy) looks muddy.',
+  make(r){const H=r()*360,n=4+Math.floor(r()*2),step=25+r()*20,out=[];
+   for(let i=0;i<n;i++){const h=H+i*step,L=clamp(cuspL(h)+(r()-.5)*.08,.3,.93);out.push([vivid(L,h,.9),'hue at its natural lightness']);
+     out.push([vivid(clamp(L+.17,.4,.96),shifted(h,L+.17),.6),'its tint (towards sunlight)']);}
+   const h0=H+step*(n-1)/2;out.push([vivid(.3,shifted(h0,.3),.7),'one deep shade for edges']);return{items:out,tag:n+' hues, '+Math.round(step)+'° apart'};}},
+ {id:'line',name:'Bridges all the way',src:'"Lines in colour space" (arXiv 1709.02252: straight-line palettes were preferred) built Radiance\'s way: two control colours, a dark cool one and a light warm one, and every colour between is a bridge, then bridges of bridges.',
+  make(r){const Hd=200+r()*110,Hl=Hd+180+(r()-.5)*90;const a=vivid(.28,Hd,.9),b=vivid(.92,Hl,.9);
+   let p=[a,b];for(let k=0;k<3;k++){const q=[p[0]];for(let i=1;i<p.length;i++){q.push(RC.midpointColor(p[i-1],p[i],'wheel'));q.push(p[i]);}p=q;}
+   return{items:p.map((h,i)=>[h,i==0||i==p.length-1?'control colour':'bridge (wheel)']),tag:'9 from 2 controls',ordered:true};}},
+ {id:'pigment',name:'Limited pigments',src:'Painters\' limited palettes (Zorn: ochre, vermilion, black, white; split primary; earth). Every swatch is a mix of a few real pigments, so everything shares the same ingredients. Mixed here in OKLab as an approximation of paint.',
+  sets:[['Zorn',{ochre:'#c8963e',vermilion:'#e34234','ivory black':'#28241f',white:'#f5f2ea'}],
+        ['Earth + blue',{'burnt sienna':'#8a3e1e','yellow ochre':'#cf9a3a',ultramarine:'#2a3a9a',white:'#f6f3ec'}],
+        ['Split primary',{lemon:'#f4e04d','cad yellow':'#f6b12a','cad red':'#e0352b',alizarin:'#a3203f',ultramarine:'#2a3a9a',phthalo:'#0f5b78',white:'#f7f5ef'}]],
+  make(r,i){const [nm,pg]=this.sets[i%3],names=Object.keys(pg).filter(k=>k!='white'),W=pg.white,out=[];
+   const mix=(x,y,t)=>{const A=RC.hexToOklab(x),B=RC.hexToOklab(y);return RC.oklabToHex({L:A.L+(B.L-A.L)*t,a:A.a+(B.a-A.a)*t,b:A.b+(B.b-A.b)*t});};
+   names.forEach(n=>out.push([pg[n],n]));
+   for(let a=0;a<names.length;a++)for(let b=a+1;b<names.length;b++){const t=.35+r()*.3;out.push([mix(pg[names[a]],pg[names[b]],t),names[a]+' + '+names[b]]);}
+   names.forEach(n=>out.push([mix(pg[n],W,.55),n+' + white']));
+   let o=out;while(o.length>14){o.splice(Math.floor(r()*(o.length-names.length))+names.length,1);} // keep the pure pigments
+   return{items:o,tag:nm};}},
+ {id:'notan',name:'Quiet, middle, loud',src:'Munsell\'s area rule (large areas quiet, small areas strong) and the colourists\' 60-30-10: one quiet family for big fields across the whole value range, one middle family, one loud accent used sparingly.',
+  make(r){const H=r()*360,H2=H+(r()<.5?1:-1)*(30+r()*30),H3=H+150+r()*60,out=[];
+   for(let i=0;i<6;i++){const L=.3+.62*i/5;out.push([lch(L,.035+.02*r(),guard(L,shifted(H,L))),'quiet: big fields']);}
+   for(let i=0;i<4;i++){const L=.45+.4*i/3;out.push([vivid(L,shifted(H2,L),.55),'middle: medium areas']);}
+   const L3=cuspL(H3);out.push([vivid(L3,H3,.95),'loud: small touches']);out.push([vivid(clamp(L3-.15,.35,.8),H3,.95),'loud, darker']);
+   return{items:out,tag:'60 / 30 / 10',ordered:true};}},
+];
+
+
+/* ---- suggestions for the next control colour (the maker's five rules) ---- */
+const warm=H=>H<110||H>330;
+const SUGGEST=[
+ ['Next in natural order','turns the wheel 35° onward and puts that hue at its natural lightness',a=>{const o=RC.hexToOklch(a.at(-1)),p=a.length>1?RC.hexToOklch(a.at(-2)):null;
+   const dir=p&&o.H!=null&&p.H!=null?Math.sign(RC.hueDelta(p.H,o.H))||1:1,H=(o.H??60)+35*dir;return vivid(cuspL(H),H,.88);}],
+ ['Light–dark see-saw','stays close in hue (20° on) but flips the value: light after dark, dark after light',a=>{const o=RC.hexToOklch(a.at(-1)),H=(o.H??60)+20,L=o.L>.6?.32:.88;return vivid(L,shifted(H,L),.85);}],
+ ['Warm ↔ cool','crosses to the other temperature, at a contrasting value',a=>{const o=RC.hexToOklch(a.at(-1)),H=o.H??60,T=warm(H)?235:62,L=clamp(o.L>.6?o.L-.3:o.L+.3,.3,.92);return vivid(L,shifted(T,L),.85);}],
+ ['Continue the line','extends the straight line through the last two controls (needs two)',a=>{if(a.length<2)return null;const x=RC.hexToOklab(a.at(-2)),y=RC.hexToOklab(a.at(-1));
+   const L=clamp(2*y.L-x.L,.22,.95);return RC.oklabToHex({L,a:2*y.a-x.a,b:2*y.b-x.b});}],
+ ['Accent','the colour opposite your controls, at full strength: for the one field that breaks the rule',a=>{let sa=0,sb=0;a.forEach(h=>{const o=RC.hexToOklab(h);sa+=o.a;sb+=o.b;});
+   const H=wrap(Math.atan2(sb,sa)*180/Math.PI+180);return vivid(cuspL(H),H,.95);}],
+];
+
+/* ---- recipes: every palette is FAMILIES of named controls plus rounds of bridges. The list and the maker both
+   build colours from a recipe with build(), so a palette opened in the maker is exactly the one in the list.
+   recipe = {families:[{controls:[[name,hex]...], rounds:0-3, mode:'wheel'|'blend'}]} */
+function expand(f){let p=f.controls.map(([n,h])=>[h,n]);
+  for(let k=0;k<(f.rounds||0);k++){const q=[p[0]];for(let i=1;i<p.length;i++){const A=p[i-1],B=p[i];
+    q.push([RC.midpointColor(A[0],B[0],f.mode||'wheel'),k==0&&A[1]&&B[1]?'between '+A[1]+' and '+B[1]:'bridge']);q.push(B);}p=q;}
+  return p;}
+const build=r=>r.families.flatMap(expand);
+const fams=(list,rounds,mode)=>({families:list.map(c=>({controls:c,rounds,mode}))});
+const chunks=(items,sizes)=>{let k=0;return{families:sizes.map(n=>({controls:items.slice(k,k+=n).map(([h,w])=>[w,h]),rounds:0,mode:'wheel'}))};};
+const withColors=(id,label,recipe)=>({id,label,recipe,colors:build(recipe)});
+
+/* ---- the grouped catalog the picker dials down through: group -> item -> its lines ---- */
+const slug=t=>t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+function catalog(){
+  const keep=['Markers','Sunset','Ocean'];
+  return[
+   {id:'classic',name:'Classic',items:PRESETS.filter(p=>keep.includes(p[0])).map(([n,c])=>({id:'classic:'+slug(n),name:n,sub:'',
+     lines:[withColors('classic:'+slug(n),'',{families:[{controls:c.map(h=>['',h]),rounds:0,mode:'wheel'}]})]}))},
+   {id:'places',name:'Places',items:BIOMES.map(b=>{const id='place:'+slug(b[0]),x=BIOTA[b[0]],lines=[withColors(id+':land','land',fams([b[2],b[3],b[4]],1,'wheel'))];
+     if(x){lines.push(withColors(id+':flora',(x.labels&&x.labels.flora)||'flora',fams(x.flora,1,'wheel')));
+           lines.push(withColors(id+':fauna','fauna',fams(x.fauna,1,'wheel')));}
+     return{id,name:b[0],sub:b[1],lines};})},
+   {id:'skies',name:'Skies',items:SKIES.map(([n,sub,day,dusk,how])=>{const id='sky:'+slug(n),mk=x=>how=='bridges'?fams([x],3,'blend'):fams(x,1,'wheel');
+     return{id,name:n,sub,lines:[withColors(id+':day','day',mk(day)),withColors(id+':sunset','sunset',mk(dusk))]};})},
+   {id:'fades',name:'Fades',items:FADES.map(([n,sub,c,m])=>({id:'fade:'+slug(n),name:n,sub,lines:[withColors('fade:'+slug(n),'',fams([c],3,m))]}))},
+   {id:'pairs',name:'Pairs',items:DUOS.map(d=>({id:'pair:'+slug(d[0]),name:d[0],sub:'duotone',lines:[withColors('pair:'+slug(d[0]),'',chunks(duo(d),[5,5]))]}))
+     .concat(TRIS.map(t=>({id:'pair:'+slug(t[0]),name:t[0],sub:'tritone',lines:[withColors('pair:'+slug(t[0]),'',chunks(tri(t),[5,4,3]))]})))},
+  ];
+}
+// a seeded method's result as a recipe: one family, every colour a control (no bridges)
+function methodRecipe(k,seed){const m=METHODS[k],r=mulberry32(seed),res=m.make(r,seed%3),items=res.ordered?res.items:lineOrder(res.items);
+  if(m.id=='line')return{families:[{controls:[['dark control',items[0][0]],['light control',items.at(-1)[0]]],rounds:3,mode:'wheel'}]}; // keep its build: 2 controls, 3 rounds
+  return{families:[{controls:items.map(([h,w])=>[w||'',h]),rounds:0,mode:'wheel'}]};}
+return{RC,clamp,wrap,mulberry32,lch,guard,vivid,cuspL,shifted,ramp,neutralRamp,grey,closest,lineOrder,
+  PRESETS,BIOMES,BIOTA,SKIES,FADES,DUOS,TRIS,family,bridgesAll,biome,duo,tri,METHODS,catalog,SUGGEST,warm,expand,build,methodRecipe};
+})();
+
+</script>
+<script>
+const P=PSETS,RC=RadianceColor;
+const store={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
+const us=t=>String(t).replace(/([Cc])olour/g,'$1olor'); // the palette data's notes use 'colour'; this page speaks like the app
+const esc=t=>us(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const HEX=/^#[0-9a-f]{6}$/i,MAXC=24; // MAXC: most colors a palette may have
+/* Anything that was not built on this page in this visit (storage, a shared link) is checked before use:
+   a recipe is families of [name, #rrggbb] controls, 0-3 rounds, wheel or blend, 24 colors at most. */
+function cleanRecipe(r){if(!r||!Array.isArray(r.families)||!r.families.length||r.families.length>8)return null;const fams=[];let n=0;
+  for(const f of r.families){if(!f||!Array.isArray(f.controls)||!f.controls.length||f.controls.length>MAXC)return null;const cs=[];
+    for(const c of f.controls){if(!Array.isArray(c)||!HEX.test(c[1]))return null;cs.push([String(c[0]??'').slice(0,60),c[1].toLowerCase()]);}
+    const rounds=[0,1,2,3].includes(f.rounds)?f.rounds:0;let m=cs.length;for(let k=0;k<rounds;k++)m=2*m-1;n+=m;
+    fams.push({controls:cs,rounds,mode:f.mode=='blend'?'blend':'wheel'});}
+  return n>96?null:{families:fams};}
+const readArr=k=>{try{const v=JSON.parse(store.get(k)||'[]');return Array.isArray(v)?v:[];}catch(e){return[];}};
+const readMine=()=>readArr('licorice-pal-mine').map(m=>{const r=m&&cleanRecipe(m.recipe);return r&&/^mine:[a-z0-9]+$/.test(m.id)?{id:m.id,name:String(m.name||'My palette').slice(0,60),recipe:r}:null;}).filter(Boolean);
+const readIds=k=>readArr(k).filter(x=>typeof x=='string'&&x.length<80);
+const readSets=()=>readArr('licorice-pal-app-sets').filter(x=>x&&Array.isArray(x.picks)).map(x=>({id:String(x.id||''),name:String(x.name||'Combination').slice(0,60),picks:x.picks.filter(p=>typeof p=='string'&&p.length<80).slice(0,3)}));
+let mine=readMine();
+let CAT=[];
+function rebuildCat(){CAT=P.catalog();
+  if(mine.length)CAT.unshift({id:'mine',name:'My palettes',items:mine.map(m=>({id:m.id,name:m.name,sub:'',mine:true,lines:[{id:m.id,label:'',recipe:m.recipe,colors:P.build(m.recipe)}]}))});}
+rebuildCat();
+let view='list',path=[],loadMode=false;
+let cur=store.get('licorice-pal-line')||'classic:markers',pick=0,pickSet=false; // pickSet: the person tapped a color in Your palette (Ripple builds its run around it)
+let draft=null; // {name, recipe, from (id of a saved one being edited)}
+try{draft=JSON.parse(store.get('licorice-pal-draft')||'null');if(draft){const r=cleanRecipe(draft.recipe);draft=r?{name:String(draft.name||'').slice(0,60),recipe:r,from:mine.some(m=>m.id==draft.from)?draft.from:null}:null;}}catch(e){draft=null;}
+const saveDraft=()=>store.set('licorice-pal-draft',JSON.stringify(draft));
+const findLine=id=>{if(id=='draft'&&draft)return{it:{name:draft.name||'Your draft'},ln:{label:'not saved',recipe:draft.recipe,colors:P.build(draft.recipe)}};
+  // a New mix rolled in the app ('nmix:<n>'): one of the five methods, seeded, so both pages build the same colors
+  if(/^nmix:\d{1,9}$/.test(id)){const n=+id.slice(5),k=n%P.METHODS.length,r=P.methodRecipe(k,n);return{it:{name:P.METHODS[k].name+' '+n,sub:'New mix from the app'},ln:{id,label:'',recipe:r,colors:P.build(r)}};}
+  for(const g of CAT)for(const it of g.items)for(const ln of it.lines)if(ln.id==id)return{g,it,ln};return null;};
+const strip=(cols,cls='strip',mark=-1)=>'<div class="'+cls+'">'+cols.map((c,k)=>'<i style="background:'+c[0]+(k==mark?';box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 4px #000':'')+'" title="'+esc((c[1]?c[1]+' ':'')+c[0])+'"></i>').join('')+'</div>';
+const clone=o=>JSON.parse(JSON.stringify(o));
+/* TAKE TO THE APP (Gary 2026-10-06): this page is where people play; they pick up to 3 palettes and only those show
+   in the app, so switching while coloring is one tap. Stored by line id; both pages share it (same site). */
+const MAXPICK=3;let picks=readIds('licorice-pal-app-picks').slice(0,MAXPICK);
+/* COMBINATIONS (Gary): the picks can be saved under a name and brought back as a group. */
+let sets=readSets(),lastGone=null;
+const saveSets=()=>{store.set('licorice-pal-app-sets',JSON.stringify(sets));renderPicks();};
+const sameSet=a=>a.length==picks.length&&a.every((x,i)=>x==picks[i]);
+/* SHARING a combination: a link whose #set= carries the name and the three palettes. List palettes travel as their
+   stable ids (a few characters); a home-made one travels as its recipe, so it rebuilds the same on any device. */
+const b64e=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const b64d=t=>JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/')))));
+function shareLink(set){const p=set.picks.map(id=>{if(id.startsWith('mine:')){const m=mine.find(x=>x.id==id);return m?{n:m.name,r:m.recipe}:null;}return id;}).filter(Boolean);
+  return location.origin+location.pathname+'#set='+b64e({n:set.name,p});}
+let gift=null; // a combination someone shared with you, waiting for Add / No thanks
+try{const m=location.hash.match(/^#set=(.+)$/);if(m&&m[1].length<20000){const o=b64d(m[1]);if(o&&Array.isArray(o.p)){
+  // list palettes must be ids this page knows; home-made ones must be well-formed recipes of a size the maker could have saved
+  const p=o.p.slice(0,MAXPICK).map(x=>{if(typeof x=='string')return x.length<80?x:null;const r=x&&cleanRecipe(x.r);return r&&P.build(r).length<=MAXC?{n:String(x.n||'Shared palette').slice(0,60),r}:null;}).filter(Boolean);
+  if(p.length)gift={n:String(o.n||'').slice(0,60),p};}}}catch(e){}
+let sharing=-1; // which combination's link is showing
+/* the APP's palette bar (previewed above the sample): its combination menu and the three palettes, one tap each */
+function renderAppbar(){const el=document.getElementById('appbar'),on=sets.findIndex(x=>sameSet(x.picks));
+  let h='<div class="meta lbl">In the app</div>';
+  if(sets.length)h+='<select id="appSet" title="Switch combination">'+(on<0?'<option value="-1">Not saved</option>':'')+sets.map((x,k)=>'<option value="'+k+'"'+(k==on?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select>';
+  picks.forEach(id=>{const f=findLine(id);h+='<button class="ap'+(id==cur?' on':'')+'" data-ap="'+esc(id)+'" title="'+esc(f.it.name+(f.ln.label?' · '+f.ln.label:''))+'">'+strip(f.ln.colors)+'</button>';});
+  if(!picks.length)h+='<span class="meta">no palettes taken yet</span>';
+  el.innerHTML=h;
+  const sel=el.querySelector('#appSet');if(sel)sel.onchange=()=>{const k=+sel.value;if(k<0)return;picks=sets[k].picks.filter(id=>findLine(id));if(picks[0]){cur=picks[0];pick=0;pickSet=false;store.set('licorice-pal-line',cur);}savePicks();};
+  el.querySelectorAll('[data-ap]').forEach(b=>b.onclick=()=>{cur=b.dataset.ap;pick=0;pickSet=false;store.set('licorice-pal-line',cur);renderPicks();render();renderCur();});}
+const savePicks=()=>{store.set('licorice-pal-app-picks',JSON.stringify(picks));renderPicks();render();renderCur();};
+function renderPicks(){picks=picks.filter(id=>findLine(id));let h='';
+  if(gift){const ok=gift.p.map(x=>typeof x=='string'?findLine(x)&&findLine(x).ln.colors:x.r?P.build(x.r):null).filter(Boolean);
+    h+='<div class="gift"><b>Shared with you: “'+esc(gift.n||'A combination')+'”</b><div class="mini" style="margin:6px 0">'+ok.map(c=>strip(c)).join('')+'</div><div class="mk-row" style="padding:0"><button class="b pri" data-gift>Add it</button><button class="b" data-nogift>No thanks</button></div></div>';}
+  h+='<h2>In the app ('+picks.length+' of '+MAXPICK+')</h2>';
+  picks.forEach((id,k)=>{const f=findLine(id);h+='<div class="slot"><button class="pk'+(id==cur?' on':'')+'" data-pk="'+esc(id)+'"><span>'+esc(f.it.name+(f.ln.label?' · '+f.ln.label:''))+'</span>'+strip(f.ln.colors)+'</button><button class="x" data-unpk="'+k+'" title="Take it out of the app">✕</button></div>';});
+  for(let k=picks.length;k<MAXPICK;k++)h+='<div class="slot empty">'+(k==picks.length?'Open a palette and Take it to the app':'empty')+'</div>';
+  const savedAs=sets.find(x=>sameSet(x.picks));
+  h+='<div class="mk-row" style="padding:8px 0 0">'+(savedAs?'<span class="meta">Saved as “'+esc(savedAs.name)+'”</span>':
+    '<input id="setName" class="mk-name" style="flex:1;width:auto" placeholder="Name this combination"><button class="b pri" data-saveset '+(picks.length?'':'disabled')+'>Save combination</button>')+'</div>';
+  if(sets.length||lastGone){h+='<div class="sets"><h2>Your combinations</h2>';
+    sets.forEach((x,k)=>{h+='<div class="set"><button class="pk'+(sameSet(x.picks)?' on':'')+'" data-loadset="'+k+'"><b>'+esc(x.name)+'</b>'+x.picks.filter(id=>findLine(id)).map(id=>strip(findLine(id).ln.colors)).join('')+'</button><button class="x" data-shareset="'+k+'" title="Share this combination">↗</button><button class="x" data-delset="'+k+'" title="Delete this combination">✕</button></div>';
+      if(sharing==k)h+='<div class="mk-row" style="padding:4px 0"><input class="share" readonly value="'+esc(shareLink(x))+'"><span class="meta" id="shareMsg">Copied. Anyone who opens this link gets the same three palettes.</span></div>';});
+    if(lastGone)h+='<div class="mk-row" style="padding:6px 0 0"><span class="meta">Deleted “'+esc(lastGone.set.name)+'”.</span><button class="b" data-undoset>Undo</button></div>';
+    h+='</div>';}
+  const el=document.getElementById('picks');el.innerHTML=h;
+  el.querySelectorAll('[data-pk]').forEach(b=>b.onclick=()=>{cur=b.dataset.pk;pick=0;pickSet=false;store.set('licorice-pal-line',cur);renderPicks();render();renderCur();});
+  el.querySelectorAll('[data-unpk]').forEach(b=>b.onclick=()=>{picks.splice(+b.dataset.unpk,1);savePicks();});
+  el.querySelectorAll('[data-saveset]').forEach(b=>b.onclick=()=>{const name=(el.querySelector('#setName').value||'').trim()||'Combination '+(sets.length+1);
+    sets.push({id:'set:'+Date.now().toString(36),name,picks:picks.slice()});lastGone=null;saveSets();});
+  el.querySelectorAll('[data-loadset]').forEach(b=>b.onclick=()=>{picks=sets[+b.dataset.loadset].picks.filter(id=>findLine(id));if(picks[0]){cur=picks[0];pick=0;pickSet=false;store.set('licorice-pal-line',cur);}savePicks();});
+  el.querySelectorAll('[data-delset]').forEach(b=>b.onclick=()=>{const k=+b.dataset.delset;lastGone={set:sets[k],at:k};sets.splice(k,1);saveSets();});
+  el.querySelectorAll('[data-shareset]').forEach(b=>b.onclick=()=>{const k=+b.dataset.shareset;sharing=sharing==k?-1:k;renderPicks();
+    if(sharing==k){const inp=document.querySelector('#picks .share');inp.select();(navigator.clipboard?navigator.clipboard.writeText(inp.value):Promise.reject()).catch(()=>{const m=document.getElementById('shareMsg');if(m)m.textContent='Select the link and copy it.';});}});
+  el.querySelectorAll('[data-gift]').forEach(b=>b.onclick=()=>{const ids=gift.p.map(x=>{if(typeof x=='string')return findLine(x)?x:null;
+      const id='mine:'+Date.now().toString(36)+Math.floor(Math.random()*1e4);mine.push({id,name:x.n||'Shared palette',recipe:x.r});return id;}).filter(Boolean);
+    store.set('licorice-pal-mine',JSON.stringify(mine));rebuildCat();sets.push({id:'set:'+Date.now().toString(36),name:gift.n||'Shared combination',picks:ids});
+    picks=ids.slice(0,MAXPICK);gift=null;path=[];history.replaceState(null,'',location.pathname);store.set('licorice-pal-app-sets',JSON.stringify(sets));savePicks();});
+  el.querySelectorAll('[data-nogift]').forEach(b=>b.onclick=()=>{gift=null;history.replaceState(null,'',location.pathname);renderPicks();});
+  renderAppbar();
+  el.querySelectorAll('[data-undoset]').forEach(b=>b.onclick=()=>{sets.splice(lastGone.at,0,lastGone.set);lastGone=null;saveSets();});}
+
+/* ---------- the list: groups -> items -> lines ---------- */
+/* SORTING (Gary): besides the groups, the list can be one ranked list:
+   NEAR A COLOUR: by how close the palette's nearest color comes to a color you choose (that color is outlined)
+   GOES WITH YOURS: by how many colors a palette shares with your current one (for each color, the distance to the
+   nearest color in the other palette, both ways, averaged), so the top ones sit well beside it in a combination. */
+let sortMode=store.get('licorice-pal-sort')||'groups',sortCol=store.get('licorice-pal-sort-col')||'#3f7f5a';if(!HEX.test(sortCol))sortCol='#3f7f5a';if(!['groups','color','goes'].includes(sortMode))sortMode='groups';
+let sortMore=false,sortRef=null; // sortRef: the palette 'Goes with' ranks against
+const allLines=()=>CAT.flatMap(g=>g.items.flatMap(it=>it.lines.map(ln=>({g,it,ln}))));
+function nearestTo(cols,hex){let bi=0,bd=1e9;cols.forEach((c,i)=>{const d=RC.oklabDistance(c[0],hex);if(d<bd){bd=d;bi=i;}});return[bd,bi];}
+function sharedDist(A,B){const half=(X,Y)=>X.reduce((s,c)=>s+nearestTo(Y,c[0])[0],0)/X.length;return(half(A,B)+half(B,A))/2;}
+function ranked(){const L=allLines();
+  if(sortMode=='color')return L.map(x=>{const[d,i]=nearestTo(x.ln.colors,sortCol);return{...x,score:d,mark:i};}).sort((a,b)=>a.score-b.score);
+  if(!sortRef||!findLine(sortRef))sortRef=cur;const me=findLine(sortRef)||findLine('classic:markers'),A=me.ln.colors;
+  return L.filter(x=>x.ln.id!=sortRef).map(x=>({...x,score:sharedDist(A,x.ln.colors),mark:-1})).sort((a,b)=>a.score-b.score);}
+let goneMine=null; // the last deleted home-made palette, for Undo
+const goneNote=()=>goneMine?'<div class="mk-row"><span class="meta">Deleted “'+esc(goneMine.m.name)+'”.</span><button class="b" data-undomine>Undo</button></div>':'';
+function renderList(){
+  let h='';
+  if(path.length==0){
+    if(loadMode)h+='<div class="crumb"><button class="back" data-cancel>‹ Back to the maker</button></div><div class="title">Start from…</div><div class="note" style="padding-top:0">Pick any palette; it opens in the maker with its own build, ready to change.</div>';
+    else{h+='<div class="title">Palettes</div><button class="rowb make" data-make><div class="t"><b>Make your own</b><span>›</span></div><div class="s">Start blank, from any palette, or roll one of the five methods</div></button>'+goneNote();}
+    h+='<div class="sortbar"><span class="seg">Sort '+[['groups','Groups'],['color','Near a color'],['goes','Goes with yours']].map(([m,t])=>'<button class="'+(sortMode==m?'on':'')+'" data-sort="'+m+'">'+t+'</button>').join('')+'</span>'+
+      (sortMode=='color'?'<input type="color" class="sw" id="sortCol" value="'+sortCol+'" title="Choose a color">':'')+'</div>';
+    if(sortMode=='groups')CAT.forEach((g,k)=>{h+='<button class="rowb" data-g="'+k+'"><div class="t"><b>'+g.name+'</b><span>'+g.items.length+' ›</span></div>'+
+      '<div class="mini">'+g.items.slice(0,3).map(it=>strip(it.lines[0].colors)).join('')+'</div></button>';});
+    else{const R=ranked(),show=sortMore?R:R.slice(0,20);
+      if(sortMode=='goes'){const me=findLine(sortRef)||findLine('classic:markers');h+='<div class="note" style="padding-top:0">Sharing the most colors with <b>'+esc(me.it.name+(me.ln.label?' · '+me.ln.label:''))+'</b> first.'+(cur!=sortRef&&cur!='draft'?' <button class="b" data-reref>Goes with the one I am on</button>':'')+'</div>';}
+      show.forEach(x=>{const why=sortMode=='color'?'closest: '+(x.ln.colors[x.mark][1]&&!/^(bridge|between)/.test(x.ln.colors[x.mark][1])?x.ln.colors[x.mark][1]:x.ln.colors[x.mark][0]):'';
+        h+='<button class="rowb'+(!loadMode&&x.ln.id==cur?' on':'')+'" data-l="'+esc(x.ln.id)+'"><div class="t"><b>'+esc(x.it.name+(x.ln.label?' · '+x.ln.label:''))+'</b><span>'+esc(x.g.name)+(picks.includes(x.ln.id)?' · <span class="tag">in the app</span>':'')+'</span></div>'+
+          (why?'<div class="s">'+esc(why)+'</div>':'')+strip(x.ln.colors,'strip',x.mark)+'</button>';});
+      if(!sortMore&&R.length>20)h+='<div class="mk-row"><button class="b" data-sortmore>Show all '+R.length+'</button></div>';}
+  }else if(path.length==1){
+    const g=CAT[path[0]];
+    h+='<div class="crumb"><button class="back" data-up>‹ '+(loadMode?'Start from…':'Palettes')+'</button></div><div class="title">'+g.name+'</div>'+(g.id=='mine'&&!loadMode?goneNote():'');
+    g.items.forEach((it,k)=>{const multi=it.lines.length>1,on=!loadMode&&it.lines.some(l=>l.id==cur),del=it.mine&&!loadMode;
+      h+=(del?'<div class="minerow">':'')+'<button class="rowb'+(on?' on':'')+'" '+(multi?'data-i="'+k+'"':'data-l="'+it.lines[0].id+'"')+'><div class="t"><b>'+esc(it.name)+'</b>'+
+        (it.lines.some(l=>picks.includes(l.id))?'<span class="tag">in the app</span>':'')+(multi?'<span class="more">'+it.lines.length+' lines ›</span>':'')+'</div>'+(it.sub?'<div class="s">'+it.sub+'</div>':'')+strip(it.lines[0].colors)+'</button>'+
+        (del?'<button class="x" data-delmine="'+esc(it.id)+'" title="Delete this palette" aria-label="Delete '+esc(it.name)+'">✕</button></div>':'');});
+  }else{
+    const g=CAT[path[0]],it=g.items[path[1]];
+    h+='<div class="crumb"><button class="back" data-up>‹ '+g.name+'</button></div><div class="title">'+esc(it.name)+'</div>'+(it.sub?'<div class="note" style="padding-top:0">'+it.sub+'</div>':'');
+    it.lines.forEach(ln=>{h+='<button class="rowb'+(!loadMode&&ln.id==cur?' on':'')+'" data-l="'+ln.id+'"><div class="lbl">'+ln.label+(picks.includes(ln.id)?' <span class="tag">in the app</span>':'')+'</div>'+strip(ln.colors)+'</button>';});
+  }
+  return h;
+}
+function wireList(nav){
+  nav.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{path=[+b.dataset.g];render();});
+  nav.querySelectorAll('[data-delmine]').forEach(b=>b.onclick=()=>{const id=b.dataset.delmine,at=mine.findIndex(x=>x.id==id);if(at<0)return;
+    goneMine={m:mine[at],at,picks:picks.slice(),cur};mine.splice(at,1);store.set('licorice-pal-mine',JSON.stringify(mine));
+    if(draft&&draft.from==id){draft.from=null;saveDraft();}
+    if(cur==id){cur='classic:markers';pick=0;pickSet=false;store.set('licorice-pal-line',cur);}
+    rebuildCat();if(!mine.length)path=[];picks=picks.filter(x=>x!=id);savePicks();});
+  nav.querySelectorAll('[data-undomine]').forEach(b=>b.onclick=()=>{const g=goneMine;goneMine=null;mine.splice(Math.min(g.at,mine.length),0,g.m);store.set('licorice-pal-mine',JSON.stringify(mine));
+    const had=CAT[0].id=='mine';rebuildCat();if(!had)path=[];picks=g.picks.filter(id=>findLine(id)).slice(0,MAXPICK);
+    if(g.cur==g.m.id&&cur=='classic:markers'){cur=g.m.id;store.set('licorice-pal-line',cur);}savePicks();});
+  nav.querySelectorAll('[data-sort]').forEach(b=>b.onclick=()=>{sortMode=b.dataset.sort;sortMore=false;sortRef=cur;store.set('licorice-pal-sort',sortMode);render();});
+  nav.querySelectorAll('[data-reref]').forEach(b=>b.onclick=()=>{sortRef=cur;render();});
+  nav.querySelectorAll('[data-sortmore]').forEach(b=>b.onclick=()=>{sortMore=true;render();});
+  const sc=nav.querySelector('#sortCol');if(sc)sc.oninput=()=>{sortCol=sc.value;store.set('licorice-pal-sort-col',sortCol);render();};
+  nav.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{path=[path[0],+b.dataset.i];render();});
+  nav.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{path.pop();render();});
+  nav.querySelectorAll('[data-cancel]').forEach(b=>b.onclick=()=>{loadMode=false;view='maker';render();});
+  nav.querySelectorAll('[data-make]').forEach(b=>b.onclick=()=>{if(!draft)draft={name:'',recipe:{families:[{controls:[['','#1f4e8c'],['','#f2b134']],rounds:1,mode:'wheel'}]}};view='maker';render();});
+  nav.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{const f=findLine(b.dataset.l);
+    if(loadMode){openInMaker(f);return;}
+    cur=b.dataset.l;pick=0;pickSet=false;store.set('licorice-pal-line',cur);render();renderCur();renderPicks();});
+}
+function openInMaker(f){const m=f.it.mine?mine.find(x=>x.id==f.ln.id):null;
+  draft={name:m?m.name:f.it.name+(f.ln.label?' '+f.ln.label:'')+' (mine)',recipe:clone(f.ln.recipe),from:m?m.id:null};
+  saveDraft();loadMode=false;view='maker';path=[];render();}
+
+/* ---------- the maker: families of controls + rounds of bridges ---------- */
+const total=()=>P.build(draft.recipe).length;
+const famSize=f=>{let n=f.controls.length;for(let k=0;k<(f.rounds||0);k++)n=2*n-1;return n;};
+function renderMaker(){
+  const R=draft.recipe;let h='<div class="crumb"><button class="back" data-home>‹ Palettes</button></div>';
+  h+='<div class="title">Make your own</div>';
+  h+='<div class="mk-row"><input id="mkName" class="mk-name" placeholder="Name your palette" value="'+esc(draft.name||'')+'"></div>';
+  h+='<div class="mk-row"><button class="b" data-load>Start from the list…</button>'+
+     '<select id="mkMethod" class="b">'+P.METHODS.map((m,k)=>'<option value="'+k+'">'+m.name+'</option>').join('')+'</select><button class="b" data-roll>Roll</button></div>';
+  R.families.forEach((f,fi)=>{
+    h+='<div class="fam"><div class="fam-h"><b>Family '+(fi+1)+'</b><span>'+famSize(f)+' colors</span>'+(R.families.length>1?'<button class="x" data-delfam="'+fi+'" title="Remove this family">✕</button>':'')+'</div>';
+    h+='<div class="cols">';let ci=0;
+    P.expand(f).forEach(([hex,w],k)=>{const isC=f.rounds?k%(2**f.rounds)==0:true;
+      if(isC){h+='<button class="col c" style="background:'+hex+';color:'+RC.inkOn(hex)+'" data-edit="'+fi+','+ci+'" title="'+esc((w||'control color')+' · '+hex+' · click to change')+'"></button>';ci++;}
+      else h+='<i class="col" style="background:'+hex+'" title="'+esc(w+' '+hex)+'"></i>';});
+    h+='</div><div class="mk-row">'+
+      '<button class="b" data-dropc="'+fi+'" '+(f.controls.length<=1?'disabled':'')+'>− control</button>'+
+      '<span class="seg" title="How many rounds of halfway colors between the controls">Bridges '+[0,1,2,3].map(n=>'<button class="'+(n==(f.rounds||0)?'on':'')+'" data-rounds="'+fi+','+n+'">'+n+'</button>').join('')+'</span>'+
+      '<span class="seg">'+['wheel','blend'].map(m=>'<button class="'+((f.mode||'wheel')==m?'on':'')+'" data-mode="'+fi+','+m+'" title="'+(m=='wheel'?'keeps color across hues':'true middle, softer')+'">'+m+'</button>').join('')+'</span></div>';
+    h+='<div class="sugg">';
+    P.SUGGEST.forEach(([n,w,fn],si)=>{const x=fn(f.controls.map(c=>c[1]));if(!x)return;
+      h+='<button class="sg" data-sug="'+fi+','+si+'" title="'+esc(n+': '+w)+'"><span style="background:'+x+'"></span>'+n+'</button>';});
+    h+='</div></div>';});
+  h+='<div class="mk-row"><button class="b" data-addfam>+ Add a family</button><span class="meta">'+total()+' colors'+(total()>MAXC?' · too many, '+MAXC+' at most':'')+'</span></div>';
+  h+='<div class="mk-row"><button class="b pri" data-use>Use it</button><button class="b pri" data-save '+(total()>MAXC?'disabled':'')+'>'+(draft.from?'Save':'Save as mine')+'</button>'+(draft.from?'<button class="b" data-saveas '+(total()>MAXC?'disabled':'')+'>Save as new</button>':'')+'</div>';
+  h+='<div class="note">Every palette in the list is built this way: families of named control colors with rounds of halfway colors between them. Opening one here keeps its build, so you can change one control and its bridges follow.</div>';
+  return h;
+}
+let editing=null;
+function wireMaker(nav){
+  const R=draft.recipe,redo=()=>{saveDraft();render();if(cur=='draft')renderCur();};
+  nav.querySelector('#mkName').oninput=e=>{draft.name=e.target.value;saveDraft();};
+  nav.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>{view='list';path=[];render();});
+  nav.querySelectorAll('[data-load]').forEach(b=>b.onclick=()=>{loadMode=true;view='list';path=[];render();});
+  nav.querySelectorAll('[data-roll]').forEach(b=>b.onclick=()=>{const k=+nav.querySelector('#mkMethod').value,seed=1+Math.floor(Math.random()*99999);
+    draft.recipe=P.methodRecipe(k,seed);draft.name=P.METHODS[k].name+' '+seed;draft.from=null;redo();});
+  nav.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{const[fi,ci]=b.dataset.edit.split(',').map(Number);editing=[fi,ci];
+    const pk=document.getElementById('picker');pk.value=R.families[fi].controls[ci][1];pk.click();});
+  nav.querySelectorAll('[data-dropc]').forEach(b=>b.onclick=()=>{R.families[+b.dataset.dropc].controls.pop();redo();});
+  nav.querySelectorAll('[data-rounds]').forEach(b=>b.onclick=()=>{const[fi,n]=b.dataset.rounds.split(',').map(Number);R.families[fi].rounds=n;redo();});
+  nav.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{const[fi,m]=b.dataset.mode.split(',');R.families[+fi].mode=m;redo();});
+  nav.querySelectorAll('[data-delfam]').forEach(b=>b.onclick=()=>{R.families.splice(+b.dataset.delfam,1);redo();});
+  nav.querySelectorAll('[data-sug]').forEach(b=>b.onclick=()=>{const[fi,si]=b.dataset.sug.split(',').map(Number),f=R.families[fi],
+    x=P.SUGGEST[si][2](f.controls.map(c=>c[1]));f.controls.push([P.SUGGEST[si][0].toLowerCase(),x]);redo();});
+  nav.querySelectorAll('[data-addfam]').forEach(b=>b.onclick=()=>{const last=R.families.at(-1).controls.map(c=>c[1]),
+    a=P.SUGGEST[2][2](last),c=P.SUGGEST[1][2]([a]);R.families.push({controls:[['',a],['',c]].sort((x,y)=>RC.hexToOklab(x[1]).L-RC.hexToOklab(y[1]).L),rounds:1,mode:'wheel'});redo();});
+  nav.querySelectorAll('[data-use]').forEach(b=>b.onclick=()=>{cur='draft';pick=0;pickSet=false;store.set('licorice-pal-line',cur);renderCur();});
+  const save=asNew=>{if(total()>MAXC)return;goneMine=null;
+    const name=(draft.name||'').trim()||'My palette '+(mine.length+1);
+    if(draft.from&&!asNew){const m=mine.find(x=>x.id==draft.from);m.name=name;m.recipe=clone(draft.recipe);}
+    else{const id='mine:'+Date.now().toString(36);mine.push({id,name,recipe:clone(draft.recipe)});draft.from=id;}
+    store.set('licorice-pal-mine',JSON.stringify(mine));draft.name=name;saveDraft();rebuildCat();path=[];cur=draft.from;store.set('licorice-pal-line',cur);render();renderCur();};
+  nav.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>save(false));
+  nav.querySelectorAll('[data-saveas]').forEach(b=>b.onclick=()=>save(true));
+}
+document.getElementById('picker').oninput=e=>{if(!editing||!draft)return;const[fi,ci]=editing;draft.recipe.families[fi].controls[ci][1]=e.target.value;saveDraft();render();if(cur=='draft')renderCur();};
+
+function render(){const nav=document.getElementById('nav'),top=nav.scrollTop,same=nav.dataset.view==view+path.join()+loadMode;
+  nav.innerHTML=view=='maker'?renderMaker():renderList();(view=='maker'?wireMaker:wireList)(nav);
+  nav.dataset.view=view+path.join()+loadMode;nav.scrollTop=same?top:0;}
+
+/* ---------- your palette + the sample page ---------- */
+function renderCur(){
+  const f=findLine(cur)||findLine('classic:markers'),cols=f.ln.colors;
+  document.getElementById('curName').textContent=f.it.name+(f.ln.label?' · '+f.ln.label:'');
+  const gr=document.getElementById('grid');gr.innerHTML='';
+  cols.forEach(([h,w],k)=>{const b=document.createElement('button');b.style.background=h;b.title=(w?w+' ':'')+h;b.setAttribute('aria-label',b.title);b.className=k==pick?'on':'';
+    b.onclick=()=>{pick=k;pickSet=true;renderCur();};gr.appendChild(b);});
+  const tk=document.getElementById('takeCur'),inApp=picks.includes(cur);
+  tk.disabled=cur=='draft'||(!inApp&&picks.length>=MAXPICK);
+  tk.textContent=cur=='draft'?'Save it to take it to the app':inApp?'✓ In the app · take it out':picks.length>=MAXPICK?'The app holds '+MAXPICK+': take one out first':'Take it to the app';
+  tk.className='b'+(inApp||tk.disabled?'':' pri');
+  tk.onclick=()=>{if(inApp)picks=picks.filter(x=>x!=cur);else picks.push(cur);savePicks();};
+  document.getElementById('editCur').onclick=()=>{if(cur=='draft'){view='maker';render();return;}openInMaker(f);};
+  paint(f.ln.recipe);
+}
+// a small sample page: hex cells, so a palette can be judged on a page and not only as a strip
+let dark=store.get('licorice-pal-dark')==='1';
+const PAPERS={light:['#fffefb','#15121a'],dark:['#1d1a25','#f4f1ea']}; // app: PAPER() and the first ink of each set
+function setPaper(d){dark=d;store.set('licorice-pal-dark',d?'1':'0');
+  document.getElementById('paperLight').className=d?'':'on';document.getElementById('paperDark').className=d?'on':'';renderCur();}
+function setFill(m){fillMode=m;store.set('licorice-pal-fill',m);
+  document.getElementById('fillScatter').className=m=='scatter'?'on':'';document.getElementById('fillCluster').className=m=='cluster'?'on':'';document.getElementById('fillPattern').className=m=='pattern'?'on':'';showRep();renderCur();}
+// Repeat styles inside Pattern. Free = the search/weave below (the dial decides); the others repeat a fixed tile.
+let rep=store.get('licorice-pal-rep')||'free',motifSeed=+(store.get('licorice-pal-motif')||1),rippleSeed=+(store.get('licorice-pal-ripple')||1);
+function showRep(){const on=fillMode=='pattern';if(typeof setCycle=='function'&&cycleT&&!(on&&rep=='ripple'))setCycle(false);
+  document.getElementById('cycle').style.display=on&&rep=='ripple'?'':'none';document.getElementById('repWrap').style.display=on?'flex':'none';
+  document.querySelectorAll('[data-rep]').forEach(b=>b.className=b.dataset.rep==rep?'on':'');
+  document.getElementById('reroll').style.display=on&&(rep=='motif'||rep=='ripple')?'':'none';
+  document.getElementById('touchWrap').style.display=on&&['free','ripple','motif'].includes(rep)?'flex':'none';}
+document.querySelectorAll('[data-rep]').forEach(b=>b.onclick=()=>{rep=b.dataset.rep;store.set('licorice-pal-rep',rep);showRep();renderCur();});
+/* AUTO CYCLE (Gary): Ripple's focus color steps through the palette by itself, one color every 1.5 s, and the
+   run is rebuilt around each. Off on every visit (not remembered); stops when Ripple is left. A color that can't
+   lead a run at the dial's setting is skipped. */
+let cycleT=0;
+function setCycle(on){clearInterval(cycleT);cycleT=0;const b=document.getElementById('cycle');b.textContent='Auto cycle: '+(on?'on':'off');b.className='b'+(on?' pri':'');b.setAttribute('aria-pressed',on);
+  if(on)cycleT=setInterval(()=>{const f=findLine(cur)||findLine('classic:markers'),n=f.ln.colors.length;
+    for(let t=0;t<n;t++){pick=(pick+1)%n;pickSet=true;renderCur();if(!/goes without it/.test(fillNote))break;}},1500);}
+document.getElementById('cycle').onclick=()=>setCycle(!cycleT);
+document.getElementById('reroll').onclick=()=>{if(rep=='ripple'){rippleSeed++;store.set('licorice-pal-ripple',rippleSeed);}else{motifSeed++;store.set('licorice-pal-motif',motifSeed);}renderCur();};
+document.getElementById('fillScatter').onclick=()=>setFill('scatter');document.getElementById('fillCluster').onclick=()=>setFill('cluster');document.getElementById('fillPattern').onclick=()=>setFill('pattern');
+function initTouch(){const t=document.getElementById('touch');t.value=touchPct;document.getElementById('touchVal').textContent=touchPct+'%';
+ t.oninput=()=>{touchPct=+t.value;store.set('licorice-pal-touch',touchPct);document.getElementById('touchVal').textContent=touchPct+'%';renderCur();};}
+document.getElementById('paperLight').onclick=()=>setPaper(false);document.getElementById('paperDark').onclick=()=>setPaper(true);
+/* How the sample is colored, the way a colorist would use the palette's build:
+   - a fade (one family, 2+ rounds of bridges): a smooth sweep across the page
+   - families: the big family covers ~60% of the cells, the supporting one ~30%, the accent ~10%
+   - one flat family (Classic): any color
+   and touching cells never get the same color (except inside a fade, where neighbors are meant to be close). */
+/* Two ways to lay the families out (toggle):
+   SCATTER: each cell picks a family by its share, so families mix across the page
+   CLUSTER: each family gathers into patches (accents and opposites too), shaded from the patch center outward
+   A fade family (2+ rounds of bridges) is always a sweep across the page; in Cluster the other families sit on it as islands. */
+let fillMode=store.get('licorice-pal-fill')||'scatter';
+/* PATTERN (Gary's touch rules): same colors never touch, colors that blend into each other never touch,
+   opposites may touch. Where three hex cells meet, all three touch each other, so the strictest rule a page can keep
+   is set by the palette's most opposite TRIO (the three colors furthest apart from one another). The dial asks
+   touching colors to be at least x% of that trio's spacing (OKLab distance: hue and light-dark both count), never
+   less than a blend floor. 100% locks the trio into an interlocking pattern; lower lets more pairs touch.
+   A greedy fill can paint itself into a corner, so it tries a few layouts and keeps the one that breaks the rule least. */
+let fillNote='',touchPct=+(store.get('licorice-pal-touch')||60);
+const BLEND=.07; // closer than this, two colors read as one where they touch
+function trio(recipe){
+  const fams=recipe.families.map(f=>P.expand(f)),all=[];fams.forEach((f,k)=>f.forEach((c,i)=>all.push({hex:c[0],name:c[1],k,i})));
+  const uniq=[...new Map(all.map(c=>[c.hex,c])).values()],dc={};
+  const D=(x,y)=>{const k=x<y?x+y:y+x;return dc[k]??(dc[k]=RC.oklabDistance(x,y));};
+  let best=uniq.slice(0,3),bs=-1;const m=uniq.length;
+  for(let a=0;a<m;a++)for(let b=a+1;b<m;b++){const ab=D(uniq[a].hex,uniq[b].hex);if(ab<=bs)continue;
+    for(let c=b+1;c<m;c++){const t=Math.min(ab,D(uniq[a].hex,uniq[c].hex),D(uniq[b].hex,uniq[c].hex));if(t>bs){bs=t;best=[uniq[a],uniq[b],uniq[c]];}}}
+  return{best,fams,uniq,triD:bs,D};
+}
+function pattern(recipe){
+  const{best,fams,uniq,triD,D}=trio(recipe),n=fams.length;
+  const W=n==1?[1]:n==2?[.65,.35]:n==3?[.6,.3,.1]:fams.map((_,i)=>i==0?.5:.5/(n-1));
+  const thr=Math.max(BLEND,touchPct/100*triD);
+  const nbOf=(g,row,col)=>[g[row][col-1]].concat(row?(row%2?[g[row-1][col],g[row-1][col+1]]:[g[row-1][col-1],g[row-1][col]]):[]).filter(Boolean);
+  // search first: back up from dead ends (weighted random order keeps the 60/30/10 feel); a budget keeps it quick
+  {const rnd=P.mulberry32(11),g=[...Array(RW)].map(()=>[]);let budget=6000*Math.max(1,RW*CL/80);
+   const go=i=>{if(i==RW*CL)return true;if(--budget<0)return false;const row=Math.floor(i/CL),col=i%CL,nb=nbOf(g,row,col);
+     const ok=uniq.filter(c=>nb.every(h=>D(c.hex,h)>=thr)).map(c=>({c,key:Math.pow(rnd(),fams[c.k].length/W[c.k])})).sort((x,y)=>y.key-x.key);
+     for(const{c}of ok){g[row][col]=c.hex;if(go(i+1))return true;}g[row][col]=undefined;return false;};
+   if(go(0)){const nm=X=>X.name&&X.name!='bridge'&&!X.name.startsWith('between')?X.name:X.hex;
+     fillNote='Same and blending colors never touch. Neighbors: at least '+touchPct+'% as far apart as the most opposite three ('+best.map(nm).join(', ')+').';return g;}}
+  // the weave: three interleaved sets of cells that never touch their own set. Sort colors into three groups where
+  // every color is far enough from every color in the OTHER groups (inside a group anything goes: they never touch).
+  {const groups=best.map(c=>[c]),rest=uniq.filter(c=>!best.includes(c)).sort((x,y)=>W[y.k]/fams[y.k].length-W[x.k]/fams[x.k].length);
+   rest.forEach(c=>{for(let gi=0;gi<3;gi++){if(groups.every((G,j)=>j==gi||G.every(m=>D(c.hex,m.hex)>=thr))){groups[gi].push(c);break;}}});
+   if(groups.every((G,i)=>groups.every((H,j)=>i==j||G.every(a=>H.every(b=>D(a.hex,b.hex)>=thr))))){
+     const rnd=P.mulberry32(13),g=[];
+     const pickIn=G=>{let tot=0;const w=G.map(c=>{const x=W[c.k]/fams[c.k].length;tot+=x;return x;});let x=rnd()*tot,i=0;while(i<G.length-1&&x>w[i]){x-=w[i];i++;}return G[i].hex;};
+     for(let row=0;row<RW;row++){g[row]=[];for(let col=0;col<CL;col++){const q=col-(row-(row&1))/2;g[row][col]=pickIn(groups[((q-row)%3+3)%3]);}}
+     const nm=X=>X.name&&X.name!='bridge'&&!X.name.startsWith('between')?X.name:X.hex;
+     fillNote='Same and blending colors never touch. Neighbors: at least '+touchPct+'% as far apart as the most opposite three ('+best.map(nm).join(', ')+'), woven in three sets.'+
+       (rest.length+3>groups.flat().length?' '+(uniq.length-groups.flat().length)+' colors sit out at this setting.':'');
+     return g;}}
+  let keep=null,kMiss=1e9;
+  for(let tryN=0;tryN<24&&kMiss>0;tryN++){
+    const rnd=P.mulberry32(11+tryN*7919),grid=[];let misses=0;
+    for(let row=0;row<RW;row++){grid[row]=[];for(let col=0;col<CL;col++){
+      const nb=[grid[row][col-1]].concat(row?(row%2?[grid[row-1][col],grid[row-1][col+1]]:[grid[row-1][col-1],grid[row-1][col]]):[]).filter(Boolean);
+      const ok=uniq.filter(c=>nb.every(h=>D(c.hex,h)>=thr));let pick;
+      if(ok.length){let tot=0;const w=ok.map(c=>{const x=W[c.k]/fams[c.k].length;tot+=x;return x;});let x=rnd()*tot,i=0;while(i<ok.length-1&&x>w[i]){x-=w[i];i++;}pick=ok[i];}
+      else{misses++;let bd=-1;uniq.forEach(c=>{const m=Math.min(...nb.map(h=>D(c.hex,h)));if(m>bd){bd=m;pick=c;}});} // nothing fits: the most different one
+      grid[row][col]=pick.hex;}}
+    if(misses<kMiss){kMiss=misses;keep=grid;}}
+  const nm=X=>X.name&&X.name!='bridge'&&!X.name.startsWith('between')?X.name:X.hex;
+  fillNote='Same and blending colors never touch. Neighbors: at least '+touchPct+'% as far apart as the most opposite three ('+best.map(nm).join(', ')+').'+
+    (kMiss?' '+kMiss+' cells had no color that fit, so they took the most different one.':'');
+  return keep;
+}
+/* REPEAT: periodic colorings of the hex page, balanced and repeating by construction. A cell's tile class comes
+   from its position (axial q,r); two cells share a class only if they never touch, so one color per class keeps
+   "same never touches". Weave = 3 classes (q-r mod 3), Four = 4 (q,r each mod 2), Flower = 7 ((q+3r) mod 7: every
+   cell ringed by the other six), Ripple = colors dark to light in bands ((q+2r) mod m), Motif = a seeded tile of
+   5-12 cells repeated by sliding (a lattice that never puts a cell next to its own copy). */
+/* DESKTOP / PHONE: decided by what the screen can do, not by the device's name: a finger as the main pointer
+   (pointer: coarse) gets bigger cells to tap; a narrow screen (CSS, 760px) stacks the page above the panel. */
+const TOUCH=matchMedia('(pointer: coarse)').matches;document.documentElement.classList.toggle('touch',TOUCH);
+let RW=8,CL=10; // rows and columns of the sample page; paint() sets them to fill the frame
+let tileMask=null; // Motif: which cells make up the outlined copy of the tile
+const NBV=[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]]; // the six neighbors, in turn around a cell
+const axial=(row,col)=>[col-(row-(row&1))/2,row],md=(x,m)=>((x%m)+m)%m;
+const NM=X=>X.name&&X.name!='bridge'&&!X.name.startsWith('between')?X.name:X.hex;
+function spread(cs,k,D){ // the k colors furthest apart (largest smallest gap): greedy start, then branch and bound
+  let sel=[],gap=0;
+  {let a=0,b=1,bd=-1;for(let i=0;i<cs.length;i++)for(let j=i+1;j<cs.length;j++){const d=D(cs[i].hex,cs[j].hex);if(d>bd){bd=d;a=i;b=j;}}
+   sel=[cs[a],cs[b]];while(sel.length<k){let bc=null,bm=-1;cs.forEach(c=>{if(sel.includes(c))return;const m=Math.min(...sel.map(s=>D(c.hex,s.hex)));if(m>bm){bm=m;bc=c;}});sel.push(bc);}}
+  const minPair=S=>{let m=1e9;for(let i=0;i<S.length;i++)for(let j=i+1;j<S.length;j++)m=Math.min(m,D(S[i].hex,S[j].hex));return m;};
+  gap=minPair(sel);let budget=300000;const pick=[];
+  const go=(i,mn)=>{if(--budget<0)return;if(pick.length==k){if(mn>gap){gap=mn;sel=pick.slice();}return;}
+    for(let j=i;j<=cs.length-(k-pick.length);j++){let m2=mn;for(const p of pick)m2=Math.min(m2,D(cs[j].hex,p.hex));if(m2<=gap)continue;pick.push(cs[j]);go(j+1,m2);pick.pop();}};
+  go(0,1e9);return{sel,gap};
+}
+const LATS=[];for(let N=5;N<=12;N++)for(let c=1;c<=N;c++){if(N%c)continue;const a=N/c;
+  for(let b=0;b<a;b++){if(NBV.some(([x,y])=>md(y,c)==0&&md(x-(y/c)*b,a)==0))continue;LATS.push({a,b,c,N});}}
+const latClass=(L,q,r)=>{const j=md(r,L.c);return j*L.a+md(q-(r-j)/L.c*L.b,L.a);};
+function repeat(recipe){
+  const{fams,uniq,triD,D}=trio(recipe),n=fams.length,W=n==1?[1]:n==2?[.65,.35]:n==3?[.6,.3,.1]:fams.map((_,i)=>i==0?.5:.5/(n-1));
+  const pc=g=>Math.round(g/triD*100)+'%',L=h=>RC.hexToOklab(h).L,thr0=Math.max(BLEND,touchPct/100*triD);
+  const out=(cls,cols,note)=>{fillNote=note;const g=[];for(let row=0;row<RW;row++){g[row]=[];for(let col=0;col<CL;col++){const[q,r]=axial(row,col);g[row][col]=cols[cls(q,r)].hex;}}return g;};
+  let style=rep;const need={quad:4,flower:7};
+  if(need[style]&&uniq.length<need[style]){fillNote=style+' needs '+need[style]+' different colors; this palette has '+uniq.length+'. ';style=uniq.length>=4?'quad':'weave';}
+  // too few colors far enough apart (a close fade or duotone): step down to a smaller tile
+  for(const[s,k,down]of[['flower',7,'quad'],['quad',4,'weave']])if(style==s&&spread(uniq,k,D).gap<BLEND){fillNote+=(s=='flower'?'Flower':'Four')+' needs '+k+' colors that don\'t blend; this palette doesn\'t have them. ';style=down;}
+  const pre=fillNote;
+  if(style=='weave'){const{sel,gap}=spread(uniq,3,D);
+    return out((q,r)=>md(q-r,3),sel,pre+'Weave: 3 colors, each cell ringed by the other two ('+sel.map(NM).join(', ')+'). Touching colors at least '+pc(gap)+' of the most opposite three.');}
+  if(style=='quad'){const{sel,gap}=spread(uniq,4,D);sel.sort((x,y)=>L(x.hex)-L(y.hex));
+    return out((q,r)=>md(q,2)*2+md(r,2),[sel[0],sel[2],sel[3],sel[1]],pre+'Four: 4 colors in a repeating tile, every cell touching the other three. Touching colors at least '+pc(gap)+'.');}
+  if(style=='flower'){const{sel,gap}=spread(uniq,7,D);
+    // the center is the color that stands out most; the ring turns dark to light around it
+    const avg=c=>sel.reduce((s,o)=>s+D(c.hex,o.hex),0);const ctr=sel.reduce((a,b)=>avg(b)>avg(a)?b:a),ring=sel.filter(c=>c!==ctr).sort((x,y)=>L(x.hex)-L(y.hex));
+    const cols=[ctr];[1,5,4,6,2,3].forEach((v,i)=>cols[v]=ring[i]);
+    return out((q,r)=>md(q+3*r,7),cols,pre+'Flower: 7 colors, every cell ringed by the other six; centers '+NM(ctr)+'. Touching colors at least '+pc(gap)+'.');}
+  if(style=='ripple'){
+    // a RUN of the palette's colors where each band is far enough from the next two (wrapping round). Seeded, so
+    // Reroll walks a different run (4-8 long) through the palette; shown dark to light whenever the rule allows it
+    const rnd=P.mulberry32(rippleSeed*9301+17),ok=(a,b)=>D(a.hex,b.hex)>=thr0,cap=Math.min(uniq.length,4+Math.floor(rnd()*5));
+    const closes=q=>q.every((x,i)=>ok(x,q[(i+1)%q.length])&&ok(x,q[(i+2)%q.length]));
+    const key=new Map(uniq.map(c=>[c,rnd()])),seq=[],used=new Set();let best=null,budget=40000;
+    const go=()=>{if(--budget<0)return;
+      if(seq.length>=3&&closes(seq)&&(!best||seq.length>best.length))best=seq.slice();
+      if(seq.length==cap||(best&&best.length==cap))return;
+      const last=seq.at(-1),prev=seq.at(-2);
+      for(const c of uniq.filter(c=>!used.has(c)&&(!last||ok(c,last))&&(!prev||ok(c,prev))).sort((a,b)=>key.get(a)-key.get(b))){
+        seq.push(c);used.add(c);go();seq.pop();used.delete(c);if(best&&best.length==cap)return;}};
+    const f=findLine(cur)||findLine('classic:markers'),want=pickSet&&f.ln.colors[pick]?uniq.find(c=>c.hex==f.ln.colors[pick][0]):null;
+    let lost='';
+    if(want){seq.push(want);used.add(want);go();if(!best){seq.length=0;used.clear();budget=40000;lost=' '+NM(want)+' has too few far-enough partners at '+touchPct+'%, so the run goes without it.';}}
+    if(!best)go();
+    if(best){const byL=best.slice().sort((x,y)=>L(x.hex)-L(y.hex)),run=closes(byL)?byL:best,m=run.length;
+      return out((q,r)=>md(q+2*r,m),run,pre+'Ripple #'+rippleSeed+': '+m+' of the palette’s '+uniq.length+' colors'+(run===byL?', dark to light':'')+', repeating in bands; touching bands at least '+touchPct+'% of the most opposite three. '+(want&&!lost?'Built around '+NM(want)+'. ':'')+'Tap a color in Your palette to build around it; Reroll for another run.'+lost);}
+    const{sel,gap}=spread(uniq,3,D);
+    return out((q,r)=>md(q-r,3),sel,pre+'Ripple: no run of colors is far enough apart at '+touchPct+'%, so this is the Weave. Lower the dial for bands.');}
+  // MOTIF: a seeded tile; color its classes so touching classes keep the dial's distance (unused colors first)
+  const rnd=P.mulberry32(motifSeed*7919+3),Lt=LATS[Math.floor(rnd()*LATS.length)],N=Lt.N;
+  const adj=[...Array(N)].map(()=>new Set());
+  for(let j=0;j<Lt.c;j++)for(let i=0;i<Lt.a;i++){const k=latClass(Lt,i,j);NBV.forEach(([x,y])=>adj[k].add(latClass(Lt,i+x,j+y)));}
+  const order=[0];for(let i=0;i<order.length;i++)adj[order[i]].forEach(k=>{if(!order.includes(k))order.push(k);});
+  const key=new Map(uniq.map(c=>[c,Math.pow(rnd(),fams[c.k].length/W[c.k])]));
+  for(let pct=touchPct;pct>=0;pct-=10){const thr=Math.max(BLEND,pct/100*triD),col=[];let budget=20000;
+    const go=i=>{if(i==N)return true;if(--budget<0)return false;const k=order[i],used=new Set(col.filter(Boolean));
+      const ok=uniq.filter(c=>[...adj[k]].every(o=>!col[o]||D(c.hex,col[o].hex)>=thr)).sort((x,y)=>(used.has(x)-used.has(y))||key.get(y)-key.get(x));
+      for(const c of ok){col[k]=c;if(go(i+1))return true;}col[k]=undefined;return false;};
+    if(go(0)){const dist=new Set(col).size;
+      // outline one copy of the tile so the stamp can be seen: the copy with the most cells on the page, nearest the middle
+      const copy=(q,r)=>{const j=md(r,Lt.c),n=(r-j)/Lt.c;return n+','+Math.floor((q-n*Lt.b)/Lt.a);},cnt={};
+      for(let row=0;row<RW;row++)for(let col=0;col<CL;col++){const id=copy(...axial(row,col));(cnt[id]=cnt[id]||{n:0,d:0}).n++;cnt[id].d+=Math.hypot(row-(RW-1)/2,col-(CL-1)/2);}
+      const mid=Object.keys(cnt).reduce((x,y)=>cnt[y].n>cnt[x].n||cnt[y].n==cnt[x].n&&cnt[y].d/cnt[y].n<cnt[x].d/cnt[x].n?y:x);
+      tileMask=[...Array(RW)].map((_,row)=>[...Array(CL)].map((_,col)=>copy(...axial(row,col))==mid));
+      return out((q,r)=>latClass(Lt,q,r),col,pre+'Motif #'+motifSeed+': a tile of '+N+' cells ('+dist+' colors) repeated across the page; touching colors at least '+pct+'%'+(pct<touchPct?' (the tile could not keep '+touchPct+'%)':'')+'.');}}
+  return pattern(recipe);
+}
+function fill(recipe){
+  const F=recipe.families.map(f=>({cols:P.expand(f).map(x=>x[0]),fade:(f.rounds||0)>=2})),rnd=P.mulberry32(7),grid=[];
+  const n=F.length,W=n==1?[1]:n==2?[.65,.35]:n==3?[.6,.3,.1]:F.map((_,i)=>i==0?.5:.5/(n-1));
+  const pos=(row,col)=>[col+(row%2?.5:0),row*.87];
+  const sweep=(f,row,col)=>{const t=Math.min(1,Math.max(0,col/(CL-1)*.6+row/(RW-1)*.4+(rnd()-.5)*.12));return f.cols[Math.round(t*(f.cols.length-1))];};
+  const near=(row,col)=>[grid[row][col-1]].concat(row?(row%2?[grid[row-1][col],grid[row-1][col+1]]:[grid[row-1][col-1],grid[row-1][col]]):[]);
+  const anyOf=(f,row,col)=>{let c;for(let k=0;k<12;k++){c=f.cols[Math.floor(rnd()*f.cols.length)];if(!near(row,col).includes(c))break;}return c;};
+  // cluster: seeds per family by its share; a fade family is the ground, the others get islands on it
+  if(fillMode=='pattern')return rep=='free'?pattern(recipe):repeat(recipe);
+  const fadeK=F.findIndex(f=>f.fade),seeds=[];
+  if(fillMode=='cluster')F.forEach((f,k)=>{if(k===fadeK)return;const m=Math.max(1,Math.round(W[k]*7*RW*CL/80));
+    for(let i=0;i<m;i++)seeds.push({k,x:rnd()*CL,y:rnd()*(RW-1)*.87,r:fadeK<0?99:1.2+W[k]*3});});
+  for(let row=0;row<RW;row++){grid[row]=[];for(let col=0;col<CL;col++){
+    let k;
+    if(fillMode=='cluster'){const[x,y]=pos(row,col);let best=null,bd=1e9;
+      seeds.forEach(s=>{const d=Math.hypot(s.x-x,s.y-y)+(rnd()-.5)*.6;if(d<bd&&d<s.r){bd=d;best=s;}});
+      if(!best){k=fadeK<0?0:fadeK;}else{k=best.k;const f=F[k];
+        if(f.fade){grid[row][col]=sweep(f,row,col);continue;}
+        // shade the patch: the center takes the family's darkest step, the edge its lightest
+        const t=Math.min(1,bd/(fadeK<0?2.6:best.r));let i=Math.min(f.cols.length-1,Math.floor(t*f.cols.length));const nb=near(row,col);
+        for(const d of[0,1,-1,2,-2])if(f.cols[i+d]&&!nb.includes(f.cols[i+d])){i+=d;break;} // same color never touches
+        grid[row][col]=f.cols[i];continue;}
+    }else{let x=rnd();k=0;while(k<W.length-1&&x>W[k]){x-=W[k];k++;}}
+    const f=F[k];grid[row][col]=f.fade?sweep(f,row,col):anyOf(f,row,col);}}
+  return grid;
+}
+function paint(recipe){
+  const svg=document.getElementById('sample'),[bg,ink]=PAPERS[dark?'dark':'light'];svg.style.background=bg;svg.parentNode.style.background=bg;let s='';
+  const box=svg.getBoundingClientRect(),FW=Math.max(200,Math.round(box.width)),FH=Math.max(150,Math.round(box.height));
+  const r=Math.max(TOUCH?30:22,Math.min(TOUCH?40:36,Math.min(FW,FH)/11)),w=r*Math.sqrt(3);
+  CL=Math.ceil(FW/w)+1;RW=Math.ceil(FH/(1.5*r))+1;svg.setAttribute('viewBox','0 0 '+FW+' '+FH);
+  fillNote='';tileMask=null;const grid=fill(recipe);document.getElementById('fillNote').textContent=fillNote+(tileMask?' One copy is outlined.':'');
+  let edges='';
+  for(let row=0;row<RW;row++)for(let col=0;col<CL;col++){
+    const cx=col*w+(row%2?w/2:0),cy=row*r*1.5;
+    const c=grid[row][col];
+    const pts=[0,1,2,3,4,5].map(i=>{const a=Math.PI/3*i+Math.PI/6;return(cx+r*Math.cos(a)).toFixed(1)+','+(cy+r*Math.sin(a)).toFixed(1);}).join(' ');
+    s+='<polygon points="'+pts+'" fill="'+c+'" stroke="'+ink+'" stroke-width="1.5"/>';
+    // tile outline: the edges of a tile cell that face a cell outside the tile (edge i faces 60+60i degrees)
+    if(tileMask&&tileMask[row][col]){const o=row&1,nb=[[row+1,col+o],[row+1,col-1+o],[row,col-1],[row-1,col-1+o],[row-1,col+o],[row,col+1]];
+      nb.forEach(([r2,c2],i)=>{if(tileMask[r2]&&tileMask[r2][c2])return;const v=k=>{const a=Math.PI/3*k+Math.PI/6;return[(cx+r*Math.cos(a)).toFixed(1),(cy+r*Math.sin(a)).toFixed(1)];};
+        const[a,b]=[v(i),v(i+1)];edges+='<line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'"/>';});}}
+  if(edges)s+='<g stroke="'+bg+'" stroke-width="7" stroke-linecap="round">'+edges+'</g><g stroke="'+ink+'" stroke-width="3.5" stroke-linecap="round">'+edges+'</g>';
+  svg.innerHTML=s;
+}
+/* THE APP AND THIS PAGE share the browser's storage (same site). What the app reads:
+     licorice-pal-app-picks  up to 3 palette ids, in order: the palettes the app shows
+     licorice-pal-mine       home-made palettes [{id:'mine:…', name, recipe}] (an id in picks may point here)
+     licorice-pal-app-sets   named combinations [{id, name, picks}]
+   A change made in another tab (the app, or this page twice) arrives as a 'storage' event and is redrawn here. */
+addEventListener('storage',e=>{if(e.key&&!/^licorice-pal-(mine|app-picks|app-sets)$/.test(e.key))return;
+  const had=CAT[0].id=='mine';mine=readMine();picks=readIds('licorice-pal-app-picks').slice(0,MAXPICK);sets=readSets();rebuildCat();
+  if(had!=(CAT[0].id=='mine'))path=[];if(draft&&draft.from&&!mine.some(m=>m.id==draft.from))draft.from=null;
+  renderPicks();render();renderCur();});
+// the way back to the drawing: beside this page on the site; from anywhere else, the live app
+{const a=document.getElementById('toApp');if(!/\.github\.io$/.test(location.hostname)){a.href='https://grbsoftware.github.io/licorice/app/';a.target='_blank';a.rel='noopener';}}
+initTouch();render();setPaper(dark);setFill(fillMode);renderPicks();
+let rsz=0;addEventListener('resize',()=>{clearTimeout(rsz);rsz=setTimeout(renderCur,120);});
+</script>
+</body></html>
