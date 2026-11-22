@@ -1,0 +1,2061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Licorice Ink &amp; Fill</title>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="theme-color" content="#1c1c1c">
+<style>
+/* Licorice Ink & Fill: a small vector coloring editor. Dark Licorice-app look.
+   Rows: tool options, the page, the swatch strip, the tool rail. */
+:root{
+  --bg:#1c1c1c; --panel:#252525; --well:#1a1a1a; --stage:#131313;
+  --edge:#3a3a3a; --edge2:#4a4a4a; --ink:#d8d8d8; --bright:#fff; --dim:#8a8a8a;
+  --hot:#e8b04a; --sel:#3d5a80; --sel2:#5d82ac; --hover:#333; --danger:#c8403a;
+  --ui:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono",Consolas,monospace;
+  color-scheme:dark; box-sizing:border-box;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:13px/1.4 var(--ui);overflow:hidden;
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;background:var(--hover);border:1px solid var(--edge2);border-radius:6px;
+  padding:0 10px;min-height:34px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+button:hover{background:#3d3d3d}
+button:disabled{opacity:.4;cursor:default}
+button.on{background:var(--sel);border-color:var(--sel2);color:var(--bright)}
+button.hot{background:var(--hot);border-color:var(--hot);color:#1c1c1c;font-weight:600}
+button.warn{color:#ff9a8a}
+:focus-visible{outline:2px solid var(--sel2);outline-offset:1px}
+input[type=range]{width:110px;accent-color:var(--hot);margin:0;vertical-align:middle}
+input[type=checkbox]{accent-color:var(--hot);width:16px;height:16px;margin:0}
+
+#app{display:grid;height:100dvh;height:100vh;grid-template-rows:auto minmax(0,1fr) auto auto;
+  padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
+@supports(height:100dvh){#app{height:100dvh}}
+
+/* ---- tool options ---- */
+#opts{display:flex;align-items:center;gap:10px;padding:6px 10px;background:var(--panel);border-bottom:1px solid #111;
+  overflow-x:auto;scrollbar-width:none;min-height:48px}
+#opts::-webkit-scrollbar{display:none}
+.tname{font-weight:700;color:var(--bright);flex:none}
+.grp{display:flex;align-items:center;gap:7px;flex:none;white-space:nowrap}
+.lb{color:var(--dim)}
+.num{color:var(--bright);font-variant-numeric:tabular-nums;min-width:2.2em;display:inline-block}
+.numin{width:4.4em;background:var(--well);color:var(--bright);border:1px solid var(--edge2);border-radius:6px;padding:4px 5px;font:13px var(--ui);font-variant-numeric:tabular-nums;-webkit-user-select:text;user-select:text}
+.numin:focus{outline:2px solid var(--sel2);outline-offset:0}
+.unit{color:var(--dim);margin-left:-3px}
+.warn,.menu p.warn{color:#f0b46a;font-style:italic;font-size:12.5px;margin:0}
+.hint{color:var(--dim);font-size:12px;flex:none;white-space:nowrap}
+.seg{display:inline-flex;flex:none}
+.seg button{border-radius:0;margin-left:-1px}
+.seg button:first-child{border-radius:6px 0 0 6px;margin-left:0}
+.seg button:last-child{border-radius:0 6px 6px 0}
+.vsep{width:1px;height:24px;background:var(--edge);flex:none}
+
+/* ---- the page ---- */
+#stage{position:relative;background:var(--stage);overflow:hidden}
+#sv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+#sv:focus{outline:none}#sv.edit{cursor:default}#sv.hand{cursor:grab}
+#sv.noHit [data-id],#sv.noHit [data-fill]{pointer-events:none}
+#gEdge *,#gFillUI *{pointer-events:none}
+#toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(10,10,10,.88);color:#fff;
+  padding:8px 14px;border-radius:999px;font-weight:600;pointer-events:none;white-space:nowrap;border:1px solid var(--edge2)}
+#zoomui{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}
+#zoomui button{min-width:38px;justify-content:center;background:rgba(37,37,37,.92)}
+
+/* ---- swatches ---- */
+#strip{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--panel);border-top:1px solid #111;
+  overflow-x:auto;scrollbar-width:none}
+#strip::-webkit-scrollbar{display:none}
+#palBtn{flex:none;max-width:42vw;overflow:hidden;text-overflow:ellipsis}
+#sw{display:flex;gap:6px;flex:none}
+.swb{width:34px;height:34px;min-height:0;padding:0;border-radius:50%;border:2px solid var(--panel);box-shadow:0 0 0 1px var(--edge2);flex:none}
+.swb.on{box-shadow:0 0 0 2px #fff}
+.cur{flex:none;display:flex;align-items:center;gap:6px}
+.cur .chip{width:34px;height:34px;border-radius:8px;border:1px solid var(--edge2);position:relative;overflow:hidden}
+.cur input[type=color]{position:absolute;inset:-8px;width:60px;height:60px;opacity:0;cursor:pointer;border:0;padding:0}
+.hex{font:11px var(--mono);color:var(--dim)}
+
+/* ---- tool rail ---- */
+#rail{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--panel);border-top:1px solid #111;overflow-x:auto;scrollbar-width:none}
+#rail::-webkit-scrollbar{display:none}
+#rail button{flex:1 0 auto;min-height:44px;flex-direction:column;gap:2px;padding:4px 6px;font-size:11px;min-width:46px;max-width:76px;justify-content:center}
+#rail svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#rail .sp{flex:0 1 16px}
+@media(max-width:560px){#rail{gap:4px;padding:6px}#rail .sp{display:none}#rail button{flex:1 1 0;min-width:0;padding:4px 2px;font-size:10px}}
+
+/* ---- sheets ---- */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--panel);border:1px solid var(--edge2);border-radius:14px 14px 0 0;width:min(760px,100%);
+  max-height:84vh;display:grid;grid-template-rows:auto auto minmax(0,1fr);overflow:hidden;
+  padding-bottom:env(safe-area-inset-bottom,0)}
+@media(min-width:800px){.scrim{align-items:center}.sheet{border-radius:14px}}
+.shead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--edge)}
+.shead h2{margin:0;font-size:16px;color:var(--bright);flex:1}
+.tabs{display:flex;gap:6px;padding:10px 14px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--edge)}
+.tabs::-webkit-scrollbar{display:none}
+.sbody{overflow-y:auto;padding:8px 14px 18px;-webkit-overflow-scrolling:touch}
+.item{padding:10px 0;border-bottom:1px solid #2f2f2f}
+.item .nm{color:var(--bright);font-weight:600}
+.item .sub{color:var(--dim);font-size:12px;margin-left:6px}
+.line{display:flex;align-items:center;gap:8px;width:100%;background:none;border:1px solid transparent;padding:6px 6px;margin-top:6px;min-height:40px}
+.line:hover{background:#2e2e2e}
+.line.on{border-color:var(--hot);background:#2e2a22}
+.line .lab{width:58px;flex:none;color:var(--dim);font-size:12px;text-align:left;white-space:normal}
+.strip{display:flex;flex:1;height:26px;border-radius:5px;overflow:hidden;min-width:0}
+.strip i{flex:1}
+.imp{display:grid;gap:8px;padding:12px 0}
+.imp textarea{width:100%;min-height:70px;background:var(--well);color:var(--ink);border:1px solid var(--edge2);border-radius:8px;padding:8px;font:12px var(--mono);resize:vertical}
+.imp p{margin:0;color:var(--dim);font-size:12.5px}
+.msg{font:12px var(--mono);color:var(--hot);min-height:1em}
+.menu{display:grid;gap:8px;padding:14px}
+.menu button{justify-content:flex-start;min-height:44px}
+.menu p{margin:0;color:var(--dim);font-size:12.5px}
+body.big #opts{display:none}
+body.big #app{grid-template-rows:minmax(0,1fr) auto auto}
+body.big #strip{padding:4px 8px}body.big .swb,body.big .cur .chip{width:30px;height:30px}
+body.big #rail{padding:4px 8px}body.big #rail button{min-height:38px;font-size:10px}
+body.big #zoomui{bottom:6px;right:6px}
+.nudge button{min-width:38px;justify-content:center;font-size:16px;padding:0 6px}
+#shot{max-width:100%;border-radius:8px;border:1px solid var(--edge2);background:#fdfbf7}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="opts" role="toolbar" aria-label="Tool options"></div>
+  <div id="stage">
+    <svg id="sv" tabindex="-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" preserveAspectRatio="xMidYMid meet" aria-label="Drawing page">
+      <rect id="paper" x="0" y="0" width="800" height="1000" fill="#fdfbf7"/>
+      <defs id="gBlur"></defs><defs><clipPath id="pageClip"><rect x="-3" y="-3" width="806" height="1006"/></clipPath></defs>
+      <g id="gFill" clip-path="url(#pageClip)"></g><g id="gEdge" clip-path="url(#pageClip)"></g><g id="gInk" clip-path="url(#pageClip)"></g><g id="gHit"></g><g id="gUI"></g>
+    </svg>
+    <div id="toast" hidden></div>
+    <div id="zoomui"><button id="zOut" title="Zoom out" aria-label="Zoom out">−</button><button id="zFit" title="Fit page">Fit</button><button id="zIn" title="Zoom in" aria-label="Zoom in">+</button><button id="bFull" title="Full screen"><span id="bFullT">Full</span></button></div>
+  </div>
+  <div id="strip">
+    <button id="palBtn" title="Browse Licorice palettes">Palettes ▾</button>
+    <div id="sw" role="group" aria-label="Palette colors"></div>
+    <div class="cur"><span class="chip" id="curChip" title="Pick any color"><input type="color" id="picker" aria-label="Pick any color"></span><span class="hex" id="curHex"></span></div>
+  </div>
+  <nav id="rail" aria-label="Tools">
+    <button data-tool="marker" title="Marker: tap for a dot, color to make a shape (M)"><svg viewBox="0 0 24 24"><path d="M14 4l6 6-8 8H6v-6z"/><path d="M4 21c3-2 6 1 9-1"/></svg>Marker</button>
+    <button data-tool="pen" title="Line with handles (P)"><svg viewBox="0 0 24 24"><path d="M3 18C7 6 15 20 21 6"/><path d="M3 18 7 9M21 6l-3 8" stroke-dasharray="2 2"/><rect x="1.5" y="16.5" width="3" height="3"/><rect x="19.5" y="4.5" width="3" height="3"/></svg>Line</button>
+    <button data-tool="round" title="Round a corner (R)"><svg viewBox="0 0 24 24"><path d="M4 20V4h16"/><path d="M4 17C4 9 9 4 17 4"/><path d="M4 4h5C6 5 5 6 4 9z" fill="currentColor"/></svg>Round</button>
+    <button data-tool="fill" title="Fill with edge line (F)"><svg viewBox="0 0 24 24"><path d="M4 11 11 4l8 8-7 7z"/><path d="M4 11h15"/><path d="M20 15c1.5 2 2 3 2 4a2 2 0 0 1-4 0c0-1 .5-2 2-4z" fill="currentColor"/></svg>Fill</button>
+    <button data-tool="edit" title="Move points and handles (V)"><svg viewBox="0 0 24 24"><path d="M5 3l14 8-6 1.5L10 19z"/></svg>Edit</button>
+    <button data-tool="style" title="Cell style: tap a cell to style it (S)"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><path d="M3.5 8.5C3.5 5.5 5.5 3.5 8.5 3.5H3.5zM20.5 15.5c0 3-2 5-5 5h5z" fill="currentColor"/></svg>Style</button>
+    <button data-tool="hand" title="Move the page (H)"><svg viewBox="0 0 24 24"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4.5a1.5 1.5 0 0 1 3 0V12M14 11.5V6a1.5 1.5 0 0 1 3 0v7c0 4-2.5 7-6 7-2.5 0-4-1.2-5.5-3.5L3.8 13a1.5 1.5 0 0 1 2.4-1.7L8 13"/></svg>Hand</button>
+    <span class="sp"></span>
+    <button id="bUndo" title="Undo (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 7 4 12l5 5"/><path d="M4 12h10a6 6 0 0 1 0 12"/></svg>Undo</button>
+    <button id="bRedo" title="Redo (Ctrl+Shift+Z)"><svg viewBox="0 0 24 24"><path d="m15 7 5 5-5 5"/><path d="M20 12H10a6 6 0 0 0 0 12"/></svg>Redo</button>
+    <button id="bMenu" title="Save, export, new page"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Page</button>
+  </nav>
+</div>
+
+<div class="scrim" id="palSheet" hidden>
+  <div class="sheet" role="dialog" aria-label="Palettes">
+    <div class="shead"><h2>Licorice palettes</h2><button id="palClose">Done</button></div>
+    <div class="tabs" id="palTabs"></div>
+    <div class="sbody" id="palBody"></div>
+  </div>
+</div>
+
+<div class="scrim" id="menuSheet" hidden>
+  <div class="sheet" role="dialog" aria-label="Page">
+    <div class="shead"><h2>Page</h2><button id="menuClose">Done</button></div>
+    <div></div>
+    <div class="sbody"><div class="menu" id="menuBody">
+      <button id="mPng">Save picture (PNG)</button>
+      <button id="mSvg">Save vector file (SVG)</button>
+      <button id="mCopy">Copy SVG code</button>
+      <button id="mShow">Show picture here (press and hold to save)</button>
+      <label class="grp" style="padding:6px 2px"><input type="checkbox" id="mEdges" checked> <span>Show fill edge lines</span></label>
+      <div id="patBox" style="display:grid;gap:8px;padding:6px 0;border-top:1px solid var(--edge);border-bottom:1px solid var(--edge)">
+        <b style="color:var(--bright)">New pattern page: Shattered lines</b>
+        <p>Random straight lines edge to edge. A line is only kept if it doesn't make any cell smaller than the limits.</p>
+        <div id="patSliders" style="display:grid;gap:8px"></div>
+        <button id="mGen" class="hot">Make a pattern page</button>
+      </div>
+      <button id="mNew" class="warn">New blank page</button>
+      <p>Load a drawing: paste SVG code saved or copied from Ink &amp; Fill. It replaces this page (Undo brings the old one back).</p>
+      <textarea id="mImp" style="width:100%;min-height:70px;background:var(--well);color:var(--ink);border:1px solid var(--edge2);border-radius:8px;padding:8px;font:12px var(--mono)" placeholder="<svg xmlns=…"></textarea>
+      <button id="mLoad">Load it</button>
+      <p class="msg" id="mMsg"></p>
+      <img id="shot" alt="Your page" hidden>
+    </div></div>
+  </div>
+</div>
+
+<script>/* vendor/radiance-color.js: pinned copy of shared/radiance-color (never edit; re-vendor) */
+/* vendored: shared/radiance-color v1.0.0 — do not edit here; change it in Radiance and re-vendor */
+// radiance-color -- Radiance's colour engine.
+//
+// sRGB <-> OKLab / OKLCH, the gamut hull, bridge midpoints, ink and contrast.
+// Radiance (github.com/grbsoftware/Radiance) owns this file and loads it as
+// is; other projects carry a pinned copy. Change it HERE, never in a copy.
+//
+// Everything is pure: hex strings and plain numbers in, the same out, no DOM
+// and no state. Load it with a <script> tag, paste it into a script, or
+// require() it -- it defines one name, RadianceColor.
+const RadianceColor = (() => {
+    'use strict';
+
+    // HSL to Hex
+    function hslToHex(h, s, l) {
+        s /= 100;
+        l /= 100;
+        const a = s * Math.min(l, 1 - l);
+        const f = n => {
+            const k = (n + h / 30) % 12;
+            const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+            return Math.round(255 * color).toString(16).padStart(2, '0');
+        };
+        return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
+    }
+
+    // Parse hex to RGB
+    function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
+    }
+
+    // RGB to hex
+    function rgbToHex(r, g, b) {
+        return '#' + [r, g, b].map(x => {
+            const hex = Math.round(x).toString(16);
+            return hex.length === 1 ? '0' + hex : hex;
+        }).join('').toUpperCase();
+    }
+
+    // --- OKLab -------------------------------------------------------
+    // A bridge is only a bridge if it LOOKS halfway between its anchors,
+    // and HSL cannot promise that. HSL's "L" is not perceived lightness:
+    // averaging green (#00FF00) and blue (#0000FF) in HSL gives cyan
+    // (#00FFFF), which is LIGHTER than both colors it sits between. It
+    // does not bridge, it spikes. Measured in perceptual lightness the
+    // anchors are 0.866 and 0.452, so the midpoint should read 0.659 --
+    // HSL puts it at 0.905, off by 0.246.
+    //
+    // OKLab is built so that equal numeric steps look like equal steps.
+    // The same pair midpoints to #00AABF at 0.675, which is where the eye
+    // expects it. Same idea for the anchors themselves: evenly spaced HSL
+    // hues range over 0.41 in perceived lightness (red 0.628, green 0.866,
+    // blue 0.452), which is why a "smooth" ramp never looked smooth.
+    //
+    // hslToHex stays, for the initial evenly-spaced anchors. HSL is a fine
+    // thing to SPECIFY a starting color in. It is just not a thing to
+    // average in, and nothing averages in it any more.
+
+    function srgbToLinear(c) {
+        c /= 255;
+        return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    }
+
+    function linearToSrgb(c) {
+        const v = c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+        return Math.max(0, Math.min(255, v * 255));
+    }
+
+    function hexToOklab(hex) {
+        const rgb = hexToRgb(hex);
+        const r = srgbToLinear(rgb.r), g = srgbToLinear(rgb.g), b = srgbToLinear(rgb.b);
+
+        const l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b;
+        const m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b;
+        const s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b;
+
+        const l_ = Math.cbrt(l), m_ = Math.cbrt(m), s_ = Math.cbrt(s);
+
+        return {
+            L: 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
+            a: 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
+            b: 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+        };
+    }
+
+    function oklabToLinear(lab) {
+        const l_ = lab.L + 0.3963377774 * lab.a + 0.2158037573 * lab.b;
+        const m_ = lab.L - 0.1055613458 * lab.a - 0.0638541728 * lab.b;
+        const s_ = lab.L - 0.0894841775 * lab.a - 1.2914855480 * lab.b;
+
+        const l = l_ * l_ * l_, m = m_ * m_ * m_, s = s_ * s_ * s_;
+
+        return [
+            +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+            -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+            -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+        ];
+    }
+
+    // The tolerance is not slop, it is the accuracy of the transform. The
+    // OKLab matrices are fitted approximations, so a colour that sits
+    // exactly ON the sRGB hull round-trips to a channel a few ten-thousandths
+    // the wrong side of zero.
+    //
+    // At 1e-4 that broke an assumption every bisection here depends on --
+    // that the ray out from neutral is in gamut up to one boundary and out
+    // after it. Measured along pure blue's ray (L 0.452, H 264.05): in gamut
+    // at 85% of its chroma, OUT at 90%, 95% and 99% where linear red reads
+    // -0.00063, and in again at 100% where it is exactly 0. A hole in the
+    // middle, and a bisection walks straight into it -- maxChroma returned
+    // 0.2674 for a colour whose chroma is 0.3132, a 15% underestimate, and
+    // oklabToHex used the same pattern to desaturate bridges further than
+    // the gamut actually required.
+    //
+    // 1e-3 clears the transform's own error. In linear light that is well
+    // under a quarter of an 8-bit step, and the clamp at the end of
+    // oklabToHex catches whatever rounds past the edge.
+    const GAMUT_EPS = 1e-3;
+
+    function inGamut(lab) {
+        return oklabToLinear(lab).every(c => c >= -GAMUT_EPS && c <= 1 + GAMUT_EPS);
+    }
+
+    // OKLab is bigger than sRGB, so a midpoint can land somewhere the screen
+    // cannot show. SOMETHING has to give, and the choice of what decides
+    // whether the bridge still reads as a bridge.
+    //
+    // Clamping each channel at the end -- the obvious way, and what this did
+    // -- gives away lightness and hue, the two properties the whole OKLab
+    // change was made to protect. Measured over every bridge the presets
+    // produce, 23 land outside sRGB and clamping moved them up to 3.6 deg in
+    // hue and 0.014 in L. The green -> blue midpoint from the notes above
+    // came out at L 0.676 against a target of 0.659; that residual was
+    // blamed on "gamut clipping" and this is the clipping it meant.
+    //
+    // Reducing CHROMA instead gives away saturation, which is the one thing
+    // a bridge does not promise. Same 23 colors: worst hue shift 0.9 deg,
+    // worst L error 0.0009 -- fifteen times closer. Green -> blue now lands
+    // at 0.659 exactly, so the residual is gone rather than explained.
+    function oklabToHex(lab) {
+        let out = lab;
+        if (!inGamut(lab)) {
+            let lo = 0, hi = 1;
+            for (let i = 0; i < 24; i++) {
+                const mid = (lo + hi) / 2;
+                if (inGamut({ L: lab.L, a: lab.a * mid, b: lab.b * mid })) lo = mid;
+                else hi = mid;
+            }
+            out = { L: lab.L, a: lab.a * lo, b: lab.b * lo };
+        }
+        // Still clamp: chroma reduction cannot rescue an L outside [0,1],
+        // and rounding leaves channels a hair over.
+        return rgbToHex(...oklabToLinear(out).map(c => linearToSrgb(Math.max(0, Math.min(1, c)))));
+    }
+
+    // --- Bridge policy ----------------------------------------------
+    // Both midpoints below are in OKLab and both are perceptually honest.
+    // They differ in what they treat as the thing being halved.
+    //
+    // BLEND averages a and b as coordinates: the true midpoint of the two
+    // colors as POINTS. a and b are signed, so as the anchors' hues diverge
+    // the two vectors point apart and partly cancel -- gold and navy are
+    // both strongly colored and their blend is #7E7D70, a drab olive grey.
+    // Nothing is out of gamut there; the saturation was destroyed by the
+    // arithmetic. Across the shipped presets, 12 bridges lose more than half
+    // their anchors' chroma this way.
+    //
+    // WHEEL averages lightness and chroma as scalars and walks hue around
+    // the shorter arc: the midpoint of the two HUES. Chroma at the bridge is
+    // the mean of the two chromas by construction, so it cannot collapse and
+    // cannot exceed the colors it sits between. Gold -> navy becomes #009083.
+    //
+    // Neither is a better version of the other, which is the test a setting
+    // has to pass to deserve existing. Blend answers "what color is halfway
+    // between these two", wheel answers "what color is halfway around from
+    // one to the other". Blend stays the default because it is what every
+    // saved palette was built with.
+    //
+    // NOT OFFERED: pushing chroma out to the gamut hull. It was measured and
+    // it is a trap -- the headroom is largest exactly where hue means least.
+    // Two pale neutrals whose midpoint chroma is 0.002 have 89x of it, and
+    // spending it turns a soft grey into #C3FF3B. At C near zero the hue is
+    // arbitrary, so amplifying it invents a color rather than finding one.
+
+    function midpointColor(hex1, hex2, mode = 'blend') {
+        const c1 = hexToOklab(hex1);
+        const c2 = hexToOklab(hex2);
+        const L = (c1.L + c2.L) / 2;
+
+        if (mode === 'blend') {
+            return oklabToHex({ L, a: (c1.a + c2.a) / 2, b: (c1.b + c2.b) / 2 });
+        }
+
+        const k1 = Math.hypot(c1.a, c1.b), k2 = Math.hypot(c2.a, c2.b);
+        let h1 = Math.atan2(c1.b, c1.a), h2 = Math.atan2(c2.b, c2.a);
+        // A grey has no hue -- CSS Color 4 calls it powerless. atan2(0,0) is
+        // 0, which is red, so averaging against it would drag every bridge
+        // out of a neutral anchor toward pink. Borrow the other end's hue.
+        if (k1 < 1e-6) h1 = h2;
+        if (k2 < 1e-6) h2 = h1;
+        const d = ((h2 - h1 + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+        const h = h1 + d / 2, c = (k1 + k2) / 2;
+        return oklabToHex({ L, a: c * Math.cos(h), b: c * Math.sin(h) });
+    }
+
+    // --- Ink on a bar -------------------------------------------------
+    // This used to weight the GAMMA-ENCODED channels 0.299/0.587/0.114 and
+    // switch at 0.5. Two things wrong with that, and they compound: the NTSC
+    // weights are for analogue luma, not for contrast, and the channels have
+    // to be linearised before any weighting means anything.
+    //
+    // The switch point is not a matter of taste either. White beats black
+    // exactly while 1.05/(L+0.05) > (L+0.05)/0.05, so the crossover is
+    // sqrt(0.0525) - 0.05 = 0.1791 -- nowhere near the midpoint, because
+    // contrast is a ratio and black has the shorter run to the floor.
+    //
+    // Measured over the 114 colors in the preset library, the old test put
+    // the wrong ink on 14 of them. The worst was #FF00FF, which got white at
+    // 3.14:1 where black scores 6.70:1. Worst case anywhere goes 3.14 -> 4.72,
+    // so every hex code on screen now clears AA at normal size.
+    const INK_CROSSOVER = Math.sqrt(0.0525) - 0.05;
+
+    function relativeLuminance(hex) {
+        const rgb = hexToRgb(hex);
+        return 0.2126 * srgbToLinear(rgb.r)
+             + 0.7152 * srgbToLinear(rgb.g)
+             + 0.0722 * srgbToLinear(rgb.b);
+    }
+
+    function inkOn(hex) {
+        return relativeLuminance(hex) > INK_CROSSOVER ? '#000' : '#fff';
+    }
+
+
+    const DEG = 180 / Math.PI;
+
+    function hexToOklch(hex) {
+        const { L, a, b } = hexToOklab(hex);
+        const C = Math.hypot(a, b);
+        // A neutral has no hue -- CSS Color 4 calls it powerless. Reported
+        // as null rather than as atan2(0, 0), which is red and would put a
+        // grey into the harmony maths as though it pointed somewhere.
+        const H = C < 1e-6 ? null : ((Math.atan2(b, a) * DEG) % 360 + 360) % 360;
+        return { L, C, H };
+    }
+
+    function oklchToHex({ L, C, H }) {
+        const h = (H === null ? 0 : H) / DEG;
+        return oklabToHex({ L, a: C * Math.cos(h), b: C * Math.sin(h) });
+    }
+
+    // The most chroma sRGB can actually show at this lightness and hue.
+    // The hull is nothing like a circle -- yellow reaches far further out
+    // than blue -- so "hold chroma constant across these hues" is only a
+    // request that can be granted up to the SMALLEST hull among them.
+    function maxChroma(L, H) {
+        if (H === null) return 0;
+        const h = H / DEG, cos = Math.cos(h), sin = Math.sin(h);
+        let lo = 0, hi = 0.4;
+        for (let i = 0; i < 24; i++) {
+            const mid = (lo + hi) / 2;
+            if (inGamut({ L, a: mid * cos, b: mid * sin })) lo = mid; else hi = mid;
+        }
+        return lo;
+    }
+
+    function contrast(hex1, hex2) {
+        const a = relativeLuminance(hex1), b = relativeLuminance(hex2);
+        return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    }
+
+    // Perceptual distance, so "widest gap" means the gap that LOOKS widest.
+    // Hue distance would call red->green and green->blue equal at 120
+    // degrees each when the eye does not read them that way at all.
+    function oklabDistance(hex1, hex2) {
+        const c1 = hexToOklab(hex1);
+        const c2 = hexToOklab(hex2);
+        return Math.hypot(c1.L - c2.L, c1.a - c2.a, c1.b - c2.b);
+    }
+
+    // Signed shortest arc, so a palette walking one way round the wheel
+    // reads as consistent rather than as alternating +350/-10.
+    function hueDelta(from, to) {
+        return ((to - from + 180) % 360 + 360) % 360 - 180;
+    }
+
+    return Object.freeze({
+        hslToHex, hexToRgb, rgbToHex, srgbToLinear, linearToSrgb,
+        hexToOklab, oklabToLinear, GAMUT_EPS, inGamut, oklabToHex,
+        midpointColor, INK_CROSSOVER, relativeLuminance, inkOn, DEG,
+        hexToOklch, oklchToHex, maxChroma, contrast, oklabDistance,
+        hueDelta,
+    });
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = RadianceColor;
+/* end vendored: shared/radiance-color */
+
+</script>
+<script>/* gen/palette-sets.js: copied in unedited; edit the source file and copy again */
+/* Licorice's palette sets: Classic, Places (biomes: land / flora / fauna), Skies (day / sunset), Fades, Pairs
+   (duotones / tritones), and the five seeded methods behind New mix. Built on Radiance's engine
+   (vendor/radiance-color.js, global RadianceColor); the recipes and the named colours are Licorice's own.
+   One namespace (PSETS) because the app has its own globals (mulberry32, clamp, ...).
+   PSETS.catalog() -> [{id, name, items:[{id, name, sub, lines:[{id, label, colors:[[hex, why], ...]}]}]}] */
+const PSETS=(()=>{
+const RC=RadianceColor;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const wrap=h=>((h%360)+360)%360;
+function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+/* ---- colour helpers on the vendored engine ---- */
+function lch(L,C,H){H=wrap(H);return RC.oklchToHex({L,C:Math.min(C,RC.maxChroma(L,H)),H});}
+// dark yellow-greens read as olive: slide them to ochre/brown or to green (same guard as mix@2)
+function guard(L,H){H=wrap(H);if(H>85&&H<140&&L<.8){const k=Math.min(1,(.8-L)/.3);H=H<112?H+(65-H)*k:H+(150-H)*k;}return H;}
+function vivid(L,H,k=.85,cap=.25){H=guard(L,H);return lch(L,Math.min(cap,RC.maxChroma(L,H)*k),H);}
+const cuspCache={};
+// the lightness where a hue reaches its strongest colour: yellow peaks light, blue and violet peak dark
+function cuspL(H){const h=Math.round(wrap(H));if(cuspCache[h]!=null)return cuspCache[h];
+  let best=.6,bc=0;for(let L=.3;L<=.97;L+=.01){const c=RC.maxChroma(L,h);if(c>bc){bc=c;best=L;}}return cuspCache[h]=best;}
+// hue shift along a ramp: lighter leans to yellow, darker leans to blue (sunlight and shade)
+function shifted(H,L,amt=16){const t=clamp((L-.6)/.33,-1,1),target=t>0?95:268;
+  const d=RC.hueDelta(H,target);return wrap(H+clamp(d,-amt,amt)*Math.abs(t));}
+function ramp(H,L0,L1,n,k=.8,why=''){const o=[];for(let i=0;i<n;i++){const L=L0+(L1-L0)*(n>1?i/(n-1):.5);
+  const Hs=shifted(H,L);o.push([vivid(L,Hs,k),why]);}return o;}
+function neutralRamp(H,L0,L1,n,C=.018,why=''){const o=[];for(let i=0;i<n;i++){const L=L0+(L1-L0)*(n>1?i/(n-1):.5);o.push([lch(L,C,H),why]);}return o;}
+const grey=hex=>{const L=RC.hexToOklab(hex).L;return RC.oklchToHex({L,C:0,H:0});};
+function closest(p){let m=9;for(let i=0;i<p.length;i++)for(let j=i+1;j<p.length;j++)m=Math.min(m,RC.oklabDistance(p[i],p[j]));return m;}
+// one line, ordered round the wheel starting after the widest hue gap; light before dark inside a family; greys last
+function lineOrder(items){
+  const ch=[],ne=[];items.forEach(it=>{const o=RC.hexToOklch(it[0]);(o.C<.035?ne:ch).push({it,o});});
+  ch.sort((a,b)=>a.o.H-b.o.H);let start=0,gap=-1;
+  for(let i=0;i<ch.length;i++){const g=wrap(ch[(i+1)%ch.length].o.H-ch[i].o.H)||360;if(g>gap){gap=g;start=(i+1)%ch.length;}}
+  const rot=ch.slice(start).concat(ch.slice(0,start));
+  // group into 30-degree families along the rotated order, light to dark inside each
+  const fam=[];rot.forEach(x=>{const f=fam[fam.length-1];if(f&&RC.hueDelta(f[0].o.H,x.o.H)<30)f.push(x);else fam.push([x]);});
+  return fam.flatMap(f=>f.sort((a,b)=>b.o.L-a.o.L)).concat(ne.sort((a,b)=>b.o.L-a.o.L)).map(x=>x.it);
+}
+
+/* ---- 1. today's presets (from double-blob-v29.html CURATED) ---- */
+const PRESETS=[
+ ['Markers',['#e0262f','#f06aa6','#c2185b','#f58a1f','#f7c613','#9ccc3c','#3f9142','#1f5e3a','#1aa6a0','#53b8ee','#2f6fd6','#1f2a7a','#7b4bc4','#b9a3e8','#8a5a35','#f4c7a1']],
+ ['Sunset',['#2b1b3f','#4b2a5e','#7a2e6e','#b23a6f','#e0506b','#f2786a','#f79d65','#fbc36b','#ffe29a','#fff3d6','#8e5c9e','#c97fb0','#e8a9c5','#3d5a80','#98c1d9','#5a3d7a']],
+ ['Ocean',['#03224c','#063970','#0b5394','#1c7fb6','#34a0c9','#6cc3d5','#a8e0e0','#e0f5f1','#0e6b62','#148f77','#40b59a','#8fd4b7','#f2e8cf','#e0b872','#c9824b','#7a4a2a']],
+ ['Candy',['#ffadad','#ffd6a5','#fdffb6','#caffbf','#9bf6ff','#a0c4ff','#bdb2ff','#ffc6ff','#ff8fab','#fb6f92','#ffb3c6','#cdb4db','#a2d2ff','#bde0fe','#f1faee','#8d99ae']],
+ ['Earth',['#3d2b1f','#6b4226','#8c5a3c','#b07d52','#d4a373','#e9c46a','#f4e3c1','#606c38','#283618','#8a9a5b','#bc6c25','#dda15e','#9c6644','#a3b18a','#588157','#7f5539']],
+ ['Neon',['#ff006e','#fb5607','#ffbe0b','#8338ec','#3a86ff','#00f5d4','#00bbf9','#f15bb5','#fee440','#9b5de5','#06d6a0','#ef476f','#ffd166','#118ab2','#7bff00','#ff4d00']],
+ ['Jewel',['#0b3954','#087e8b','#bfd7ea','#ff5a5f','#c81d25','#6a0572','#ab83a1','#1b998b','#2d3047','#fffd82','#ff9b71','#e84855','#3c1642','#086375','#1dd3b0','#affc41']]
+];
+
+/* ---- 2. biomes, built like the Ocean preset: one big family, one supporting family, one small accent.
+   Each family is a run of NAMED control colours (dark to light, named after things in that place, the Werner 1814
+   idea); one bridge between each pair fills it out (Radiance wheel midpoint). 4+3+2 controls = 7+5+3 = 15 colours. */
+const BIOMES=[
+ ['Rain forest','Pacific Northwest: firs, moss, cedar bark, fog',
+  [['fir shadow','#0e2a26'],['Douglas fir','#1f5048'],['cedar bough','#3b7d5e'],['sword fern','#8fbf72']],
+  [['wet soil','#2e2119'],['cedar bark','#6b3f2a'],['nurse log','#b48a64']],
+  [['rain cloud','#7f939b'],['fog','#e2e9e8']]],
+ ['Jungle','tropical: deep greens, bark, one bright bird',
+  [['canopy shade','#0f2e1a'],['leaf','#1f6b3a'],['fern','#4caf50'],['new shoot','#b8e07a']],
+  [['root','#3a2418'],['bark','#7a4a2c'],['dry leaf','#c49a6c']],
+  [['macaw','#d7263d'],['toucan beak','#f6a623']]],
+ ['Coral reef','water over sand, coral in between',
+  [['deep reef','#0f3460'],['reef water','#1b6fb3'],['lagoon','#2fb7c9'],['shallows','#bdeee8']],
+  [['red coral','#b8354a'],['pink coral','#ff8c94'],['polyp','#ffd6cc']],
+  [['wet sand','#c9a575'],['white sand','#fbf0d9']]],
+ ['Desert','sun-baked rock, big sky, a little cactus',
+  [['canyon shadow','#4f2618'],['mesa','#a5482b'],['terracotta','#d9774b'],['dune','#f0c88e']],
+  [['dusk','#4d4a7a'],['noon sky','#7fb3d5'],['haze','#dcecf3']],
+  [['cactus','#2f5e45'],['sagebrush','#9db3a0']]],
+ ['Tundra','stone and snow, ice-blue, small red berries',
+  [['peat','#3b2e26'],['rock','#6e6a63'],['lichen','#bdb592'],['snow','#f3f6f8']],
+  [['glacial lake','#2f5d7c'],['melt water','#5aa9c9'],['ice','#c7e4f0']],
+  [['bearberry','#a0233a'],['cloudberry','#f08a24']]],
+ ['Savanna','gold grass, red earth, flat-top trees',
+  [['grass root','#7a5420'],['tall grass','#c9962f'],['dry grass','#e2c06b'],['straw','#f5e6b5']],
+  [['red earth shade','#5a2618'],['red earth','#b4532a'],['dust','#e08f5c']],
+  [['acacia','#3f6b3a'],['acacia leaf','#8bab6a']]],
+ ['Deep sea','dark water, things that glow',
+  [['midnight','#05081c'],['abyss','#14215a'],['twilight water','#2d4fa0'],['last light','#6f9ad8']],
+  [['glow shadow','#0e6f78'],['glow','#2de2e6'],['glow edge','#b9fbf5']],
+  [['jelly','#a0306a'],['comb jelly','#ff6fb5']]],
+ ['Autumn woods','turning leaves, bark, a few evergreens',
+  [['maple shadow','#6e1a14'],['maple','#c62d1f'],['pumpkin','#e8731b'],['birch','#f2b134']],
+  [['wet bark','#3b2a20'],['oak leaf','#7a4a24'],['mushroom','#c9a27e']],
+  [['pine','#1f4d3a'],['pine light','#6d9a7c']]],
+ ['Alpine meadow','sky and lake, meadow, alpenrose',
+  [['lake depth','#14365a'],['gentian sky','#2f6fae'],['high sky','#7fb5e3'],['glacier','#dff2fb']],
+  [['spruce','#24543a'],['meadow','#4f8f45'],['spring grass','#a5d07a']],
+  [['alpenrose','#c2306a'],['alpenrose light','#f39ab8']]],
+ ['Wetland','still water, reeds, a lotus',
+  [['pond bottom','#23343a'],['pond','#4f7f8f'],['heron','#8eb3b8'],['morning mist','#e7ece4']],
+  [['cattail','#5a4326'],['reed','#a8894e'],['reed tip','#e0cf96']],
+  [['lotus','#c2457a'],['lotus light','#f6bfd0']]],
+ ['Polar night','night and ice, green aurora, a violet edge',
+  [['night','#0b1636'],['polar blue','#2a3f7a'],['glacier','#6fb6d9'],['snow','#f6f9fb']],
+  [['aurora deep','#0e6b55'],['aurora','#3ddc97'],['aurora light','#b7f5d8']],
+  [['aurora violet','#6a3fd0'],['aurora pink','#d84fd1']]],
+ ['Volcano','ash and basalt, fire, first regrowth',
+  [['obsidian','#121016'],['basalt','#3a3638'],['ash','#8d8a88'],['steam','#e6e9ec']],
+  [['magma','#7a0010'],['lava','#e0300b'],['ember','#ffb000']],
+  [['new fern','#2e6a2e'],['fern light','#8cc56a']]],
+];
+function family(ctrl){const o=[];ctrl.forEach(([n,h],i)=>{o.push([h,n]);
+  if(i<ctrl.length-1)o.push([RC.midpointColor(h,ctrl[i+1][1],'wheel'),'between '+n+' and '+ctrl[i+1][0]]);});return o;}
+/* ---- 2c. fades: bridges all the way. Three named controls, dark to light; wheel bridges keep colour when the
+   fade walks across hues, blend bridges take the true middle for soft fades. */
+const FADES=[
+ ['Dawn','night into first light',[['night','#1b2350'],['dawn rose','#d77a8e'],['first light','#fbe7b4']],'wheel'],
+ ['Dusk','the sun just gone',[['deep dusk','#2a1840'],['afterglow','#b4365e'],['last orange','#f39a4a']],'wheel'],
+ ['Golden hour','long warm light',[['long shadow','#4a2a1a'],['amber','#d98a2a'],['warm light','#fff0c8']],'blend'],
+ ['Deep to shore','from open water up the beach',[['abyss','#061a3a'],['sea','#1f7aa8'],['wet sand','#f2e6c4']],'wheel'],
+ ['Northern lights','green curtains into violet',[['arctic night','#0a1430'],['aurora green','#3ad69a'],['aurora haze','#e2c8ff']],'wheel'],
+ ['Lagoon','deep channel to white sand',[['channel','#0b3a44'],['turquoise','#2cc0c0'],['white sand','#f6f4e6']],'blend'],
+ ['Ember','charcoal to flame',[['charcoal','#1a0e0a'],['ember','#c0281a'],['flame tip','#ffd24a']],'wheel'],
+ ['Moonlight','blue night, silver moon',[['midnight','#0e1424'],['moonlit blue','#6a7ea8'],['moon','#eef0f4']],'blend'],
+ ['Ink wash','brush ink thinned on paper',[['ink','#15171d'],['wash','#7c8494'],['paper','#f4f1ea']],'blend'],
+ ['Plum & peach','dark fruit to soft skin',[['plum','#3a1a3a'],['mauve','#a46a8a'],['peach','#ffd2b0']],'blend'],
+ ['Lavender field','rows of lavender into haze',[['row shadow','#2a2050'],['lavender','#8a6ad0'],['lavender haze','#ece2fa']],'blend'],
+ ['Rose','deep petal to blush',[['dark rose','#4a0e22'],['rose','#d24a6a'],['blush','#fde0e6']],'blend'],
+ ['Glacier','crevasse to snow',[['crevasse','#0e2e4a'],['glacier blue','#4aa6d0'],['snow','#f4fbff']],'blend'],
+ ['Fern','shade to a new frond',[['fern shade','#0f2a1e'],['fern','#3f9a5a'],['new frond','#d8f0b0']],'blend'],
+ ['Desert heat','canyon to shimmering haze',[['canyon','#3a1a12'],['terracotta','#d0643a'],['heat haze','#fbe4c8']],'blend'],
+ ['Cherry blossom','dark bark, pink petals',[['wet bark','#2e1e22'],['blossom','#e89ab4'],['petal','#fff4f6']],'blend'],
+ ['Copper','green patina to bright copper',[['patina','#2a6a5a'],['copper','#b8642a'],['polished','#f2c09a']],'blend'],
+];
+// bridges all the way: keep the named controls, put a bridge between every pair, repeat (3 controls, 3 rounds -> 17)
+function bridgesAll(ctrl,rounds,mode='blend'){let p=ctrl.map(([n,h])=>[h,n]);
+  for(let k=0;k<rounds;k++){const q=[p[0]];for(let i=1;i<p.length;i++){q.push([RC.midpointColor(p[i-1][0],p[i][0],mode),'bridge']);q.push(p[i]);}p=q;}
+  return p;}
+function biome([n,sub,A,B,C]){return family(A).concat(family(B),family(C));}
+
+/* flora and fauna: two more lines under a biome, same build (big family, supporting family, small accent) */
+const BIOTA={
+ 'Rain forest':{
+  flora:[[['sword fern','#1d3f2c'],['salal','#2f5e3a'],['vine maple','#6f9a3e'],['licorice fern','#a6c96a']],
+         [['huckleberry','#4a1730'],['red huckleberry','#b0283f'],['salmonberry','#f08a5d']],
+         [['skunk cabbage','#e8c22e'],['trillium','#f6f0ea']]],
+  fauna:[[['raven','#16161c'],['black bear','#3a2c26'],['elk','#8a6440'],['elk rump','#d9bf95']],
+         [['Steller\'s jay','#1b2f6b'],['jay wing','#2f5fb0'],['jay light','#8fb4e4']],
+         [['sockeye salmon','#c3272b'],['banana slug','#e9c53a']]]},
+ 'Coral reef':{
+  flora:[[['deep seagrass','#1f4d36'],['seagrass','#2e7d4a'],['sea lettuce','#5fae6a'],['seagrass tip','#b6e3a6']],
+         [['red algae','#6b1a2e'],['coralline','#b8354a'],['coralline light','#f08b8b']],
+         [['sea fan','#7b2d8e'],['sea fan light','#c99be0']]],
+  fauna:[[['parrotfish deep','#0e2f6b'],['blue tang','#1d5fd0'],['damselfish','#3fb5e8'],['fin glow','#bfe8f8']],
+         [['clownfish edge','#a8340f'],['clownfish','#f26b1d'],['clownfish light','#ffd2a6']],
+         [['yellow tang','#e8b800'],['sea slug','#7b2d8e']]]},
+ 'Desert':{
+  flora:[[['cactus shadow','#22412f'],['saguaro','#3f6e4a'],['sage','#7fa37a'],['sage dust','#cfdcc2']],
+         [['prickly pear fruit','#8a1f4f'],['cactus bloom','#e05a8b'],['bloom light','#f6b3cb']],
+         [['desert marigold','#f2c12e'],['cholla straw','#e8d9a8']]],
+  fauna:[[['coyote shadow','#3a2a1e'],['jackrabbit','#7a5a3a'],['coyote','#b89064'],['pale belly','#ead7b5']],
+         [['gila black','#1f1a1a'],['gila monster','#e2683c'],['gila light','#f2a679']],
+         [['vermilion flycatcher','#d42a1f'],['mountain bluebird','#4a7fc5']]]},
+ 'Jungle':{
+  flora:[[['forest-floor fern','#163a22'],['philodendron','#2a6b35'],['banana leaf','#5aa84a'],['bamboo','#c4e08a']],
+         [['heliconia shade','#7a1222'],['heliconia','#d9302a'],['heliconia tip','#f6a03a']],
+         [['orchid','#b04fb8'],['frangipani','#f8ecd2']]],
+  fauna:[[['jaguar spot','#1f1712'],['jaguar shade','#7a4a1e'],['jaguar','#d29a3e'],['jaguar belly','#f1dfb4']],
+         [['morpho shade','#0d2f7a'],['morpho','#1e74e0'],['morpho shine','#8fd0ff']],
+         [['poison frog','#e8402a'],['tree frog','#5ccf3a']]]},
+ 'Tundra':{
+  flora:[[['crowberry leaf','#22372a'],['dwarf willow','#4f6b45'],['reindeer moss','#b3b596'],['cotton grass','#f1efe6']],
+         [['fireweed shade','#6a1f52'],['fireweed','#c2459a'],['fireweed light','#eaa6d4']],
+         [['arctic poppy','#f2d03a'],['bilberry','#3b3f8a']]],
+  fauna:[[['musk ox','#2b221d'],['caribou','#6e5a48'],['caribou light','#b8a48c'],['snowy owl','#f4f3ee']],
+         [['arctic fox blue','#4a5560'],['fox grey','#8e98a0'],['fox winter coat','#e6eaee']],
+         [['ptarmigan comb','#c4302b'],['snow bunting','#c98a3a']]]},
+ 'Savanna':{
+  flora:[[['acacia shade','#24402a'],['acacia','#4f7a3a'],['acacia leaf','#8fae5a'],['new grass','#d4e2a0']],
+         [['baobab','#5e4636'],['baobab bark','#9a7a62'],['baobab pod','#d9c4a2']],
+         [['aloe flower','#e2462a'],['flame lily','#f2a22a']]],
+  fauna:[[['lion mane','#4a2c14'],['lion','#b07a3a'],['lion light','#dcb26c'],['lion belly','#f2e2bc']],
+         [['zebra','#1a1a1c'],['wildebeest','#5c5a58'],['zebra white','#f2f0ea']],
+         [['lilac-breasted roller','#7d5ab8'],['roller blue','#2fa0d8']]]},
+ 'Deep sea':{labels:{flora:'sea floor (no plants this deep)'},
+  flora:[[['vent chimney','#1c1a1e'],['vent rock','#4a3f3a'],['bacterial mat','#c9b07a'],['mat light','#f0e6c8']],
+         [['bamboo coral','#6b2a1a'],['deep coral','#c45a2e'],['coral light','#f2a07a']],
+         [['tube worm plume','#d2283c'],['glass sponge','#d6e6ea']]],
+  fauna:[[['anglerfish','#1a1414'],['viperfish','#2e3440'],['lanternfish','#6b7d96'],['lantern glow','#c6e2f2']],
+         [['vampire squid','#3a0a1a'],['vampire squid red','#9a1a2e'],['squid light','#e2687a']],
+         [['photophore','#3ef0ff'],['dumbo octopus','#f2a2b8']]]},
+ 'Autumn woods':{
+  flora:[[['oak shade','#3a2412'],['oak','#8a5a24'],['beech','#c9862e'],['ginkgo','#f2d24a']],
+         [['sumac shade','#5a0e1a'],['sumac','#b3222a'],['sumac light','#e86a4a']],
+         [['fly agaric','#d42a1f'],['moss','#4f8a4a']]],
+  fauna:[[['moose','#2a1e18'],['deer','#7a5232'],['deer light','#b88a5c'],['deer tail','#f0e4d0']],
+         [['red fox shade','#6a2a10'],['red fox','#c8581e'],['fox light','#eaa266']],
+         [['cardinal','#c8102e'],['blue jay','#3a6ec8']]]},
+ 'Alpine meadow':{
+  flora:[[['dwarf pine','#1f3f2c'],['alpine grass','#4f8a45'],['lady\'s mantle','#93c06a'],['dew','#e2f0d2']],
+         [['gentian deep','#1a2a7a'],['gentian','#2f52c8'],['harebell','#9fb2ee']],
+         [['alpine poppy','#f4c42a'],['edelweiss','#f2f0e6']]],
+  fauna:[[['ibex horn','#2a2420'],['ibex','#6e5a46'],['chamois','#b08e64'],['mountain hare','#ece6dc']],
+         [['marmot shade','#4a3426'],['marmot','#9a7450'],['marmot light','#d6b68c']],
+         [['apollo butterfly spot','#c8202e'],['chough beak','#f2c22a']]]},
+ 'Wetland':{
+  flora:[[['sedge shade','#1f3a2a'],['sedge','#3f7a4a'],['lily pad','#6fae5a'],['duckweed','#c2e07a']],
+         [['iris deep','#2e1f6b'],['wild iris','#6a4cb3'],['iris light','#b9a8ea']],
+         [['marsh marigold','#f5c22b'],['water lily','#f6d6e2']]],
+  fauna:[[['heron shadow','#2a3038'],['great blue heron','#5f7088'],['heron grey','#9fb0c0'],['egret','#f4f4ee']],
+         [['mallard head','#0f4a3a'],['mallard green','#1f7a5a'],['mallard light','#6fc29a']],
+         [['red-winged blackbird','#d4281e'],['wing stripe','#f2c43a']]]},
+ 'Polar night':{labels:{flora:'flora: lichen and snow algae'},
+  flora:[[['crust lichen','#2e2a26'],['rock lichen','#6a6050'],['map lichen','#b6c06a'],['frost','#eef2f0']],
+         [['snow algae deep','#7a1a2e'],['snow algae','#d65a6a'],['watermelon snow','#f4b6be']],
+         [['golden lichen','#c09a3a'],['moss campion','#d45aa8']]],
+  fauna:[[['orca','#0e0f14'],['seal','#4a5058'],['harp seal','#9aa2aa'],['polar bear','#f2efe4']],
+         [['narwhal','#3a4a5a'],['beluga shadow','#8aa6b8'],['beluga','#e6f0f4']],
+         [['puffin beak','#f26b1d'],['king eider','#5aa86a']]]},
+ 'Volcano':{
+  flora:[[['regrowth shade','#1f3a22'],['new fern','#2e6a2e'],['ohia leaf','#6aa04a'],['fern curl','#c2e08a']],
+         [['lichen shade','#3f4a44'],['silversword','#8fa39a'],['silversword light','#dbe4df']],
+         [['sulphur lichen','#e8d84a'],['ohia lehua','#d4202e']]],
+  fauna:[[['lava lizard','#2a2422'],['nene goose','#5a5048'],['nene','#a8957e'],['nene cheek','#ece0c4']],
+         [['booby feet shade','#1f5f7a'],['blue-footed booby','#3aa0c8'],['booby feet light','#a6e0ee']],
+         [['amakihi','#b8c43a'],['lava lizard throat','#e2563a']]]},
+};
+/* ---- 2b. skies: weather, each as a day line and a sunset line, same build as the biomes ---- */
+const SKIES=[
+ ['Thunderstorm','dark anvil clouds, rain curtains, lightning',
+  [[['anvil base','#1c2230'],['storm cloud','#3a4558'],['shelf cloud','#6f7d92'],['cloud top','#c9d2dd']],
+   [['rain shaft','#2d3f4f'],['rain curtain','#5d7487'],['spray','#a9bccb']],
+   [['lightning violet','#a98cf0'],['lightning','#f4f1ff']]],
+  [[['storm underside','#2a1f3a'],['bruised cloud','#5a3a62'],['mammatus','#a86a86'],['lit edge','#f0b8a0']],
+   [['ember sky','#8a2a1a'],['sunset orange','#e8642a'],['gold break','#f6b84a']],
+   [['storm teal','#2f5f6a'],['lightning','#f6f2ff']]]],
+ ['Eerie storm light','the green-yellow cast before a big storm arrives',
+  [[['green-black cloud','#1d2a26'],['storm green','#3f5a4a'],['eerie teal','#6f9a8a'],['sickly light','#c9dcae']],
+   [['ochre gloom','#6a5426'],['yellow cast','#c8a440'],['eerie yellow','#efe08a']],
+   [['funnel grey','#7a7e78'],['hail','#eef2ec']]],
+  [[['dark wall','#2a2420'],['copper cloud','#7a4a2a'],['orange cast','#d0803a'],['amber glow','#f2c27a']],
+   [['green tinge','#3e5a48'],['teal break','#6a9a8a'],['pale teal','#c4ded2']],
+   [['pink flash','#f08ab0'],['lightning','#fbf6ff']]]],
+ ['Snow','flat white sky, blue shadows',
+  [[['snow cloud','#5a6470'],['flat grey sky','#8e98a2'],['snowfall','#c9d0d8'],['fresh snow','#f6f8fb']],
+   [['snow shadow','#3a5a8a'],['blue shadow','#7a9ad0'],['shadow light','#c6d6f2']],
+   [['bare branch','#2e2624'],['winter berry','#b8283a']]],
+  [[['dusk snow cloud','#3e3a5a'],['lavender sky','#8a7ab0'],['pink snow','#e2b8cc'],['alpenglow','#fbe6e6']],
+   [['cold shadow','#2f4a7a'],['blue hour','#5f7ac0'],['ice blue','#b6c8ee']],
+   [['last sun','#f2a05a'],['warm window','#f6d27a']]]],
+ ['Rain','grey sky, wet streets',
+  [[['rain cloud','#2f3a44'],['wet sky','#5a6a78'],['rain grey','#94a2ae'],['bright overcast','#d6dde2']],
+   [['wet street','#22303a'],['puddle','#3e6a7a'],['reflection','#8ab8c6']],
+   [['umbrella','#d8342a'],['raincoat','#f2c23a']]],
+  [[['rain dusk','#2e2a40'],['wet violet','#5e4a72'],['rose cloud','#b07a96'],['peach haze','#f0c2a8']],
+   [['dark street','#2a2a36'],['puddle glow','#a85a3a'],['puddle shine','#f2a05a']],
+   [['rain teal','#3f7a86'],['streetlight','#ffd68a']]]],
+ // mist is one continuous fade, so it is built the other way: three controls, then bridges of bridges (Gary)
+ ['Mist','one soft fade: a dark tree, the mist, the sun behind it',
+  [['dark tree','#2f3d3a'],['mist','#a7b4b0'],['sun in mist','#f6ecd0']],
+  [['dusk hill','#3a3550'],['rose mist','#c09aa8'],['sun glow','#fbe2c0']],'bridges'],
+ ['Drizzle','light rain, rinsed greens',
+  [[['drizzle cloud','#4e5660'],['drizzle grey','#7c8690'],['soft grey','#adb6bd'],['pale sky','#dde2e5']],
+   [['wet leaf','#2f4a3a'],['wet grass','#4f7a5a'],['rinsed green','#93b89a']],
+   [['wet brick','#9a4a3a'],['yellow raincoat','#f2d04a']]],
+  [[['drizzle dusk','#4a4256'],['mauve drizzle','#857590'],['soft pink','#c8aab4'],['pale peach','#f0d8cc']],
+   [['wet slate','#3a4250'],['blue drizzle','#6a7a96'],['silver','#aab6c8']],
+   [['low sun','#f0a060'],['window light','#f8dc90']]]],
+ ['Forest mist','Pacific Northwest: lush greens fading into mist',
+  [[['near fir','#173a2c'],['wet fir','#2f5e48'],['firs in mist','#6f8f80'],['fir ghosts','#b4c6bd']],
+   [['moss','#3f7a3a'],['lush moss','#6fa84a'],['wet fern','#b2d48a']],
+   [['mist','#dfe6e3'],['wet cedar','#7a4a32']]],
+  [[['dusk fir','#1f2e2a'],['fir in gold mist','#4a5a40'],['gold mist','#b8a878'],['lit mist','#f2e2b8']],
+   [['moss in shade','#2f5030'],['moss','#5f8a3a'],['backlit fern','#c2d86a']],
+   [['sunbeam','#f8d27a'],['rose mist','#e2b8b0']]]],
+];
+
+/* ---- 3. duotones / tritones: families, one led dark, one led light ---- */
+// hue numbers are OKLCH degrees
+const DUOS=[
+ ['Navy & Marigold',265,75,'blue with gold/orange: the best-liked pair in the 2025 pairing study'],
+ ['Teal & Coral',195,35,'a warm colour with cyan: popular in O\'Donovan\'s 2011 palette data'],
+ ['Indigo & Apricot',282,62,'cool dark with warm light, the way light falls outdoors'],
+ ['Plum & Butter',325,100,'natural order: yellow lives light, violet lives dark'],
+ ['Rust & Sky',42,236,'roles swapped: the warm family carries the darks'],
+ ['Pine & Peach',158,52,'green and orange-pink, opposite temperatures'],
+ ['Forest & Rose',150,5,'near-complements, kept apart by lightness'],
+ ['Ink & Tomato',null,30,'print duotone: black ink plus one colour'],
+];
+const TRIS=[
+ ['Navy, Gold & Coral',265,85,30],
+ ['Teal, Sand & Tomato',200,80,28],
+ ['Plum, Peach & Mint',320,58,165],
+ ['Forest, Butter & Berry',150,100,355],
+ ['Indigo, Apricot & Turquoise',282,62,200],
+ ['Ink, Paper & Vermilion',null,80,32],
+];
+function duo([name,a,b,why]){
+  const A=a==null?neutralRamp(60,.2,.62,5,.012,'family 1 (dark-led): neutral ink'):ramp(a,.27,.72,5,.85,'family 1, led dark');
+  const B=ramp(b,.58,.95,5,.85,'family 2, led light');
+  return A.concat(B);
+}
+function tri([name,a,b,c]){
+  const A=a==null?neutralRamp(60,.2,.6,5,.012,'family 1: neutral ink'):ramp(a,.27,.7,5,.85,'family 1, led dark');
+  const B=ramp(b,.6,.95,4,.8,'family 2, led light');
+  const C=ramp(c,.5,.78,3,.9,'family 3: the accent, small amounts');
+  return A.concat(B,C);
+}
+
+/* ---- 4. methods (seeded) ---- */
+const METHODS=[
+ {id:'wheel',name:'Wheel rules',src:'Adobe Color / Itten: hues placed by angle (analogous, split complement, triad, complement), each at a few lightnesses. O\'Donovan 2011: these templates alone don\'t predict which palettes people like. Shown as the baseline.',
+  make(r){const H=r()*360,rules=[['analogous',[0,30,60]],['split complement',[0,150,210]],['triad',[0,120,240]],['complement',[0,180]]],[rn,off]=rules[Math.floor(r()*rules.length)];
+   const out=[];off.forEach(d=>{const n=off.length==2?5:4;for(let i=0;i<n;i++){const L=.42+.46*i/(n-1);out.push([vivid(L,H+d,.75),rn+' '+(d?'+'+d+'°':'base')]);}});return{items:out,tag:rn};}},
+ {id:'natural',name:'Natural order',src:'Judd / Munsell: each hue sits at its own natural lightness, where it is strongest (yellow light, orange mid, blue and violet dark). Pairs that follow this order look right; reversed (dark yellow, pale navy) looks muddy.',
+  make(r){const H=r()*360,n=4+Math.floor(r()*2),step=25+r()*20,out=[];
+   for(let i=0;i<n;i++){const h=H+i*step,L=clamp(cuspL(h)+(r()-.5)*.08,.3,.93);out.push([vivid(L,h,.9),'hue at its natural lightness']);
+     out.push([vivid(clamp(L+.17,.4,.96),shifted(h,L+.17),.6),'its tint (towards sunlight)']);}
+   const h0=H+step*(n-1)/2;out.push([vivid(.3,shifted(h0,.3),.7),'one deep shade for edges']);return{items:out,tag:n+' hues, '+Math.round(step)+'° apart'};}},
+ {id:'line',name:'Bridges all the way',src:'"Lines in colour space" (arXiv 1709.02252: straight-line palettes were preferred) built Radiance\'s way: two control colours, a dark cool one and a light warm one, and every colour between is a bridge, then bridges of bridges.',
+  make(r){const Hd=200+r()*110,Hl=Hd+180+(r()-.5)*90;const a=vivid(.28,Hd,.9),b=vivid(.92,Hl,.9);
+   let p=[a,b];for(let k=0;k<3;k++){const q=[p[0]];for(let i=1;i<p.length;i++){q.push(RC.midpointColor(p[i-1],p[i],'wheel'));q.push(p[i]);}p=q;}
+   return{items:p.map((h,i)=>[h,i==0||i==p.length-1?'control colour':'bridge (wheel)']),tag:'9 from 2 controls',ordered:true};}},
+ {id:'pigment',name:'Limited pigments',src:'Painters\' limited palettes (Zorn: ochre, vermilion, black, white; split primary; earth). Every swatch is a mix of a few real pigments, so everything shares the same ingredients. Mixed here in OKLab as an approximation of paint.',
+  sets:[['Zorn',{ochre:'#c8963e',vermilion:'#e34234','ivory black':'#28241f',white:'#f5f2ea'}],
+        ['Earth + blue',{'burnt sienna':'#8a3e1e','yellow ochre':'#cf9a3a',ultramarine:'#2a3a9a',white:'#f6f3ec'}],
+        ['Split primary',{lemon:'#f4e04d','cad yellow':'#f6b12a','cad red':'#e0352b',alizarin:'#a3203f',ultramarine:'#2a3a9a',phthalo:'#0f5b78',white:'#f7f5ef'}]],
+  make(r,i){const [nm,pg]=this.sets[i%3],names=Object.keys(pg).filter(k=>k!='white'),W=pg.white,out=[];
+   const mix=(x,y,t)=>{const A=RC.hexToOklab(x),B=RC.hexToOklab(y);return RC.oklabToHex({L:A.L+(B.L-A.L)*t,a:A.a+(B.a-A.a)*t,b:A.b+(B.b-A.b)*t});};
+   names.forEach(n=>out.push([pg[n],n]));
+   for(let a=0;a<names.length;a++)for(let b=a+1;b<names.length;b++){const t=.35+r()*.3;out.push([mix(pg[names[a]],pg[names[b]],t),names[a]+' + '+names[b]]);}
+   names.forEach(n=>out.push([mix(pg[n],W,.55),n+' + white']));
+   let o=out;while(o.length>14){o.splice(Math.floor(r()*(o.length-names.length))+names.length,1);} // keep the pure pigments
+   return{items:o,tag:nm};}},
+ {id:'notan',name:'Quiet, middle, loud',src:'Munsell\'s area rule (large areas quiet, small areas strong) and the colourists\' 60-30-10: one quiet family for big fields across the whole value range, one middle family, one loud accent used sparingly.',
+  make(r){const H=r()*360,H2=H+(r()<.5?1:-1)*(30+r()*30),H3=H+150+r()*60,out=[];
+   for(let i=0;i<6;i++){const L=.3+.62*i/5;out.push([lch(L,.035+.02*r(),guard(L,shifted(H,L))),'quiet: big fields']);}
+   for(let i=0;i<4;i++){const L=.45+.4*i/3;out.push([vivid(L,shifted(H2,L),.55),'middle: medium areas']);}
+   const L3=cuspL(H3);out.push([vivid(L3,H3,.95),'loud: small touches']);out.push([vivid(clamp(L3-.15,.35,.8),H3,.95),'loud, darker']);
+   return{items:out,tag:'60 / 30 / 10',ordered:true};}},
+];
+
+
+/* ---- suggestions for the next control colour (the maker's five rules) ---- */
+const warm=H=>H<110||H>330;
+const SUGGEST=[
+ ['Next in natural order','turns the wheel 35° onward and puts that hue at its natural lightness',a=>{const o=RC.hexToOklch(a.at(-1)),p=a.length>1?RC.hexToOklch(a.at(-2)):null;
+   const dir=p&&o.H!=null&&p.H!=null?Math.sign(RC.hueDelta(p.H,o.H))||1:1,H=(o.H??60)+35*dir;return vivid(cuspL(H),H,.88);}],
+ ['Light–dark see-saw','stays close in hue (20° on) but flips the value: light after dark, dark after light',a=>{const o=RC.hexToOklch(a.at(-1)),H=(o.H??60)+20,L=o.L>.6?.32:.88;return vivid(L,shifted(H,L),.85);}],
+ ['Warm ↔ cool','crosses to the other temperature, at a contrasting value',a=>{const o=RC.hexToOklch(a.at(-1)),H=o.H??60,T=warm(H)?235:62,L=clamp(o.L>.6?o.L-.3:o.L+.3,.3,.92);return vivid(L,shifted(T,L),.85);}],
+ ['Continue the line','extends the straight line through the last two controls (needs two)',a=>{if(a.length<2)return null;const x=RC.hexToOklab(a.at(-2)),y=RC.hexToOklab(a.at(-1));
+   const L=clamp(2*y.L-x.L,.22,.95);return RC.oklabToHex({L,a:2*y.a-x.a,b:2*y.b-x.b});}],
+ ['Accent','the colour opposite your controls, at full strength: for the one field that breaks the rule',a=>{let sa=0,sb=0;a.forEach(h=>{const o=RC.hexToOklab(h);sa+=o.a;sb+=o.b;});
+   const H=wrap(Math.atan2(sb,sa)*180/Math.PI+180);return vivid(cuspL(H),H,.95);}],
+];
+
+/* ---- recipes: every palette is FAMILIES of named controls plus rounds of bridges. The list and the maker both
+   build colours from a recipe with build(), so a palette opened in the maker is exactly the one in the list.
+   recipe = {families:[{controls:[[name,hex]...], rounds:0-3, mode:'wheel'|'blend'}]} */
+function expand(f){let p=f.controls.map(([n,h])=>[h,n]);
+  for(let k=0;k<(f.rounds||0);k++){const q=[p[0]];for(let i=1;i<p.length;i++){const A=p[i-1],B=p[i];
+    q.push([RC.midpointColor(A[0],B[0],f.mode||'wheel'),k==0&&A[1]&&B[1]?'between '+A[1]+' and '+B[1]:'bridge']);q.push(B);}p=q;}
+  return p;}
+const build=r=>r.families.flatMap(expand);
+const fams=(list,rounds,mode)=>({families:list.map(c=>({controls:c,rounds,mode}))});
+const chunks=(items,sizes)=>{let k=0;return{families:sizes.map(n=>({controls:items.slice(k,k+=n).map(([h,w])=>[w,h]),rounds:0,mode:'wheel'}))};};
+const withColors=(id,label,recipe)=>({id,label,recipe,colors:build(recipe)});
+
+/* ---- the grouped catalog the picker dials down through: group -> item -> its lines ---- */
+const slug=t=>t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+function catalog(){
+  const keep=['Markers','Sunset','Ocean'];
+  return[
+   {id:'classic',name:'Classic',items:PRESETS.filter(p=>keep.includes(p[0])).map(([n,c])=>({id:'classic:'+slug(n),name:n,sub:'',
+     lines:[withColors('classic:'+slug(n),'',{families:[{controls:c.map(h=>['',h]),rounds:0,mode:'wheel'}]})]}))},
+   {id:'places',name:'Places',items:BIOMES.map(b=>{const id='place:'+slug(b[0]),x=BIOTA[b[0]],lines=[withColors(id+':land','land',fams([b[2],b[3],b[4]],1,'wheel'))];
+     if(x){lines.push(withColors(id+':flora',(x.labels&&x.labels.flora)||'flora',fams(x.flora,1,'wheel')));
+           lines.push(withColors(id+':fauna','fauna',fams(x.fauna,1,'wheel')));}
+     return{id,name:b[0],sub:b[1],lines};})},
+   {id:'skies',name:'Skies',items:SKIES.map(([n,sub,day,dusk,how])=>{const id='sky:'+slug(n),mk=x=>how=='bridges'?fams([x],3,'blend'):fams(x,1,'wheel');
+     return{id,name:n,sub,lines:[withColors(id+':day','day',mk(day)),withColors(id+':sunset','sunset',mk(dusk))]};})},
+   {id:'fades',name:'Fades',items:FADES.map(([n,sub,c,m])=>({id:'fade:'+slug(n),name:n,sub,lines:[withColors('fade:'+slug(n),'',fams([c],3,m))]}))},
+   {id:'pairs',name:'Pairs',items:DUOS.map(d=>({id:'pair:'+slug(d[0]),name:d[0],sub:'duotone',lines:[withColors('pair:'+slug(d[0]),'',chunks(duo(d),[5,5]))]}))
+     .concat(TRIS.map(t=>({id:'pair:'+slug(t[0]),name:t[0],sub:'tritone',lines:[withColors('pair:'+slug(t[0]),'',chunks(tri(t),[5,4,3]))]})))},
+  ];
+}
+// a seeded method's result as a recipe: one family, every colour a control (no bridges)
+function methodRecipe(k,seed){const m=METHODS[k],r=mulberry32(seed),res=m.make(r,seed%3),items=res.ordered?res.items:lineOrder(res.items);
+  if(m.id=='line')return{families:[{controls:[['dark control',items[0][0]],['light control',items.at(-1)[0]]],rounds:3,mode:'wheel'}]}; // keep its build: 2 controls, 3 rounds
+  return{families:[{controls:items.map(([h,w])=>[w||'',h]),rounds:0,mode:'wheel'}]};}
+return{RC,clamp,wrap,mulberry32,lch,guard,vivid,cuspL,shifted,ramp,neutralRamp,grey,closest,lineOrder,
+  PRESETS,BIOMES,BIOTA,SKIES,FADES,DUOS,TRIS,family,bridgesAll,biome,duo,tri,METHODS,catalog,SUGGEST,warm,expand,build,methodRecipe};
+})();
+
+</script>
+
+<script>
+/* Spectral.js 3.0.0 (pigment mixing with the Kubelka-Munk model), https://github.com/rvanwijnen/spectral.js
+MIT License
+
+Copyright (c) 2025 Ronald van Wijnen
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+!function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"function"==typeof define&&define.amd?define(["exports"],e):e((t=t||self).spectral={})}(this,(function(t){class e{constructor(...t){1===t.length&&("string"==typeof t[0]&&(this.sRGB=G(t[0]).slice(0,3),this.lRGB=l(this.sRGB),this.R=R(this.lRGB),this.XYZ=g(this.R)),Array.isArray(t[0])&&(38===t[0].length?(this.R=t[0],this.XYZ=g(this.R),this.lRGB=u(this.XYZ),this.sRGB=o(this.lRGB)):(this.sRGB=t[0],this.lRGB=l(this.sRGB),this.R=R(this.lRGB),this.XYZ=g(this.R))))}get OKLab(){return this._OKLab??=c(this.XYZ)}get OKLCh(){return this._OKLCh??=M(this.OKLab)}get KS(){return this._KS??=this.R.map((t=>i(t)))}get luminance(){return this._luminance??=Math.max(Number.EPSILON,this.XYZ[1])}get tintingStrength(){return this._tintingStrength??=1}set tintingStrength(t){this._tintingStrength=t}inGamut=({epsilon:t=0}={})=>r(this.lRGB,t);toGamut=({method:t="map"}={})=>{switch(t.toLowerCase()){case"clip":return new e(this.sRGB.map((t=>B.clamp(t,0,255))));case"map":return a(this);default:throw new TypeError(`Unknown method: '${t}'`)}};toString=({format:t="hex",method:e="map"}={})=>{let r;if(this.inGamut())r=this.sRGB;else switch(e.toLowerCase()){case"clip":r=this.sRGB.map((t=>B.clamp(t,0,255)));break;case"map":r=a(this).sRGB;break;default:throw new TypeError(`Unknown method: '${e}'`)}switch(t.toLowerCase()){case"hex":return`#${r.map((t=>t.toString(16).padStart(2,"0"))).join("").toUpperCase()}`;case"rgb":return`rgb(${r.join(", ")})`;default:throw new TypeError(`Unknown format: '${t}'`)}}}const r=(t,{epsilon:e=0}={})=>t.every((t=>t>=-e&&t<=1+e)),n=(t,e)=>{let[r,n,a]=t,[i,s,h]=e;return((r-i)**2+(n-s)**2+(a-h)**2)**.5},a=(t,{jnd:a=.03,e:i=1e-4}={})=>{let s=t.OKLCh[0];if(s>=1)return new e([255,255,255]);if(s<=0)return new e([0,0,0]);if(r(t.lRGB))return t;let h=t.OKLCh[2],l=0,c=t.OKLCh[1],M=!0,g=t.lRGB,R=m(g.map((t=>B.clamp(t)))),G=n(R,m(g));if(G<a)return new e(o(u(p(R))));for(;c-l>i;){const t=(l+c)/2;let e=f([s,t,h]),o=p(e);if(g=u(o),M&&r(g))l=t;else if(R=m(g.map((t=>B.clamp(t)))),G=n(R,e),G<a){if(a-G<i)break;M=!1,l=t}else c=t}return new e(o(u(p(R))))},i=t=>(1-t)**2/(2*t),s=t=>1+t-(t**2+2*t)**.5,h=(...t)=>{let r=new Array(38);for(let e=0;e<38;e++){let n=0,a=0;for(let[r,i]of t){let t=i**2*r.tintingStrength**2*r.luminance;a+=t,n+=r.KS[e]*t}r[e]=s(n/a)}return new e(r)},l=t=>t.map((t=>(t=>t>.04045?((t+.055)/1.055)**2.4:t/12.92)(t/255))),o=t=>t.map((t=>Math.round(255*(t=>t>.0031308?1.055*t**(1/2.4)-.055:12.92*t)(t)))),u=t=>B.mulMatVec(w.XYZ_RGB,t),m=t=>c((t=>B.mulMatVec(w.RGB_XYZ,t))(t)),c=t=>{let e=B.mulMatVec(w.XYZ_LMS,t).map((t=>Math.cbrt(t)));return B.mulMatVec(w.LMS_LAB,e)},p=t=>{let e=B.mulMatVec(w.LAB_LMS,t).map((t=>t**3));return B.mulMatVec(w.LMS_XYZ,e)},M=t=>{let[e,r,n]=t;const a=(r*r+n*n)**.5,i=180*Math.atan2(n,r)/Math.PI;return[e,a,i>=0?i:i+360]},f=t=>{let[e,r,n]=t;return[e,r*Math.cos(n*Math.PI/180),r*Math.sin(n*Math.PI/180)]},g=t=>B.mulMatVec(d.CMF,t),R=t=>{let e=Math.min(...t);t=[t[0]-e,t[1]-e,t[2]-e];let r=Math.min(t[1],t[2]),n=Math.min(t[0],t[2]),a=Math.min(t[0],t[1]),i=Math.max(0,Math.min(t[0]-t[2],t[0]-t[1])),s=Math.max(0,Math.min(t[1]-t[2],t[1]-t[0])),h=Math.max(0,Math.min(t[2]-t[1],t[2]-t[0]));const l=new Array(38);for(let t=0;t<38;t++)l[t]=Math.max(Number.EPSILON,e*L.W[t]+r*L.C[t]+n*L.M[t]+a*L.Y[t]+i*L.R[t]+s*L.G[t]+h*L.B[t]);return l},B={lerp:(t,e,r)=>t+(e-t)*r,clamp:(t,e=0,r=1)=>Math.min(Math.max(t,e),r),dot:(t,e)=>t.reduce(((t,r,n)=>t+r*e[n]),0),mulMatVec:(t,e)=>t.map((t=>B.dot(t,e)))},G=t=>"#"===t[0]?(t=4===t.length?t.replace(/./g,(t=>t+t)).slice(1):t.slice(1),[parseInt(t.substring(0,2),16),parseInt(t.substring(2,4),16),parseInt(t.substring(4,6),16),8===t.length?parseInt(t.substring(6,8),16)/255:1]):t.startsWith("rgb")?t.slice(t.indexOf("(")+1,-1).split(",").map(((t,e)=>e<3&&t.includes("%")?Math.round(2.55*parseFloat(t)):parseFloat(t))):NaN,L=Object.freeze({W:[1.00116072718764,1.00116065159728,1.00116031922747,1.00115867270789,1.00115259844552,1.00113252528998,1.00108500663327,1.00099687889453,1.00086525152274,1.0006962900094,1.00050496114888,1.00030808187992,1.00011966602013,.999952765968407,.999821836899297,.999738609557593,.999709551639612,.999731930210627,.999799436346195,.999900330316671,1.00002040652611,1.00014478793658,1.00025997903412,1.00035579697089,1.00042753780269,1.00047623344888,1.00050720967508,1.00052519156373,1.00053509606896,1.00054022097482,1.00054272816784,1.00054389569087,1.00054448212151,1.00054476959992,1.00054489887762,1.00054496254689,1.00054498927058,1.000544996993],C:[.970585001322962,.970592498143425,.970625348729891,.970786806119017,.971368673228248,.973163230621252,.976740223158765,.981587605491377,.986280265652949,.989949147689134,.99249270153842,.994145680405256,.995183975033212,.995756750110818,.99591281828671,.995606157834528,.994597600961854,.99221571549237,.986236452783249,.967943337264541,.891285004244943,.536202477862053,.154108119001878,.0574575093228929,.0315349873107007,.0222633920086335,.0182022841492439,.016299055973264,.0153656239334613,.0149111568733976,.0146954339898235,.0145964146717719,.0145470156699655,.0145228771899495,.0145120341118965,.0145066940939832,.0145044507314479,.0145038009464639],M:[.990673557319988,.990671524961979,.990662582353421,.990618107644795,.99045148087871,.989871081400204,.98828660875964,.984290692797504,.973934905625306,.941817838460145,.817390326195156,.432472805065729,.13845397825887,.0537347216940033,.0292174996673231,.021313651750859,.0201349530181136,.0241323096280662,.0372236145223627,.0760506552706601,.205375471942399,.541268903460439,.815841685086486,.912817704123976,.946339830166962,.959927696331991,.966260595230312,.969325970058424,.970854536721399,.971605066528128,.971962769757392,.972127272274509,.972209417745812,.972249577678424,.972267621998742,.97227650946215,.972280243306874,.97228132482656],Y:[.0210523371789306,.0210564627517414,.0210746178695038,.0211649058448753,.0215027957272504,.0226738799041561,.0258235649693629,.0334879385639851,.0519069663740307,.100749014833473,.239129899706847,.534804312272748,.79780757864303,.911449894067384,.953797963004507,.971241615465429,.979303123807588,.983380119507575,.985461246567755,.986435046976605,.986738250670141,.986617882445032,.986277776758643,.985860592444056,.98547492767621,.985176934765558,.984971574014181,.984846303415712,.984775351811199,.984738066625265,.984719648311765,.984711023391939,.984706683300676,.984704554393091,.98470359630937,.984703124077552,.98470292561509,.984702868122795],R:[.0315605737777207,.0315520718330149,.0315148215513658,.0313318044982702,.0306729857725527,.0286480476989607,.0246450407045709,.0192960753663651,.0142066612220556,.0102942608878609,.0076191460521811,.005898041083542,.0048233247781713,.0042298748350633,.0040599171299341,.0043533695594676,.0053434425970201,.0076917201010463,.0135969795736536,.0316975442661115,.107861196355249,.463812603168704,.847055405272011,.943185409393918,.968862150696558,.978030667473603,.982043643854306,.983923623718707,.984845484154382,.985294275814596,.985507295219825,.985605071539837,.985653849933578,.985677685033883,.985688391806122,.985693664690031,.985695879848205,.985696521463762],G:[.0095560747554212,.0095581580120851,.0095673245444588,.0096129126297349,.0097837090401843,.010378622705871,.0120026452378567,.0160977721473922,.026706190223168,.0595555440185881,.186039826532826,.570579820116159,.861467768400292,.945879089767658,.970465486474305,.97841363028445,.979589031411224,.975533536908632,.962288755397813,.92312157451312,.793434018943111,.459270135902429,.185574103666303,.0881774959955372,.05436302287667,.0406288447060719,.034221520431697,.0311185790956966,.0295708898336134,.0288108739348928,.0284486271324597,.0282820301724731,.0281988376490237,.0281581655342037,.0281398910216386,.0281308901665811,.0281271086805816,.0281260133612096],B:[.979404752502014,.97940070684313,.979382903470261,.979294364945594,.97896301460857,.977814466694043,.974724321133836,.967198482343973,.949079657530575,.900850128940977,.76315044546224,.465922171649319,.201263280451005,.0877524413419623,.0457176793291679,.0284706050521843,.020527176756985,.0165302792310211,.0145135107212858,.0136003508637687,.0133604258769571,.013548894314568,.0139594356366992,.014443425575357,.0148854440621406,.0152254296999746,.0154592848180209,.0156018026485961,.0156824871281936,.0157248764360615,.0157458108784121,.0157556123350225,.0157605443964911,.0157629637515278,.0157640525629106,.015764589232951,.0157648147772649,.0157648801149616]}),d=Object.freeze({CMF:[[646919989576e-16,.0002194098998132,.0011205743509343,.0037666134117111,.011880553603799,.0232864424191771,.0345594181969747,.0372237901162006,.0324183761091486,.021233205609381,.0104909907685421,.0032958375797931,.0005070351633801,.0009486742057141,.0062737180998318,.0168646241897775,.028689649025981,.0426748124691731,.0562547481311377,.0694703972677158,.0830531516998291,.0861260963002257,.0904661376847769,.0850038650591277,.0709066691074488,.0506288916373645,.035473961885264,.0214682102597065,.0125164567619117,.0068045816390165,.0034645657946526,.0014976097506959,.000769700480928,.0004073680581315,.0001690104031614,952245150365e-16,490309872958e-16,199961492222e-16],[1844289444e-15,62053235865e-16,310096046799e-16,.0001047483849269,.0003536405299538,.0009514714056444,.0022822631748318,.004207329043473,.0066887983719014,.0098883960193565,.0152494514496311,.0214183109449723,.0334229301575068,.0513100134918512,.070402083939949,.0878387072603517,.0942490536184085,.0979566702718931,.0941521856862608,.0867810237486753,.0788565338632013,.0635267026203555,.05374141675682,.042646064357412,.0316173492792708,.020885205921391,.0138601101360152,.0081026402038399,.004630102258803,.0024913800051319,.0012593033677378,.000541646522168,.0002779528920067,.0001471080673854,610327472927e-16,343873229523e-16,177059860053e-16,7220974913e-15],[.000305017147638,.0010368066663574,.0053131363323992,.0179543925899536,.0570775815345485,.113651618936287,.17335872618355,.196206575558657,.186082370706296,.139950475383207,.0891745294268649,.0478962113517075,.0281456253957952,.0161376622950514,.0077591019215214,.0042961483736618,.0020055092122156,.0008614711098802,.0003690387177652,.0001914287288574,.0001495555858975,923109285104e-16,681349182337e-16,288263655696e-16,157671820553e-16,39406041027e-16,1584012587e-15,0,0,0,0,0,0,0,0,0,0,0]]}),w=Object.freeze({RGB_XYZ:[[.41239079926595934,.357584339383878,.1804807884018343],[.21263900587151027,.715168678767756,.07219231536073371],[.01933081871559182,.11919477979462598,.9505321522496607]],XYZ_RGB:[[3.2409699419045226,-1.537383177570094,-.4986107602930034],[-.9692436362808796,1.8759675015077202,.04155505740717559],[.05563007969699366,-.20397695888897652,1.0569715142428786]],XYZ_LMS:[[.819022437996703,.3619062600528904,-.1288737815209879],[.0329836539323885,.9292868615863434,.0361446663506424],[.0481771893596242,.2642395317527308,.6335478284694309]],LMS_XYZ:[[1.2268798758459243,-.5578149944602171,.2813910456659647],[-.0405757452148008,1.112286803280317,-.0717110580655164],[-.0763729366746601,-.4214933324022432,1.5869240198367816]],LMS_LAB:[[.210454268309314,.7936177747023054,-.0040720430116193],[1.9779985324311684,-2.42859224204858,.450593709617411],[.0259040424655478,.7827717124575296,-.8086757549230774]],LAB_LMS:[[1,.3963377773761749,.2158037573099136],[1,-.1055613458156586,-.0638541728258133],[1,-.0894841775298119,-1.2914855480194092]]});t.Color=e,t.mix=h,t.palette=(t,e,r)=>{let n=new Array(r);for(let a=0;a<r;a++)n[a]=h([t,r-1-a],[e,a]);return n},t.gradient=(t,...e)=>{let r=null,n=null;for(const[a,i]of e)i<=t&&(!r||i>r[1])&&(r=[a,i]),i>=t&&(!n||i<n[1])&&(n=[a,i]);if(!r)return n[0];if(!n)return r[0];if(r[1]===n[1])return r[0];const a=(t-r[1])/(n[1]-r[1]);return h([r[0],1-a],[n[0],a])}}));
+</script>
+
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s);
+const W=800,H=1000,PAPER='#fdfbf7',INK='#141414',RES=1.5;
+const sv=$('#sv'),gFill=$('#gFill'),gEdge=$('#gEdge'),gInk=$('#gInk'),gHit=$('#gHit'),gUI=$('#gUI');
+const store={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
+const r1=v=>Math.round(v*10)/10,r2=v=>Math.round(v*100)/100;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const HEX=/^#[0-9a-f]{6}$/i;
+let seq=0;const uid=p=>p+(Date.now().toString(36))+(++seq).toString(36);
+
+/* ================= document =================
+   ink:   {id,t:'dot',x,y,r,c,edge,ew} | {id,t:'blob',c,d,edge,ew,bb} (a marker shape) | {id,t:'path',w,closed,pts:[{x,y,ix,iy,ox,oy}]}  (handles are absolute and move on their own)
+   fills: {id,c,d,e,edge:'shade'|'black'|'none',ew,a,bb}  d = filled area (tucks under the ink), e = the edge line */
+let doc={v:1,ink:[],fills:[]};
+function cleanDoc(o){
+  if(!o||!Array.isArray(o.ink)||!Array.isArray(o.fills))return null;
+  const n=v=>typeof v==='number'&&isFinite(v);
+  const okD=d=>typeof d==='string'&&/^[MLCZ0-9 .\-]*$/.test(d);
+  const ink=o.ink.filter(it=>it&&((it.t==='blob'&&okD(it.d)&&HEX.test(it.c))||(it.t==='dot'&&n(it.x)&&n(it.y)&&n(it.r))||(it.t==='path'&&Array.isArray(it.pts)&&it.pts.every(p=>p&&['x','y','ix','iy','ox','oy'].every(k=>n(p[k]))))));
+  const fills=o.fills.filter(f=>f&&HEX.test(f.c)&&okD(f.d)&&okD(f.e));
+  ink.forEach(it=>{if(!it.id)it.id=uid('i');if(it.t!=='path'){if(!HEX.test(it.c||''))it.c=INK;if(!['shade','black','none'].includes(it.edge))it.edge='black';it.ew=n(it.ew)?it.ew:2;}if(it.t==='path'){it.w=n(it.w)?it.w:3;it.closed=!!it.closed;}});
+  fills.forEach(f=>{if(f.t==='bands'){
+      if(!Array.isArray(f.bands)||!f.bands.length)delete f.t;
+      else{f.bands=f.bands.filter(b=>b&&HEX.test(b.c)).map(b=>({c:b.c.toLowerCase(),t:n(b.t)?b.t:0,a:n(b.a)?b.a:0,b:n(b.b)?b.b:0}));
+        if(!f.bands.length)delete f.t;else{f.u=1;delete f.bp;if(!['smooth','pigment'].includes(f.mix))f.mix='ink';}}}
+    if(!f.id)f.id=uid('f');if(!['shade','black','none'].includes(f.edge))f.edge='shade';f.ew=n(f.ew)?f.ew:2.5;});
+  return{v:1,ink,fills};
+}
+try{const o=cleanDoc(JSON.parse(store.get('licorice-ink-doc')||'null'));if(o)doc=o;}catch(e){}
+const saveDoc=()=>store.set('licorice-ink-doc',JSON.stringify(doc));
+const findInk=id=>doc.ink.find(x=>x.id===id);
+const findFill=id=>doc.fills.find(x=>x.id===id);
+
+/* ---- undo ---- */
+const undo=[],redo=[];let pendingBefore=null;
+function begin(){if(pendingBefore==null)pendingBefore=JSON.stringify(doc);}
+function commit(){if(pendingBefore==null)return;const now=JSON.stringify(doc);
+  if(now!==pendingBefore){undo.push(pendingBefore);if(undo.length>200)undo.shift();redo.length=0;saveDoc();}
+  pendingBefore=null;syncUndo();}
+function rollback(){if(pendingBefore!=null){doc=JSON.parse(pendingBefore);pendingBefore=null;}}
+function doUndo(){if(pen)endPen();if(!undo.length)return;redo.push(JSON.stringify(doc));doc=JSON.parse(undo.pop());afterHistory();}
+function doRedo(){if(!redo.length)return;undo.push(JSON.stringify(doc));doc=JSON.parse(redo.pop());afterHistory();}
+function afterHistory(){if(sel&&!(sel.k==='ink'?findInk(sel.id):findFill(sel.id)))sel=null;pen=null;saveDoc();syncUndo();renderOpts();render();}
+function syncUndo(){$('#bUndo').disabled=!undo.length;$('#bRedo').disabled=!redo.length;}
+
+/* ================= settings ================= */
+let opt={markerMix:'cover',bandMix:'ink',fillMode:'flat',bandW:16,bandA:6,bandB:6,wide:'hug',curveW:2.5,reach:0.5,tipMax:140,cstyle:'pebble',pLines:12,pMinW:45,pMinE:26,pStyle:'pebble',rr:30,vary:0.15,tip:'black',nibScreen:true,dotR:5,grow:true,nib:12,mEdge:'none',mEW:2,inside:'gaps',join:true,steady:0.5,lineW:3,edge:'shade',edgeW:2.5,gap:0.5,color:'#141414',showEdges:true};
+try{Object.assign(opt,JSON.parse(store.get('licorice-ink-opt')||'{}'));}catch(e){}
+if(!HEX.test(opt.color))opt.color='#ff5d73';
+if(!opt.noLineDefault){opt.mEdge='none';opt.noLineDefault=1;} // markers start with no line around (once; your later choice is kept)
+const zf=()=>opt.nibScreen?1/view.s:1; // nib and dot follow the zoom so they stay the same size on screen
+const saveOpt=()=>store.set('licorice-ink-opt',JSON.stringify(opt));
+let selBand=0,bandTimer=null,nudgeBig=false,tool='marker',sel=null,selPt=-1,pen=null; // sel {k:'ink'|'fill', id}; pen = id of the line being drawn
+
+/* ================= geometry ================= */
+function pathD(p){
+  const a=p.pts;if(!a.length)return'';
+  let d='M'+r1(a[0].x)+' '+r1(a[0].y);
+  if(a.length===1)return d+'L'+r1(a[0].x)+' '+r1(a[0].y);
+  const seg=(P,Q)=>'C'+r1(P.ox)+' '+r1(P.oy)+' '+r1(Q.ix)+' '+r1(Q.iy)+' '+r1(Q.x)+' '+r1(Q.y);
+  for(let i=1;i<a.length;i++)d+=seg(a[i-1],a[i]);
+  if(p.closed&&a.length>1)d+=seg(a[a.length-1],a[0])+'Z';
+  return d;
+}
+function shade(hex){try{const RC=typeof RadianceColor!=='undefined'?RadianceColor:null;const o=RC.hexToOklab(hex);return RC.oklabToHex({L:o.L*0.6,a:o.a*0.95,b:o.b*0.95});}catch(e){
+  const n=parseInt(hex.slice(1),16);const f=c=>Math.round(c*.55).toString(16).padStart(2,'0');return'#'+f(n>>16)+f(n>>8&255)+f(n&255);}}
+const edgeColor=f=>f.edge==='black'?INK:shade(f.c);
+const moveD=(d,dx,dy)=>d.replace(/(-?[\d.]+) (-?[\d.]+)/g,(m,x,y)=>r1(+x+dx)+' '+r1(+y+dy));
+
+/* ================= view (zoom & pan) ================= */
+let view={x:0,y:0,s:1};
+function vb(){return{vw:W/view.s,vh:H/view.s};}
+function frame(){const r=sv.getBoundingClientRect(),{vw,vh}=vb(),k=Math.min(r.width/vw,r.height/vh);
+  return{r,k,ox:(r.width-vw*k)/2,oy:(r.height-vh*k)/2};}
+function applyView(){const{vw,vh}=vb();sv.setAttribute('viewBox',`${r1(view.x)} ${r1(view.y)} ${r1(vw)} ${r1(vh)}`);}
+function toPage(cx,cy){const F=frame();return{x:view.x+(cx-F.r.left-F.ox)/F.k,y:view.y+(cy-F.r.top-F.oy)/F.k};}
+let lazyT=0;function lazyRender(){clearTimeout(lazyT);lazyT=setTimeout(render,140);}
+function zoomAt(s,P,cx,cy){const s0=view.s;view.s=clamp(s,0.6,14);const F=frame();
+  view.x=P.x-(cx-F.r.left-F.ox)/F.k;view.y=P.y-(cy-F.r.top-F.oy)/F.k;applyView();if(view.s!==s0)lazyRender();}
+function fit(){view={x:0,y:0,s:1};applyView();render();}
+function zoomCenter(f){const r=sv.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;zoomAt(view.s*f,toPage(cx,cy),cx,cy);}
+const pxk=()=>frame().k; // screen pixels per page unit
+
+/* ================= render ================= */
+function render(){
+  const k=pxk()||1,u=1/k; // u = one screen pixel in page units
+  let fh='',eh='',ih='',hh='',uh='';
+  for(const f of doc.fills){
+    if(f.t==='bands'){fh+=bandsSVG(f,true);continue;}
+    fh+=`<path data-fill="${f.id}" d="${f.d}" fill="${f.c}" fill-rule="evenodd"/>`;
+    if(opt.showEdges&&f.edge!=='none'&&f.e)eh+=`<path d="${f.e}" fill="none" stroke="${edgeColor(f)}" stroke-width="${f.ew}" stroke-linejoin="round" fill-rule="evenodd"/>`;
+  }
+  for(const it of doc.ink){
+    const st=it.t!=='path'&&it.edge!=='none'&&it.c!==INK?` stroke="${edgeColor(it)}" stroke-width="${it.ew}" stroke-linejoin="round"`:'';
+    if(it.t==='dot')ih+=`<circle data-id="${it.id}" cx="${r1(it.x)}" cy="${r1(it.y)}" r="${r1(it.r)}" fill="${it.c||INK}"${st}/>`;
+    else if(it.t==='blob')ih+=`<path data-id="${it.id}" d="${it.d}" fill="${it.c}" fill-rule="evenodd"${st}/>`;
+    else ih+=`<path data-id="${it.id}" d="${pathD(it)}" fill="none" stroke="${INK}" stroke-width="${it.w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    if(tool==='edit'){
+      if(it.t==='dot')hh+=`<circle data-id="${it.id}" cx="${r1(it.x)}" cy="${r1(it.y)}" r="${r1(Math.max(it.r,14*u))}" fill="transparent"/>`;
+      else if(it.t==='blob')hh+=`<path data-id="${it.id}" d="${it.d}" fill="transparent" stroke="transparent" stroke-width="${r1(16*u)}" stroke-linejoin="round"/>`;
+      else hh+=`<path data-id="${it.id}" d="${pathD(it)}" fill="none" stroke="transparent" stroke-width="${r1(Math.max(it.w,22*u))}" stroke-linecap="round"/>`;
+    }
+  }
+  // selection
+  const blue='#3f8cff';
+  if(sel&&sel.k==='fill'){const f=findFill(sel.id);if(f)uh+=`<path d="${f.d}" fill="none" stroke="${blue}" stroke-width="${r1(2*u)}" stroke-dasharray="${r1(6*u)} ${r1(4*u)}"/>`;}
+  const showPath=pen?findInk(pen):(sel&&sel.k==='ink'?findInk(sel.id):null);
+  if(sel&&sel.k==='ink'&&!pen){const it=findInk(sel.id);if(it&&it.t==='blob')uh+=`<path d="${it.d}" fill="none" stroke="${blue}" stroke-width="${r1(2*u)}" stroke-dasharray="${r1(6*u)} ${r1(4*u)}"/>`;if(it&&it.t==='dot')uh+=`<circle cx="${r1(it.x)}" cy="${r1(it.y)}" r="${r1(it.r+4*u)}" fill="none" stroke="${blue}" stroke-width="${r1(2*u)}"/>`;}
+  if(showPath&&showPath.t==='path'){
+    uh+=`<path d="${pathD(showPath)}" fill="none" stroke="${blue}" stroke-width="${r1(1.2*u)}"/>`;
+    const hr=5*u,ar=5.5*u,hit=14*u;
+    showPath.pts.forEach((p,i)=>{
+      const far=(x,y)=>Math.hypot(x-p.x,y-p.y)>0.5;
+      for(const[hx,hy,nm]of[[p.ix,p.iy,'in'],[p.ox,p.oy,'out']]){
+        if(!far(hx,hy))continue;
+        uh+=`<line x1="${r1(p.x)}" y1="${r1(p.y)}" x2="${r1(hx)}" y2="${r1(hy)}" stroke="${blue}" stroke-width="${r1(1.2*u)}" pointer-events="none"/>`;
+        uh+=`<circle cx="${r1(hx)}" cy="${r1(hy)}" r="${r1(hr)}" fill="#fff" stroke="${blue}" stroke-width="${r1(1.5*u)}" pointer-events="none"/>`;
+        uh+=`<circle data-h="${showPath.id}:${i}:${nm}" cx="${r1(hx)}" cy="${r1(hy)}" r="${r1(hit)}" fill="transparent"/>`;
+      }
+      const on=i===selPt,first=i===0&&pen&&showPath.pts.length>1&&!showPath.closed;
+      uh+=`<rect x="${r1(p.x-ar)}" y="${r1(p.y-ar)}" width="${r1(2*ar)}" height="${r1(2*ar)}" fill="${on?blue:(first?'#e8b04a':'#fff')}" stroke="${blue}" stroke-width="${r1(1.5*u)}" pointer-events="none"/>`;
+      uh+=`<circle data-h="${showPath.id}:${i}:a" cx="${r1(p.x)}" cy="${r1(p.y)}" r="${r1(hit)}" fill="transparent"/>`;
+    });
+  }
+  if(G&&G.type==='dot'&&G.mode==='stroke'&&G.pts.length){const c=opt.color;if(!G.lv)uh+=`<path id="liveStroke" d="M${G.pts.map(q=>r1(q.x)+' '+r1(q.y)).join('L')}" fill="none" stroke="${c}" stroke-opacity=".85" stroke-width="${r1(opt.nib*zf()*100)/100}" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>`;}
+  $('#gBlur').innerHTML=blurDefs();
+  gFill.innerHTML=fh;gEdge.innerHTML=eh;gInk.innerHTML=ih;gHit.innerHTML=hh;gUI.innerHTML=uh;
+  sv.classList.toggle('noHit',tool!=='edit');sv.classList.toggle('edit',tool==='edit');sv.classList.toggle('hand',tool==='hand');
+}
+
+/* ================= toast ================= */
+let toastT;function toast(t,ms=1600){const el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toastT);if(ms)toastT=setTimeout(()=>el.hidden=true,ms);}
+
+/* ================= tool options bar ================= */
+function slider(id,label,min,max,step,val,fmt=v=>v){const unit=String(fmt('')).trim();
+  return`<label class="grp" for="${id}"><span class="lb">${label}</span><input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${val}"><input class="numin" type="number" id="${id}V" min="${min}" max="${max}" step="${step}" value="${val}" aria-label="${label}, exact number">${unit?`<span class="unit">${unit}</span>`:''}</label>`;}
+// typing a number moves its slider (kept inside the slider's range)
+document.addEventListener('change',e=>{const n=e.target;if(!n.classList||!n.classList.contains('numin'))return;const r=document.getElementById(n.id.slice(0,-1));if(!r)return;
+  let v=parseFloat(n.value);if(!isFinite(v)){n.value=r.value;return;}v=Math.min(+r.max,Math.max(+r.min,v));r.value=v;n.value=r.value;r.dispatchEvent(new Event('input',{bubbles:true}));});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('numin'))e.target.blur();},true);
+function seg(name,cur,list){return`<div class="seg" role="group">`+list.map(([v,t])=>`<button data-${name}="${v}" class="${v===cur?'on':''}">${t}</button>`).join('')+`</div>`;}
+function renderOpts(){
+  const o=$('#opts');let h='';
+  if(tool==='marker'){
+    h=`<span class="tname">Marker</span>${slider('oNib','Nib',0.5,60,0.5,opt.nib)}<label class="grp"><input type="checkbox" id="oNS" ${opt.nibScreen?'checked':''}><span>Same size when zoomed</span></label>${slider('oSteady','Steady',0,0.9,0.05,opt.steady)}<span class="grp"><span class="lb">Overlaps</span>${seg('mmix',opt.markerMix,[['cover','Cover'],['ink','Ink'],['pigment','Pigment'],['smooth','Smooth']])}</span>${opt.markerMix!=='cover'?'<span class="hint">Overlaps mix as you color, with fills too · no line around while mixing</span>':''}<span class="grp"${opt.markerMix!=='cover'?' style="opacity:.45"':''}><span class="lb">Line around</span>${seg('medge',opt.mEdge,[['black','Black'],['shade','Shade'],['none','None']])}</span>${slider('oMEW','Line',0.5,8,0.5,opt.mEW)}<span class="grp"><span class="lb">Holes</span>${seg('inside',opt.inside,[['gaps','Fill small'],['all','Fill all'],['off','Keep']])}</span><label class="grp"><input type="checkbox" id="oJoin" ${opt.join?'checked':''}><span>Join same color</span></label><span class="vsep"></span>${slider('oDot','Dot',0.5,30,0.5,opt.dotR)}<label class="grp"><input type="checkbox" id="oGrow" ${opt.grow?'checked':''}><span>Hold to grow</span></label><span class="hint">Tap = dot · press and color = a shape</span>`;
+  }else if(tool==='pen'){
+    const p=pen&&findInk(pen);
+    h=`<span class="tname">Line</span>${slider('oLine','Width',0.5,14,0.5,p?p.w:opt.lineW)}${p?`<button id="oDone" class="hot">Done</button><button id="oClose">Close shape</button>`:''}<span class="hint">Drag from A to B for a line · tap to add more points · drag any round handle to bend · tap the gold point to close</span>`;
+  }else if(tool==='round'){
+    h=`<span class="tname">Round</span>${slider('oRR','Roundness',3,250,1,opt.rr)}${slider('oVary','Vary',0,0.6,0.05,opt.vary)}<span class="grp"><span class="lb">Tip</span>${seg('tip',opt.tip,[['black','Black'],['color','Color'],['none','None']])}</span>${slider('oCW','Curve width',0.5,14,0.5,opt.curveW)}${slider('oTipMax','Tips up to',60,180,5,opt.tipMax,v=>v+'°')}<span class="hint">Tap inside a section, close to the corner you want rounded</span>`;
+  }else if(tool==='style'){
+    h=`<span class="tname">Style</span><span class="grp"><span class="lb">Cell style</span>${seg('cstyle',opt.cstyle,Object.entries(STYLES).map(([k,v])=>[k,v.name]))}</span>${slider('oRR','Roundness',3,250,1,opt.rr)}${slider('oVary','Vary',0,0.6,0.05,opt.vary)}${slider('oReach','Reach',0.1,0.5,0.05,opt.reach)}<span class="grp"><span class="lb">Tips</span>${seg('tip',opt.tip,[['black','Black'],['color','Color'],['none','None']])}</span>${slider('oTipMax','Tips up to',60,180,5,opt.tipMax,v=>v+'°')}<span class="grp"><span class="lb">Wider corners</span>${seg('wide',opt.wide,[['hug','Hug the joint'],['leave','Round curve']])}</span>${slider('oCW','Curve width',0.5,14,0.5,opt.curveW)}<button id="oAll" class="hot">Style every cell</button><span class="hint">Tap a cell to style it · Undo takes it back</span>`;
+  }else if(tool==='hand'){
+    h=`<span class="tname">Hand</span><span class="hint">Drag to move around · pinch or the + − buttons to zoom</span>`;
+  }else if(tool==='fill'){
+    h=`<span class="tname">Fill</span>${seg('fmode',opt.fillMode,[['flat','Flat'],['bands','Bands']])}<span class="vsep"></span>`;
+    if(opt.fillMode==='bands')h+=`<span class="grp"><span class="lb">Mix</span>${seg('bmix',opt.bandMix,[['ink','Ink'],['pigment','Pigment'],['smooth','Smooth']])}</span>${slider('oBW','Band width',2,80,1,opt.bandW)}${slider('oBA','Outer reaches in',0,60,1,opt.bandA)}${slider('oBB','Inner reaches out',0,60,1,opt.bandB)}${slider('oGap','Close gaps',0,8,0.5,opt.gap)}<span class="hint">First tap fills the cell · each next tap adds a band inside it in your color · change blends later in Edit</span>`;
+    else h+=`<span class="grp"><span class="lb">Edge</span>${seg('edge',opt.edge,[['shade','Shade'],['black','Black'],['none','None']])}</span>${slider('oEW','Edge width',0.5,8,0.5,opt.edgeW)}${slider('oGap','Close gaps',0,8,0.5,opt.gap)}<span class="hint">Tap a space to fill it · tap again to recolor</span>`;
+  }else{
+    h=`<span class="tname">Edit</span>`;
+    const it=sel&&sel.k==='ink'?findInk(sel.id):null,f=sel&&sel.k==='fill'?findFill(sel.id):null;
+    if(it&&it.t==='path'){
+      h+=slider('eLine','Width',0.5,14,0.5,it.w)+`<button id="eClose">${it.closed?'Open shape':'Close shape'}</button>`;
+      if(selPt>=0)h+=`<span class="vsep"></span><button id="eCorner">Sharp point</button><button id="eSmooth">Smooth point</button><button id="eDelPt">Delete point</button>`;
+      h+=`<button id="eAdd">Keep drawing</button><button id="eDel" class="warn">Delete line</button><span class="hint">Drag a square to move a point · drag a round handle on its own</span>`;
+    }
+    else if(it){h+=(it.t==='dot'?slider('eDot','Size',1,80,0.5,r1(it.r)):'')+`<span class="grp"><span class="lb">Line around</span>${seg('iedge',it.edge,[['black','Black'],['shade','Shade'],['none','None']])}</span>${slider('eIEW','Line',0.5,8,0.5,it.ew)}<button id="eFront">Bring to front</button><button id="eBack2">Send to back</button><button id="eDel" class="warn">Delete</button><span class="hint">Drag to move · tap a color to recolor</span>`;}
+    else if(f&&f.t==='bands'){const k=clamp(selBand,0,f.bands.length-1);selBand=k;
+      h+=`<span class="grp"><span class="lb">Band</span>${seg('band',String(k),f.bands.map((b,i)=>[String(i),`<i style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${b.c};vertical-align:-1px"></i>&nbsp;${i+1}`]))}</span>`;
+      if(k>0)h+=slider('bT','Starts at',1,250,1,f.bands[k].t)+slider('bA','Outer reaches in',0,60,1,f.bands[k].a)+slider('bB','Inner reaches out',0,60,1,f.bands[k].b)+'<button id="bDel">Remove band</button>';
+      h+=`<span class="grp"><span class="lb">Mix</span>${seg('emix',f.mix||'ink',[['ink','Ink'],['pigment','Pigment'],['smooth','Smooth']])}</span><button id="eBack">Send to back</button><button id="eDel" class="warn">Delete fill</button><span class="hint">${k>0?'Tap a color below to recolor this band':'Band 1 is the outermost color · tap a color below to recolor it'}</span>`;}
+    else if(f){h+=`<span class="grp"><span class="lb">Edge</span>${seg('fedge',f.edge,[['shade','Shade'],['black','Black'],['none','None']])}</span>${slider('eEW','Edge width',0.5,8,0.5,f.ew)}<button id="eBack">Send to back</button><button id="eDel" class="warn">Delete fill</button><span class="hint">Drag to move · tap a color below to recolor</span>`;}
+    else h+=`<span class="hint">Tap a line, dot or fill to change it · tap the same spot again for the piece underneath · two fingers to zoom and move</span>`;
+    if(it||f)h=h.replace('<span class="tname">Edit</span>','<span class="tname">Edit</span><span class="grp nudge" role="group" aria-label="Nudge"><button data-nudge="-1,0" aria-label="Left">←</button><button data-nudge="0,-1" aria-label="Up">↑</button><button data-nudge="0,1" aria-label="Down">↓</button><button data-nudge="1,0" aria-label="Right">→</button><label class="grp"><input type="checkbox" id="eBig" '+(nudgeBig?'checked':'')+'><span>×10</span></label></span><span class="vsep"></span>');
+  }
+  o.innerHTML=h;
+  const on=(id,ev,fn)=>{const el=o.querySelector('#'+id);if(el)el.addEventListener(ev,fn);};
+  const live=(id,fn)=>on(id,'input',e=>{const v=+e.target.value;o.querySelector('#'+id+'V').value=v;fn(v);});
+  live('oDot',v=>{opt.dotR=v;saveOpt();});
+  live('oNib',v=>{opt.nib=v;saveOpt();});live('oSteady',v=>{opt.steady=v;saveOpt();});live('oMEW',v=>{opt.mEW=v;saveOpt();});
+  on('oJoin','change',e=>{opt.join=e.target.checked;saveOpt();});
+  on('oNS','change',e=>{opt.nibScreen=e.target.checked;saveOpt();});
+  o.querySelectorAll('[data-mmix]').forEach(b=>b.addEventListener('click',()=>{opt.markerMix=b.dataset.mmix;saveOpt();renderOpts();}));
+  o.querySelectorAll('[data-medge]').forEach(b=>b.addEventListener('click',()=>{opt.mEdge=b.dataset.medge;saveOpt();renderOpts();}));
+  o.querySelectorAll('[data-inside]').forEach(b=>b.addEventListener('click',()=>{opt.inside=b.dataset.inside;saveOpt();renderOpts();}));
+  on('oGrow','change',e=>{opt.grow=e.target.checked;saveOpt();});
+  live('oLine',v=>{opt.lineW=v;saveOpt();const p=pen&&findInk(pen);if(p){begin();p.w=v;commit();render();}});
+  on('oDone','click',()=>{const p=pen&&findInk(pen);if(p&&p.pts.length<2){toast('Tap where the line should go next first',2200);return;}endPen();renderOpts();render();});
+  on('oClose','click',()=>{const p=pen&&findInk(pen);if(p&&p.pts.length>1){begin();p.closed=true;autoH(p,p.pts.length-1);commit();}endPen();renderOpts();render();});
+  o.querySelectorAll('[data-edge]').forEach(b=>b.addEventListener('click',()=>{opt.edge=b.dataset.edge;saveOpt();renderOpts();}));
+  live('oEW',v=>{opt.edgeW=v;saveOpt();});
+  o.querySelectorAll('[data-fmode]').forEach(b=>b.addEventListener('click',()=>{opt.fillMode=b.dataset.fmode;saveOpt();renderOpts();}));
+  live('oBW',v=>{opt.bandW=v;saveOpt();});
+  o.querySelectorAll('[data-bmix]').forEach(b=>b.addEventListener('click',()=>{opt.bandMix=b.dataset.bmix;saveOpt();renderOpts();}));live('oBA',v=>{opt.bandA=v;saveOpt();});live('oBB',v=>{opt.bandB=v;saveOpt();});
+  live('oRR',v=>{opt.rr=v;saveOpt();});live('oCW',v=>{opt.curveW=v;saveOpt();});live('oReach',v=>{opt.reach=v;saveOpt();});
+  {const el=o.querySelector('#oTipMax');if(el)el.addEventListener('input',e=>{opt.tipMax=+e.target.value;o.querySelector('#oTipMaxV').value=opt.tipMax;saveOpt();});}
+  o.querySelectorAll('[data-wide]').forEach(b=>b.addEventListener('click',()=>{opt.wide=b.dataset.wide;saveOpt();renderOpts();}));
+  o.querySelectorAll('[data-cstyle]').forEach(b=>b.addEventListener('click',()=>{opt.cstyle=b.dataset.cstyle;saveOpt();renderOpts();}));
+  on('oAll','click',()=>styleAll());live('oVary',v=>{opt.vary=v;saveOpt();});
+  o.querySelectorAll('[data-tip]').forEach(b=>b.addEventListener('click',()=>{opt.tip=b.dataset.tip;saveOpt();renderOpts();}));
+  live('oGap',v=>{opt.gap=v;saveOpt();});
+  const it=sel&&sel.k==='ink'?findInk(sel.id):null,f=sel&&sel.k==='fill'?findFill(sel.id):null;
+  live('eLine',v=>{if(it){begin();it.w=v;commit();opt.lineW=v;saveOpt();render();}});
+  live('eDot',v=>{if(it){begin();it.r=v;commit();render();}});
+  o.querySelectorAll('[data-iedge]').forEach(b=>b.addEventListener('click',()=>{if(it){begin();it.edge=b.dataset.iedge;commit();renderOpts();render();}}));
+  live('eIEW',v=>{if(it){begin();it.ew=v;commit();render();}});
+  on('eFront','click',()=>{if(it){begin();doc.ink=[...doc.ink.filter(x=>x!==it),it];commit();render();}});
+  on('eBack2','click',()=>{if(it){begin();doc.ink=[it,...doc.ink.filter(x=>x!==it)];commit();render();}});
+  on('eClose','click',()=>{if(it){begin();it.closed=!it.closed;commit();renderOpts();render();}});
+  on('eCorner','click',()=>{const p=it&&it.pts[selPt];if(p){begin();p.ai=p.ao=1;autoH(it,selPt-1<0?(it.closed?it.pts.length-1:-1):selPt-1);autoH(it,selPt);commit();render();}});
+  on('eSmooth','click',()=>{if(it&&it.pts[selPt]){begin();smoothPoint(it,selPt);it.pts[selPt].ai=it.pts[selPt].ao=0;commit();render();}});
+  on('eDelPt','click',()=>{if(it&&it.pts[selPt]){begin();it.pts.splice(selPt,1);if(it.pts.length<2){doc.ink=doc.ink.filter(x=>x!==it);sel=null;}selPt=-1;commit();renderOpts();render();}});
+  on('eAdd','click',()=>{if(it){pen=it.id;sel=null;selPt=-1;setTool('pen',true);}});
+  on('eDel','click',()=>{deleteSel();});
+  on('eBig','change',e=>{nudgeBig=e.target.checked;});
+  o.querySelectorAll('[data-nudge]').forEach(b=>{let rep=null;const go=()=>{const[x,y]=b.dataset.nudge.split(',').map(Number),m=nudgeBig?10:1;nudge(x*m,y*m);};
+    b.addEventListener('pointerdown',e=>{e.preventDefault();go();rep=setTimeout(function again(){go();rep=setTimeout(again,60);},380);});
+    const stop=()=>{clearTimeout(rep);rep=null;};b.addEventListener('pointerup',stop);b.addEventListener('pointerleave',stop);b.addEventListener('pointercancel',stop);});
+  o.querySelectorAll('[data-fedge]').forEach(b=>b.addEventListener('click',()=>{if(f){begin();f.edge=b.dataset.fedge;commit();opt.edge=f.edge;saveOpt();renderOpts();render();}}));
+  live('eEW',v=>{if(f){begin();f.ew=v;commit();render();}});
+  if(f&&f.t==='bands'){
+    o.querySelectorAll('[data-band]').forEach(b=>b.addEventListener('click',()=>{selBand=+b.dataset.band;renderOpts();}));
+    o.querySelectorAll('[data-emix]').forEach(b=>b.addEventListener('click',()=>{begin();f.mix=b.dataset.emix;commit();renderOpts();render();}));
+    const bl=(id,key)=>live(id,v=>{const bd=f.bands[selBand];if(!bd)return;begin();bd[key]=v;clearTimeout(bandTimer);bandTimer=setTimeout(()=>{commit();render();},80);});
+    bl('bT','t');bl('bA','a');bl('bB','b');
+    on('bDel','click',()=>{if(selBand>0){begin();f.bands.splice(selBand,1);selBand=Math.min(selBand,f.bands.length-1);commit();renderOpts();render();}});
+  }
+  on('eBack','click',()=>{if(f){begin();doc.fills=[f,...doc.fills.filter(x=>x!==f)];commit();render();}});
+}
+function smoothPoint(p,i){const a=p.pts,P=a[i],n=a.length;
+  const prev=a[i-1]||(p.closed?a[n-1]:null),next=a[i+1]||(p.closed?a[0]:null);
+  let dx,dy;if(prev&&next){dx=next.x-prev.x;dy=next.y-prev.y;}else if(next){dx=next.x-P.x;dy=next.y-P.y;}else if(prev){dx=P.x-prev.x;dy=P.y-prev.y;}else return;
+  const L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L;
+  const li=prev?Math.hypot(P.x-prev.x,P.y-prev.y)/3:0,lo=next?Math.hypot(next.x-P.x,next.y-P.y)/3:0;
+  P.ix=P.x-ux*li;P.iy=P.y-uy*li;P.ox=P.x+ux*lo;P.oy=P.y+uy*lo;}
+function segDist(P,a,b,p){let best=1e9,px=a.x,py=a.y;for(let t=1;t<=24;t++){const u=t/24,v=1-u;
+    const x=v*v*v*a.x+3*v*v*u*a.ox+3*v*u*u*b.ix+u*u*u*b.x,y=v*v*v*a.y+3*v*v*u*a.oy+3*v*u*u*b.iy+u*u*u*b.y;
+    const dx=x-px,dy=y-py,L=dx*dx+dy*dy||1e-9;let w=((p.x-px)*dx+(p.y-py)*dy)/L;w=Math.max(0,Math.min(1,w));
+    best=Math.min(best,Math.hypot(p.x-(px+w*dx),p.y-(py+w*dy)));px=x;py=y;}return best;}
+const pickCtx=document.createElement('canvas').getContext('2d');
+function nearestInk(p,maxPx){const lim=maxPx/(pxk()||1);let best=null,bd=lim;
+  for(let n=doc.ink.length-1;n>=0;n--){const it=doc.ink[n];let d=1e9;
+    if(it.t==='dot')d=Math.max(0,Math.hypot(p.x-it.x,p.y-it.y)-it.r);
+    else if(it.t==='blob'){if(it.bb&&p.x>=it.bb[0]-lim&&p.x<=it.bb[2]+lim&&p.y>=it.bb[1]-lim&&p.y<=it.bb[3]+lim){const P2=new Path2D(it.d);
+        if(pickCtx.isPointInPath(P2,p.x,p.y,'evenodd'))d=0;else{pickCtx.lineWidth=lim*2;if(pickCtx.isPointInStroke(P2,p.x,p.y))d=lim*0.9;}}}
+    else{const a=it.pts;for(let i=1;i<a.length;i++)d=Math.min(d,segDist(null,a[i-1],a[i],p));if(it.closed&&a.length>1)d=Math.min(d,segDist(null,a[a.length-1],a[0],p));d=Math.max(0,d-it.w/2);}
+    if(d<bd){bd=d;best=it;}}
+  return best;}
+function moveFill(f,g){f.d=moveD(g.d0,g.tx,g.ty);f.e=moveD(g.e0,g.tx,g.ty);if(g.bb0)f.bb=[g.bb0[0]+g.tx,g.bb0[1]+g.ty,g.bb0[2]+g.tx,g.bb0[3]+g.ty];}
+/* arrow keys and the arrow buttons nudge the selected piece (or the selected point of a line) */
+let nudgeT=null;
+function nudge(dx,dy){if(tool!=='edit'||!sel)return false;
+  if(sel.k==='fill'){const f=findFill(sel.id);if(!f)return false;begin();moveFill(f,{d0:f.d,e0:f.e,bp0:f.bp,bb0:f.bb,tx:dx,ty:dy});render();clearTimeout(nudgeT);nudgeT=setTimeout(commit,600);return true;}
+  const it=findInk(sel.id);if(!it)return false;
+  begin();
+  if(it.t==='path'){if(selPt>=0&&it.pts[selPt]){const q=it.pts[selPt];q.x+=dx;q.y+=dy;q.ix+=dx;q.iy+=dy;q.ox+=dx;q.oy+=dy;autoH(it,selPt-1);autoH(it,selPt);if(selPt===0&&it.closed)autoH(it,it.pts.length-1);}
+    else it.pts.forEach(q=>{q.x+=dx;q.y+=dy;q.ix+=dx;q.iy+=dy;q.ox+=dx;q.oy+=dy;});}
+  else if(it.t==='dot'){it.x+=dx;it.y+=dy;}
+  else{it.d=moveD(it.d,dx,dy);if(it.bb)it.bb=[it.bb[0]+dx,it.bb[1]+dy,it.bb[2]+dx,it.bb[3]+dy];}
+  render();clearTimeout(nudgeT);nudgeT=setTimeout(commit,600);return true;}
+function deleteSel(){if(!sel)return;begin();
+  if(sel.k==='ink')doc.ink=doc.ink.filter(x=>x.id!==sel.id);else doc.fills=doc.fills.filter(x=>x.id!==sel.id);
+  sel=null;selPt=-1;commit();renderOpts();render();}
+
+/* ================= tools ================= */
+function setTool(t,keepPen){if(!keepPen&&pen&&t!=='pen')endPen();tool=t;if(t!=='edit'){sel=null;selPt=-1;}
+  document.querySelectorAll('#rail [data-tool]').forEach(b=>b.classList.toggle('on',b.dataset.tool===t));renderOpts();render();}
+function autoH(path,i){ // handles marked auto sit a third of the way along the segment, so it starts straight and each handle is grabbable
+  const n=path.pts.length;if(n<2)return;const j=i+1<n?i+1:(path.closed?0:-1);if(j<0||i<0)return;
+  const P=path.pts[i],Q=path.pts[j],dx=(Q.x-P.x)/3,dy=(Q.y-P.y)/3;
+  if(P.ao){P.ox=P.x+dx;P.oy=P.y+dy;}if(Q.ai){Q.ix=Q.x-dx;Q.iy=Q.y-dy;}}
+function endPen(){const p=pen&&findInk(pen);pen=null;
+  if(p&&p.pts.length<2){toast('That line only had one point, so it was removed',2400);const before=JSON.stringify(doc);doc.ink=doc.ink.filter(x=>x!==p);saveDoc();if(undo.length&&undo[undo.length-1]===JSON.stringify(doc))undo.pop();syncUndo();}}
+document.querySelectorAll('#rail [data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
+
+/* ================= pointer input ================= */
+const ptrs=new Map();let G=null,pinch=null,blockUntilUp=false;
+function cancelGesture(){if(G){if(G.raf)cancelAnimationFrame(G.raf);if(G.lv)G.lv.cv.remove();rollback();if(pen&&!findInk(pen))pen=null;G=null;render();}}
+sv.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  // take the keyboard when the page is touched, so arrow keys and shortcuts come here and not to the app around it
+  try{window.focus();if(document.activeElement!==sv)sv.focus({preventScroll:true});}catch(_){}try{sv.setPointerCapture(e.pointerId);}catch(_){}
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2){cancelGesture();const[a,b]=[...ptrs.values()];const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    pinch={d0:Math.hypot(a.x-b.x,a.y-b.y)||1,s0:view.s,P:toPage(mx,my)};blockUntilUp=true;return;}
+  if(ptrs.size>2||blockUntilUp)return;
+  if(e.button===1||(e.button===0&&spaceDown)){G={type:'pan',P:toPage(e.clientX,e.clientY)};return;}
+  if(e.button!==0)return;
+  const p=toPage(e.clientX,e.clientY),t=e.target;
+  const h=t&&t.closest&&t.closest('[data-h]');
+  if(h&&(tool==='pen'||tool==='edit')){
+    const[id,i,nm]=h.dataset.h.split(':');const path=findInk(id);if(!path)return;
+    // in the line tool, tapping the first point closes the shape
+    if(tool==='pen'&&pen===id&&nm==='a'&&+i===0&&path.pts.length>1&&!path.closed){G={type:'closeTap',id,cx:e.clientX,cy:e.clientY};return;}
+    if(tool==='edit'){selPt=+i;renderOpts();}
+    G={type:'handle',id,i:+i,nm,last:p,moved:false};return;
+  }
+  if(tool==='marker'){
+    begin();const pr=e.pointerType==='pen'&&e.pressure>0?(0.4+1.2*e.pressure):1;
+    const d={id:uid('i'),t:'dot',x:p.x,y:p.y,r:opt.dotR*pr*zf(),c:opt.color,edge:opt.mEdge,ew:opt.mEW};doc.ink.push(d);
+    G={type:'dot',mode:'dot',id:d.id,r0:d.r,cx:e.clientX,cy:e.clientY,t0:performance.now(),lastMove:performance.now(),sliding:false,tPrev:performance.now(),
+      pts:[],sm:{x:p.x,y:p.y},pen:e.pointerType==='pen'};
+    G.raf=requestAnimationFrame(growTick);render();return;
+  }
+  if(tool==='pen'){
+    begin();let path=pen&&findInk(pen);const np={x:p.x,y:p.y,ix:p.x,iy:p.y,ox:p.x,oy:p.y,ai:1,ao:1};
+    if(!path){path={id:uid('i'),t:'path',w:opt.lineW,closed:false,pts:[np]};doc.ink.push(path);pen=path.id;G={type:'pen',id:path.id,i:0,first:true,cx:e.clientX,cy:e.clientY};}
+    else{path.pts.push(np);autoH(path,path.pts.length-2);G={type:'pen',id:path.id,i:path.pts.length-1,cx:e.clientX,cy:e.clientY};}
+    renderOpts();render();return;
+  }
+  if(tool==='hand'){G={type:'pan',P:p};return;}
+  if(tool==='round'){G={type:'round',p,cx:e.clientX,cy:e.clientY};return;}
+  if(tool==='style'){G={type:'style',p,cx:e.clientX,cy:e.clientY};return;}
+  if(tool==='fill'){G={type:'fill',p,cx:e.clientX,cy:e.clientY};return;}
+  if(tool==='edit'){
+    const ie=t&&t.closest&&t.closest('[data-id]'),fe=t&&t.closest&&t.closest('[data-fill]');
+    // everything under the tap, top first: a line or shape hit dead-on, the fill you tapped inside, then a line close by
+    // (elementsFromPoint sees through the wide invisible grab strips around lines, so fills under them still count)
+    const cands=[],seen=new Set(),add=(k,id)=>{if(id&&!seen.has(k+id)){seen.add(k+id);cands.push({k,id});}};
+    let stack=[];try{stack=document.elementsFromPoint(e.clientX,e.clientY);}catch(_){stack=[t];}
+    let anyFill=false;for(const el of stack){if(el.dataset&&el.dataset.id)add('ink',el.dataset.id);else if(el.dataset&&el.dataset.fill){anyFill=true;add('fill',el.dataset.fill);}}
+    // a fill you tapped inside comes before a line that only grabbed you because it's close
+    const direct=stack.filter(el=>el.dataset&&el.dataset.id&&el.parentNode&&el.parentNode.id==='gInk').length>0;
+    if(!direct&&anyFill){const f=cands.filter(c=>c.k==='fill'),o=cands.filter(c=>c.k!=='fill');cands.length=0;cands.push(...f,...o);}
+    if(!cands.some(c=>c.k==='ink')){const near=nearestInk(p,anyFill?14:28);if(near)add('ink',near.id);}
+    const at=sel?cands.findIndex(c=>c.k===sel.k&&c.id===sel.id):-1;
+    const pick=at>=0?sel:cands[0]||null,cycle=at>=0&&cands.length>1?cands[(at+1)%cands.length]:null;
+    if(pick){if(at<0){sel=pick;selPt=-1;selBand=0;}G={type:'move',fill:sel.k==='fill',id:sel.id,last:p,cx:e.clientX,cy:e.clientY,cycle};}
+    else{sel=null;selPt=-1;}
+    renderOpts();render();
+  }
+});
+sv.addEventListener('pointermove',e=>{
+  if(!ptrs.has(e.pointerId))return;
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch&&ptrs.size>=2){const[a,b]=[...ptrs.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);zoomAt(pinch.s0*d/pinch.d0,pinch.P,(a.x+b.x)/2,(a.y+b.y)/2);return;}
+  if(!G)return;
+  const p=toPage(e.clientX,e.clientY);
+  if(G.type==='pan'){zoomAt(view.s,G.P,e.clientX,e.clientY);return;}
+  if(G.type==='dot'){
+    if(G.mode==='stroke'){const k=1-opt.steady*0.9;G.sm.x+=(p.x-G.sm.x)*k;G.sm.y+=(p.y-G.sm.y)*k;
+      const last=G.pts[G.pts.length-1],w=opt.nib*zf()*(G.pen&&e.pressure>0?(0.4+1.2*e.pressure):1);
+      if(!last||Math.hypot(G.sm.x-last.x,G.sm.y-last.y)>0.6){const q={x:G.sm.x,y:G.sm.y,w};G.pts.push(q);
+        if(G.lv)liveSeg(G.lv,last,q);
+        else{const el=document.getElementById('liveStroke');if(el)el.setAttribute('d','M'+G.pts.map(q=>r1(q.x)+' '+r1(q.y)).join('L'));else render();}}
+      return;}
+    const d=findInk(G.id);if(!d)return;
+    if(G.sliding||Math.hypot(e.clientX-G.cx,e.clientY-G.cy)>5){
+      if(!G.sliding&&d.r<=G.r0+0.01){ // not grown: this is coloring, not a dot
+        doc.ink=doc.ink.filter(x=>x!==d);G.mode='stroke';const s=toPage(G.cx,G.cy);G.sm={x:s.x,y:s.y};G.pts=[{x:s.x,y:s.y,w:opt.nib*zf()}];
+        G.lv=liveStart();if(G.lv)liveSeg(G.lv,null,G.pts[0]);render();return;}
+      G.sliding=true;d.x=p.x;d.y=p.y;G.lastMove=performance.now();render();}return;}
+  if(G.type==='pen'){const path=findInk(G.id);if(!path)return;
+    if(!G.moving&&Math.hypot(e.clientX-G.cx,e.clientY-G.cy)<=4)return;G.moving=true;
+    if(G.first){if(path.pts.length===1){path.pts.push({x:p.x,y:p.y,ix:p.x,iy:p.y,ox:p.x,oy:p.y,ai:1,ao:1});renderOpts();}G.i=1;}
+    const q=path.pts[G.i];q.x=q.ox=q.ix=p.x;q.y=q.oy=q.iy=p.y;autoH(path,G.i-1);render();return;}
+  if(G.type==='handle'){const path=findInk(G.id),q=path&&path.pts[G.i];if(!q)return;
+    if(!G.moved){begin();G.moved=true;}
+    const dx=p.x-G.last.x,dy=p.y-G.last.y;G.last=p;
+    if(G.nm==='a'){q.x+=dx;q.y+=dy;q.ix+=dx;q.iy+=dy;q.ox+=dx;q.oy+=dy;autoH(path,G.i-1);autoH(path,G.i);if(G.i===0&&path.closed)autoH(path,path.pts.length-1);}
+    else if(G.nm==='in'){q.ix+=dx;q.iy+=dy;q.ai=0;}else{q.ox+=dx;q.oy+=dy;q.ao=0;}
+    render();return;}
+  if(G.type==='move'&&G.fill){const f=findFill(G.id);if(!f)return;const dx=p.x-G.last.x,dy=p.y-G.last.y;
+    if(!G.moved){if(Math.hypot(dx,dy)*pxk()<3)return;begin();G.moved=true;G.d0=f.d;G.e0=f.e;G.bp0=f.bp&&f.bp.slice();G.bb0=f.bb&&f.bb.slice();G.tx=0;G.ty=0;}
+    G.last=p;G.tx+=dx;G.ty+=dy;moveFill(f,G);render();return;}
+  if(G.type==='move'){const it=findInk(G.id);if(!it)return;const dx=p.x-G.last.x,dy=p.y-G.last.y;
+    if(!G.moved){if(Math.hypot(dx,dy)*pxk()<3)return;begin();G.moved=true;G.d0=it.d;G.bb0=it.bb&&it.bb.slice();G.tx=0;G.ty=0;}
+    G.last=p;if(it.t==='blob'){G.tx+=dx;G.ty+=dy;it.d=moveD(G.d0,G.tx,G.ty);if(G.bb0)it.bb=[G.bb0[0]+G.tx,G.bb0[1]+G.ty,G.bb0[2]+G.tx,G.bb0[3]+G.ty];}
+    else if(it.t==='dot'){it.x+=dx;it.y+=dy;}else it.pts.forEach(q=>{q.x+=dx;q.y+=dy;q.ix+=dx;q.iy+=dy;q.ox+=dx;q.oy+=dy;});
+    render();return;}
+});
+function up(e){
+  if(!ptrs.has(e.pointerId))return;
+  ptrs.delete(e.pointerId);
+  if(pinch){if(ptrs.size<2)pinch=null;}
+  if(!ptrs.size)blockUntilUp=false;
+  if(!G)return;
+  const g=G;G=null;if(g.raf)cancelAnimationFrame(g.raf);
+  if(e.type==='pointercancel'){if(g.lv)g.lv.cv.remove();rollback();if(pen&&!findInk(pen))pen=null;render();return;}
+  if(g.type==='closeTap'){const path=findInk(g.id);if(path){begin();path.closed=true;autoH(path,path.pts.length-1);commit();}endPen();renderOpts();render();return;}
+  if(g.type==='fill'){if(Math.hypot(e.clientX-g.cx,e.clientY-g.cy)<10)(opt.fillMode==='bands'?bandAt:fillAt)(g.p);return;}
+  if(g.type==='round'){if(Math.hypot(e.clientX-g.cx,e.clientY-g.cy)<10)roundAt(g.p);return;}
+  if(g.type==='style'){if(Math.hypot(e.clientX-g.cx,e.clientY-g.cy)<10)styleAt(g.p);return;}
+  if(g.type==='pan')return;
+  if((g.type==='move'||g.type==='pick')&&!g.moved&&g.cycle&&Math.hypot(e.clientX-g.cx,e.clientY-g.cy)<8){sel=g.cycle;selPt=-1;renderOpts();render();return;}
+  if(g.type==='pick')return;
+  if(g.type==='dot'&&g.mode==='stroke'){const sm=g.sm,last=g.pts[g.pts.length-1];if(last&&Math.hypot(sm.x-last.x,sm.y-last.y)>0.3)g.pts.push({x:sm.x,y:sm.y,w:last.w});
+    try{markerCommit(g.pts);}catch(err){rollback();toast('Marker failed: '+err.message,3000);}render();if(g.lv)g.lv.cv.remove();return;}
+  if(g.type==='dot'&&g.mode==='dot'&&opt.markerMix!=='cover'){const d=findInk(g.id);
+    if(d){d.edge='none';try{addMixes([d.x-d.r-2,d.y-d.r-2,d.x+d.r+2,d.y+d.r+2],c=>{c.beginPath();c.arc(d.x,d.y,d.r,0,Math.PI*2);c.fill();},d.c,[d]);}catch(err){}}}
+  commit();render();
+}
+sv.addEventListener('pointerup',up);sv.addEventListener('pointercancel',up);
+function growTick(now){
+  if(!G||G.type!=='dot'||G.mode!=='dot')return;
+  const d=findInk(G.id);const dt=Math.min(64,now-G.tPrev);G.tPrev=now;
+  if(d&&opt.grow&&now-G.t0>280&&now-G.lastMove>200){d.r=Math.min(120,d.r+dt/1000*(5+d.r*0.7));render();}
+  G.raf=requestAnimationFrame(growTick);
+}
+sv.addEventListener('wheel',e=>{e.preventDefault();
+  if(e.ctrlKey||e.metaKey){zoomAt(view.s*Math.exp(-e.deltaY*0.01),toPage(e.clientX,e.clientY),e.clientX,e.clientY);return;}
+  const k=pxk()||1,m=e.deltaMode===1?16:1;view.x+=e.deltaX*m/k;view.y+=e.deltaY*m/k;applyView();},{passive:false});
+$('#zIn').onclick=()=>zoomCenter(1.4);$('#zOut').onclick=()=>zoomCenter(1/1.4);$('#zFit').onclick=fit;
+window.addEventListener('resize',()=>{applyView();render();});
+
+let spaceDown=false;
+window.addEventListener('keydown',e=>{
+  if(e.target&&(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT'&&e.target.type!=='range'&&e.target.type!=='checkbox'))return;
+  const mod=e.ctrlKey||e.metaKey;
+  if(mod&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?doRedo():doUndo();return;}
+  if(mod&&e.key.toLowerCase()==='y'){e.preventDefault();doRedo();return;}
+  if(e.key===' '){spaceDown=true;e.preventDefault();return;}
+  const ar={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];
+  if(ar&&tool==='edit'&&sel){e.preventDefault();const m=e.shiftKey?10:1;
+    nudge(ar[0]*m,ar[1]*m);return;}
+  if(e.key==='Enter'||e.key==='Escape'){if(pen){endPen();renderOpts();render();}else if(sel){sel=null;selPt=-1;renderOpts();render();}return;}
+  if((e.key==='Delete'||e.key==='Backspace')&&tool==='edit'){e.preventDefault();if(sel&&sel.k==='ink'&&selPt>=0){const b=document.getElementById('eDelPt');if(b)b.click();}else deleteSel();return;}
+  const m={d:'marker',m:'marker',p:'pen',l:'pen',r:'round',s:'style',f:'fill',v:'edit',e:'edit',h:'hand'}[e.key.toLowerCase()];if(m&&!mod)setTool(m);
+});
+window.addEventListener('keyup',e=>{if(e.key===' ')spaceDown=false;});
+$('#bUndo').onclick=doUndo;$('#bRedo').onclick=doRedo;
+
+/* ================= fill =================
+   Draw the ink into a hidden bitmap, close small gaps by fattening the ink, flood the tapped space,
+   then trace the space back out as vector outlines (marching squares + simplify). Two outlines are kept:
+   the edge line (the space itself) and the fill (the space grown so it tucks under the ink). */
+function rasterInk(B,res){ // the ink drawn into a bitmap covering page box B at res pixels per page unit
+  const w=Math.max(1,Math.ceil((B[2]-B[0])*res)),h=Math.max(1,Math.ceil((B[3]-B[1])*res)),cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  const c=cv.getContext('2d',{willReadFrequently:true});c.setTransform(res,0,0,res,-B[0]*res,-B[1]*res);c.lineCap='round';c.lineJoin='round';c.fillStyle='#000';c.strokeStyle='#000';
+  for(const it of doc.ink){
+    if(it.t==='dot'){c.beginPath();c.arc(it.x,it.y,it.r,0,Math.PI*2);c.fill();}
+    else if(it.t==='blob'){const P=new Path2D(it.d);c.fill(P,'evenodd');if(it.edge!=='none'){c.lineWidth=it.ew;c.stroke(P);}}
+    else if(it.pts.length>1){c.lineWidth=it.w;c.stroke(new Path2D(pathD(it)));}
+    else if(it.pts.length===1){c.beginPath();c.arc(it.pts[0].x,it.pts[0].y,it.w/2,0,Math.PI*2);c.fill();}
+  }
+  const px=c.getImageData(0,0,w,h).data,wall=new Uint8Array(w*h);
+  for(let i=0,j=3;i<w*h;i++,j+=4)wall[i]=px[j]>60?1:0;
+  return{w,h,wall,B,res};
+}
+function recover(reg,raw,w,h,steps){ // let the space grow back into its true corners (open pixels only), a few steps
+  let front=[];for(let i=0;i<w*h;i++){if(!reg[i])continue;const x=i%w;
+    if((x>0&&!reg[i-1]&&!raw[i-1])||(x<w-1&&!reg[i+1]&&!raw[i+1])||(i>=w&&!reg[i-w]&&!raw[i-w])||(i<w*h-w&&!reg[i+w]&&!raw[i+w]))front.push(i);}
+  for(let s=0;s<steps&&front.length;s++){const nf=[];
+    for(const i of front){const x=i%w;for(const j of[x>0?i-1:-1,x<w-1?i+1:-1,i-w,i+w,x>0?i-w-1:-1,x<w-1?i-w+1:-1,x>0?i+w-1:-1,x<w-1?i+w+1:-1])
+      if(j>=0&&j<w*h&&!reg[j]&&!raw[j]){reg[j]=1;nf.push(j);}}
+    front=nf;}
+}
+function regionAt(P,gap,res,B){
+  const R=rasterInk(B,res),{w,h}=R;
+  let sx=Math.floor((P.x-B[0])*res),sy=Math.floor((P.y-B[1])*res);
+  if(sx<0||sy<0||sx>=w||sy>=h)return{err:'Tap on the page'};
+  if(R.wall[sy*w+sx]){ // tapped right on a line: take the closest open spot within a finger's width
+    const rr=Math.max(2,Math.round(8/(pxk()||1)*res));let best=null,bd=1e9;
+    for(let dy=-rr;dy<=rr;dy++)for(let dx=-rr;dx<=rr;dx++){const x=sx+dx,y=sy+dy;if(x<0||y<0||x>=w||y>=h||R.wall[y*w+x])continue;const d=dx*dx+dy*dy;if(d<bd&&d<=rr*rr){bd=d;best=[x,y];}}
+    if(!best)return{err:'That spot is all line. Tap inside a space.'};[sx,sy]=best;}
+  let gp=Math.round(gap*res),wall=R.wall;
+  if(gp>0){const d=chamfer(R.wall,w,h);wall=new Uint8Array(w*h);for(let i=0;i<w*h;i++)wall[i]=d[i]<=gp*3?1:0;
+    if(wall[sy*w+sx]){wall=R.wall;gp=0;}} // too thin to close gaps in: fill exactly this space
+  const{reg}=flood(wall,w,h,sx,sy);
+  if(gp>0)recover(reg,R.wall,w,h,gp*2+2);
+  let n=0,x0=w,y0=h,x1=-1,y1=-1;for(let y=0;y<h;y++){const r=y*w;for(let x=0;x<w;x++)if(reg[r+x]){n++;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}}
+  return{R,reg,a:n/(res*res),bb:[B[0]+x0/res,B[1]+y0/res,B[0]+(x1+1)/res,B[1]+(y1+1)/res],touch:[y0===0,x1===w-1,y1===h-1,x0===0]};
+}
+function preciseRegion(P,gap){ // find the space roughly over the whole page, then again in fine detail around it
+  const c=regionAt(P,gap,1.5,[0,0,W,H]);if(c.err)return c;
+  const pad=gap+6,cb=[Math.max(0,c.bb[0]-pad),Math.max(0,c.bb[1]-pad),Math.min(W,c.bb[2]+pad),Math.min(H,c.bb[3]+pad)];
+  const area=Math.max(1,(cb[2]-cb[0])*(cb[3]-cb[1])),res=Math.min(clamp(2.5*view.s,2.5,12),Math.sqrt(4.5e6/area));
+  if(res<=1.7)return c;
+  const f=regionAt(P,gap,res,cb);if(f.err)return c;
+  const pageEdge=[cb[1]<=0,cb[2]>=W,cb[3]>=H,cb[0]<=0];
+  if(f.touch.some((t,i)=>t&&!pageEdge[i]))return c; // spilled past the crop: trust the rough pass
+  return f;
+}
+function chamfer(src,w,h){ // distance (×3) to the nearest set pixel
+  const d=new Uint16Array(w*h);for(let i=0;i<w*h;i++)d[i]=src[i]?0:65535;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;let v=d[i];if(!v)continue;
+    if(x>0)v=Math.min(v,d[i-1]+3);
+    if(y>0){v=Math.min(v,d[i-w]+3);if(x>0)v=Math.min(v,d[i-w-1]+4);if(x<w-1)v=Math.min(v,d[i-w+1]+4);}d[i]=v;}
+  for(let y=h-1;y>=0;y--)for(let x=w-1;x>=0;x--){const i=y*w+x;let v=d[i];if(!v)continue;
+    if(x<w-1)v=Math.min(v,d[i+1]+3);
+    if(y<h-1){v=Math.min(v,d[i+w]+3);if(x<w-1)v=Math.min(v,d[i+w+1]+4);if(x>0)v=Math.min(v,d[i+w-1]+4);}d[i]=v;}
+  return d;
+}
+function flood(wall,w,h,sx,sy){
+  const reg=new Uint8Array(w*h),st=[sx,sy];let n=0,x0=sx,x1=sx,y0=sy,y1=sy;
+  while(st.length){const y=st.pop(),x=st.pop(),i=y*w+x;if(reg[i]||wall[i])continue;
+    let l=x,r=x;const row=y*w;
+    while(l>0&&!wall[row+l-1]&&!reg[row+l-1])l--;
+    while(r<w-1&&!wall[row+r+1]&&!reg[row+r+1])r++;
+    for(let k=l;k<=r;k++)reg[row+k]=1;n+=r-l+1;
+    if(l<x0)x0=l;if(r>x1)x1=r;if(y<y0)y0=y;if(y>y1)y1=y;
+    for(const ny of[y-1,y+1]){if(ny<0||ny>=h)continue;let run=false;const nr=ny*w;
+      for(let k=l;k<=r;k++){const open=!wall[nr+k]&&!reg[nr+k];if(open&&!run){st.push(k,ny);run=true;}else if(!open)run=false;}}
+  }
+  return{reg,n,bb:[x0,y0,x1,y1]};
+}
+function contours(m,w,h){ // closed outlines of mask m (all loops: outer and holes), in bitmap pixels
+  const W2=w+2,val=(x,y)=>x<0||y<0||x>=w||y>=h?0:m[y*w+x];
+  const hk=(x,y)=>((y+1)*W2+(x+1))*2,vk=(x,y)=>((y+1)*W2+(x+1))*2+1;
+  const adj=new Map();const link=(a,b)=>{let A=adj.get(a);if(!A)adj.set(a,A=[]);A.push(b);let B=adj.get(b);if(!B)adj.set(b,B=[]);B.push(a);};
+  // find bbox of mask to keep the scan small
+  let x0=w,y0=h,x1=-1,y1=-1;for(let y=0;y<h;y++){const r=y*w;for(let x=0;x<w;x++)if(m[r+x]){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}}
+  if(x1<0)return[];
+  for(let y=y0-1;y<=y1;y++)for(let x=x0-1;x<=x1;x++){
+    const c=val(x,y)*8+val(x+1,y)*4+val(x+1,y+1)*2+val(x,y+1);if(c===0||c===15)continue;
+    const T=hk(x,y),R=vk(x+1,y),B=hk(x,y+1),L=vk(x,y);
+    switch(c){case 1:link(L,B);break;case 2:link(B,R);break;case 3:link(L,R);break;case 4:link(T,R);break;
+      case 5:link(T,R);link(L,B);break;case 6:link(T,B);break;case 7:link(T,L);break;case 8:link(T,L);break;
+      case 9:link(T,B);break;case 10:link(T,L);link(B,R);break;case 11:link(T,R);break;case 12:link(L,R);break;
+      case 13:link(R,B);break;case 14:link(L,B);break;}
+  }
+  const pt=k=>{const v=k&1,idx=k>>1,X=idx%W2-1,Y=Math.floor(idx/W2)-1;return v?[X+0.5,Y+1]:[X+1,Y+0.5];};
+  const seen=new Set(),loops=[];
+  for(const start of adj.keys()){if(seen.has(start))continue;
+    const loop=[];let prev=-1,cur=start;
+    while(cur!==undefined&&!seen.has(cur)){seen.add(cur);loop.push(pt(cur));const nb=adj.get(cur);const nx=nb[0]!==prev?nb[0]:nb[1];prev=cur;cur=nx;}
+    if(loop.length>2)loops.push(loop);
+  }
+  return loops;
+}
+function rdp(pts,eps){ // simplify an open polyline
+  const n=pts.length;if(n<3)return pts.slice();const keep=new Uint8Array(n);keep[0]=keep[n-1]=1;const st=[[0,n-1]];
+  while(st.length){const[a,b]=st.pop();const[ax,ay]=pts[a],[bx,by]=pts[b];const dx=bx-ax,dy=by-ay,L=Math.hypot(dx,dy)||1e-9;
+    let md=-1,mi=-1;for(let i=a+1;i<b;i++){const d=Math.abs((pts[i][0]-ax)*dy-(pts[i][1]-ay)*dx)/L;if(d>md){md=d;mi=i;}}
+    if(md>eps){keep[mi]=1;st.push([a,mi],[mi,b]);}}
+  return pts.filter((_,i)=>keep[i]);
+}
+function loopsToD(loops,minArea,ox=0,oy=0,res=RES,epsPx){
+  const eps=epsPx||Math.max(0.6,0.12*res);
+  let d='';
+  for(const lp of loops){
+    let a=0;for(let i=0,j=lp.length-1;i<lp.length;j=i++)a+=(lp[j][0]+lp[i][0])*(lp[j][1]-lp[i][1]);
+    if(Math.abs(a/2)<minArea)continue;
+    let far=0,fd=-1;for(let i=1;i<lp.length;i++){const q=Math.hypot(lp[i][0]-lp[0][0],lp[i][1]-lp[0][1]);if(q>fd){fd=q;far=i;}}
+    const s=rdp(lp.slice(0,far+1),eps).concat(rdp(lp.slice(far).concat([lp[0]]),eps).slice(1,-1));
+    if(s.length<3)continue;
+    d+='M'+s.map(([x,y])=>r2(ox+x/res)+' '+r2(oy+y/res)).join('L')+'Z';
+  }
+  return d;
+}
+function markerCommit(pts){
+  let mw=0;for(const q of pts)mw=Math.max(mw,q.w);
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const q of pts){x0=Math.min(x0,q.x);y0=Math.min(y0,q.y);x1=Math.max(x1,q.x);y1=Math.max(y1,q.y);}
+  const pad=mw/2+4,SB=[x0-pad,y0-pad,x1+pad,y1+pad];
+  const hit=(a,b)=>a[0]<=b[2]&&b[0]<=a[2]&&a[1]<=b[3]&&b[1]<=a[3];
+  let mres=Math.min(clamp(2.5*view.s,2,12),Math.max(1.5,Math.sqrt(4e6/Math.max(1,(SB[2]-SB[0])*(SB[3]-SB[1])))));
+  const raster=(B,draw)=>{const w=Math.max(1,Math.ceil((B[2]-B[0])*mres)),h=Math.max(1,Math.ceil((B[3]-B[1])*mres)),cv=document.createElement('canvas');cv.width=w;cv.height=h;
+    const c=cv.getContext('2d',{willReadFrequently:true});c.setTransform(mres,0,0,mres,-B[0]*mres,-B[1]*mres);c.lineCap='round';c.lineJoin='round';c.fillStyle='#000';c.strokeStyle='#000';draw(c);
+    const px=c.getImageData(0,0,w,h).data,m=new Uint8Array(w*h);for(let i=0,j=3;i<w*h;i++,j+=4)m[i]=px[j]>110?1:0;return{w,h,m};};
+  const drawStroke=c=>{if(pts.length===1){c.beginPath();c.arc(pts[0].x,pts[0].y,pts[0].w/2,0,7);c.fill();return;}
+    for(let i=1;i<pts.length;i++){c.lineWidth=(pts[i-1].w+pts[i].w)/2;c.beginPath();c.moveTo(pts[i-1].x,pts[i-1].y);c.lineTo(pts[i].x,pts[i].y);c.stroke();}};
+  let join=[];
+  if(opt.join){const cands=doc.ink.filter(it=>it.t==='blob'&&it.c===opt.color&&it.bb&&hit(it.bb,SB));
+    if(cands.length){const sm=raster(SB,drawStroke);
+      for(const b of cands){const bm=raster(SB,c=>c.fill(new Path2D(b.d),'evenodd'));let any=false;for(let i=0;i<sm.m.length&&!any;i++)if(sm.m[i]&&bm.m[i])any=true;if(any)join.push(b);}}}
+  const U=SB.slice();for(const b of join){U[0]=Math.min(U[0],b.bb[0]-2);U[1]=Math.min(U[1],b.bb[1]-2);U[2]=Math.max(U[2],b.bb[2]+2);U[3]=Math.max(U[3],b.bb[3]+2);}
+  mres=Math.min(mres,Math.max(1.5,Math.sqrt(4.5e6/Math.max(1,(U[2]-U[0])*(U[3]-U[1])))));
+  const{w,h,m}=raster(U,c=>{drawStroke(c);for(const b of join)c.fill(new Path2D(b.d),'evenodd');});
+  if(opt.inside!=='off'){
+    const out=new Uint8Array(w*h),st=[];
+    for(let x=0;x<w;x++){st.push(x,0,x,h-1);}for(let y=0;y<h;y++){st.push(0,y,w-1,y);}
+    while(st.length){const y=st.pop(),x=st.pop();if(x<0||y<0||x>=w||y>=h)continue;const i=y*w+x;if(out[i]||m[i])continue;out[i]=1;st.push(x+1,y,x-1,y,x,y+1,x,y-1);}
+    const lim=opt.inside==='all'?Infinity:Math.pow(Math.max(mw,4)*mres*2.2,2),lab=new Uint8Array(w*h);
+    for(let s0=0;s0<w*h;s0++){if(m[s0]||out[s0]||lab[s0])continue;const comp=[s0];lab[s0]=1;
+      for(let k=0;k<comp.length;k++){const i=comp[k],x=i%w;for(const j of[x>0?i-1:-1,x<w-1?i+1:-1,i-w,i+w])if(j>=0&&j<w*h&&!m[j]&&!out[j]&&!lab[j]){lab[j]=1;comp.push(j);}}
+      if(comp.length<=lim)for(const i of comp)m[i]=1;}
+  }
+  const d=loopsToD(smoothContours(m,w,h),0.3*mres*mres,U[0],U[1],mres,0.05*mres);
+  if(!d){rollback();return;}
+  const bb=[1e9,1e9,-1e9,-1e9];d.replace(/(-?[\d.]+) (-?[\d.]+)/g,(q,x,y)=>{bb[0]=Math.min(bb[0],+x);bb[1]=Math.min(bb[1],+y);bb[2]=Math.max(bb[2],+x);bb[3]=Math.max(bb[3],+y);return q;});
+  const keep=join[0];
+  const mixing=opt.markerMix!=='cover';
+  const blob={id:keep?keep.id:uid('i'),t:'blob',c:opt.color,d,edge:mixing?'none':(keep?keep.edge:opt.mEdge),ew:keep?keep.ew:opt.mEW,bb};
+  doc.ink=doc.ink.filter(x=>!join.includes(x));doc.ink.push(blob);
+  if(mixing)addMixes(SB,drawStroke,opt.color,[blob,...join]);
+  commit();
+}
+function fillAt(P){
+  toast('Filling…',0);
+  setTimeout(()=>{
+    try{
+      const g=preciseRegion(P,opt.gap);if(g.err){toast(g.err);return;}
+      const{R,reg}=g,{w,h,res}=R;
+      const e=loopsToD(smoothContours(reg,w,h),0.3*res*res,R.B[0],R.B[1],res,0.05*res);
+      const grow=Math.ceil(1.6*res),gd=chamfer(reg,w,h),big=new Uint8Array(w*h);
+      for(let i=0;i<w*h;i++)big[i]=gd[i]<=grow*3?1:0;
+      const d=loopsToD(smoothContours(big,w,h),0.3*res*res,R.B[0],R.B[1],res,0.05*res);
+      if(!d){toast('Nothing to fill there');return;}
+      begin();
+      // the same space filled before gets replaced, so tapping again recolors it
+      doc.fills=doc.fills.filter(f=>!(f.u&&f.a&&Math.abs(f.a-g.a)/g.a<0.05&&f.bb&&f.bb.every((v,i)=>Math.abs(v-g.bb[i])<=2)));
+      doc.fills.push({id:uid('f'),c:opt.color,d,e,edge:opt.edge,ew:opt.edgeW,a:g.a,bb:g.bb,u:1});commit();render();
+      $('#toast').hidden=true;
+    }catch(err){toast('Fill failed: '+err.message,3000);}
+  },20);
+}
+/* ================= bands (alcohol-marker banding) =================
+   A banded cell keeps its space (e) and a list of bands. Band 1 fills the whole cell. Every next band covers
+   everything deeper than its "Starts at" distance from the cell's edge, so bands follow the cell's shape.
+   Where two bands meet, the outer color reaches in by a and the inner color reaches out by b: the inner band's
+   edge sits at t + (a-b)/2 and is softened over about a+b. The cell itself clips everything. */
+function edt(inside,w,h){ // squared distance from each inside pixel to the nearest outside pixel (exact)
+  const n=Math.max(w,h),INF=1e20,f=new Float64Array(n),d=new Float64Array(n),v=new Int32Array(n),z=new Float64Array(n+1),g=new Float64Array(w*h);
+  for(let i=0;i<w*h;i++)g[i]=inside[i]?INF:0;
+  const pass=(len,get,set)=>{for(let q=0;q<len;q++)f[q]=get(q);let k=0;v[0]=0;z[0]=-INF;z[1]=INF;
+    for(let q=1;q<len;q++){let s=((f[q]+q*q)-(f[v[k]]+v[k]*v[k]))/(2*q-2*v[k]);while(s<=z[k]){k--;s=((f[q]+q*q)-(f[v[k]]+v[k]*v[k]))/(2*q-2*v[k]);}k++;v[k]=q;z[k]=s;z[k+1]=INF;}
+    k=0;for(let q=0;q<len;q++){while(z[k+1]<q)k++;d[q]=(q-v[k])*(q-v[k])+f[v[k]];}for(let q=0;q<len;q++)set(q,d[q]);};
+  for(let x=0;x<w;x++)pass(h,y=>g[y*w+x],(y,val)=>{g[y*w+x]=val;});
+  for(let y=0;y<h;y++)pass(w,x=>g[y*w+x],(x,val)=>{g[y*w+x]=val;});
+  return g;
+}
+/* A gradient between two bands is many thin steps that follow the cell's shape. Each step is the line where the
+   distance in from the cell's edge equals some depth, traced with sub-pixel accuracy so the edges are smooth.
+   Colors go from the outer color to the inner one on an S-curve.
+   Ink mix layers the two colors like transparent marker dye (they stay rich in the middle); Smooth mixes them
+   evenly, like a painting program's gradient. */
+function contoursIso(D,w,h,lev,cand){
+  const W2=w+2,v=(x,y)=>x<0||y<0||x>=w||y>=h?0:D[y*w+x];
+  const hk=(x,y)=>((y+1)*W2+(x+1))*2,vk=(x,y)=>((y+1)*W2+(x+1))*2+1;
+  const adj=new Map(),P=new Map();
+  const put=(k,f)=>{if(!P.has(k))P.set(k,f());};
+  const link=(a,b)=>{let A=adj.get(a);if(!A)adj.set(a,A=[]);A.push(b);let B=adj.get(b);if(!B)adj.set(b,B=[]);B.push(a);};
+  for(const ci of cand){const x=ci%(w+1)-1,y=((ci/(w+1))|0)-1;
+    const a=v(x,y),b=v(x+1,y),c=v(x+1,y+1),d=v(x,y+1);
+    const k=(a>=lev?8:0)+(b>=lev?4:0)+(c>=lev?2:0)+(d>=lev?1:0);if(k===0||k===15)continue;
+    const T=hk(x,y),Rr=vk(x+1,y),B=hk(x,y+1),L=vk(x,y);
+    put(T,()=>[x+0.5+(lev-a)/(b-a),y+0.5]);put(B,()=>[x+0.5+(lev-d)/(c-d),y+1.5]);
+    put(L,()=>[x+0.5,y+0.5+(lev-a)/(d-a)]);put(Rr,()=>[x+1.5,y+0.5+(lev-b)/(c-b)]);
+    switch(k){case 1:link(L,B);break;case 2:link(B,Rr);break;case 3:link(L,Rr);break;case 4:link(T,Rr);break;
+      case 5:link(T,Rr);link(L,B);break;case 6:link(T,B);break;case 7:link(T,L);break;case 8:link(T,L);break;
+      case 9:link(T,B);break;case 10:link(T,L);link(B,Rr);break;case 11:link(T,Rr);break;case 12:link(L,Rr);break;
+      case 13:link(Rr,B);break;case 14:link(L,B);break;}}
+  const seen=new Set(),loops=[];
+  for(const st of adj.keys()){if(seen.has(st))continue;const loop=[];let prev=-1,cur=st;
+    while(cur!==undefined&&!seen.has(cur)){seen.add(cur);loop.push(P.get(cur));const nb=adj.get(cur);const nx=nb[0]!==prev?nb[0]:nb[1];prev=cur;cur=nx;}
+    if(loop.length>2)loops.push(loop);}
+  return loops;
+}
+const lin=c=>{c/=255;return c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4);},gam=c=>{c=c<=0.0031308?c*12.92:1.055*Math.pow(c,1/2.4)-0.055;return Math.round(Math.max(0,Math.min(1,c))*255);};
+const rgbOf=h=>[1,3,5].map(i=>lin(parseInt(h.slice(i,i+2),16))),hexOf=a=>'#'+a.map(c=>gam(c).toString(16).padStart(2,'0')).join('');
+function mixColor(c0,c1,t,mode){
+  if(t<=0)return c0;if(t>=1)return c1;
+  if(mode==='pigment'&&typeof spectral!=='undefined'){try{return spectral.mix([new spectral.Color(c0),1-t],[new spectral.Color(c1),t]).toString().toLowerCase();}catch(e){}}
+  if(mode==='smooth'){try{const RC=RadianceColor,A=RC.hexToOklab(c0),B=RC.hexToOklab(c1);return RC.oklabToHex({L:A.L+(B.L-A.L)*t,a:A.a+(B.a-A.a)*t,b:A.b+(B.b-A.b)*t});}catch(e){}}
+  // ink: transparent dyes layered, each one filtering the light (a weighted multiply)
+  const A=rgbOf(c0),B=rgbOf(c1);return hexOf(A.map((v,i)=>Math.exp(Math.log(Math.max(v,0.003))*(1-t)+Math.log(Math.max(B[i],0.003))*t)));
+}
+const ease=x=>x*x*x*(x*(x*6-15)+10); // a smooth S-curve, gentle at both ends
+function boxBlur(src,w,h,r){ // two passes of a running-average blur, close to a soft Gaussian
+  if(r<1)return src;let a=Float32Array.from(src),t=new Float32Array(w*h);
+  for(let pass=0;pass<2;pass++){
+    for(let y=0;y<h;y++){let s=0;const o=y*w;for(let x=-r;x<=r;x++)s+=a[o+Math.min(w-1,Math.max(0,x))];
+      for(let x=0;x<w;x++){t[o+x]=s/(2*r+1);s+=a[o+Math.min(w-1,x+r+1)]-a[o+Math.max(0,x-r)];}}
+    for(let x=0;x<w;x++){let s=0;for(let y=-r;y<=r;y++)s+=t[Math.min(h-1,Math.max(0,y))*w+x];
+      for(let y=0;y<h;y++){a[y*w+x]=s/(2*r+1);s+=t[Math.min(h-1,y+r+1)*w+x]-t[Math.max(0,y-r)*w+x];}}}
+  return a;}
+function smoothContours(m,w,h){
+  const f=boxBlur(m,w,h,1),cand=[],g=(x,y)=>x<0||y<0||x>=w||y>=h?0:f[y*w+x];
+  for(let y=-1;y<h;y++)for(let x=-1;x<w;x++){const a=g(x,y),b=g(x+1,y),c=g(x+1,y+1),d=g(x,y+1);
+    if(Math.max(a,b,c,d)>=0.5&&Math.min(a,b,c,d)<0.5)cand.push((y+1)*(w+1)+(x+1));}
+  return contoursIso(f,w,h,0.5,cand);
+}
+function rasterMask(B,res,draw){const w=Math.max(1,Math.ceil((B[2]-B[0])*res)),h=Math.max(1,Math.ceil((B[3]-B[1])*res)),cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  const c=cv.getContext('2d',{willReadFrequently:true});c.setTransform(res,0,0,res,-B[0]*res,-B[1]*res);c.lineCap='round';c.lineJoin='round';c.fillStyle='#000';c.strokeStyle='#000';draw(c);
+  const px=c.getImageData(0,0,w,h).data,m=new Uint8Array(w*h);for(let i=0,j=3;i<w*h;i++,j+=4)m[i]=px[j]>110?1:0;return{w,h,m};}
+// Layer & mix: wherever the new mark crosses a different color (a fill or a marker shape), that overlap becomes its own mixed-color shape
+function addMixes(B,draw,color,skip){
+  const mode=opt.markerMix,hit=(a,b)=>a[0]<=b[2]&&b[0]<=a[2]&&a[1]<=b[3]&&b[1]<=a[3];
+  const res=Math.min(clamp(2.5*view.s,2,12),Math.max(1.5,Math.sqrt(4e6/Math.max(1,(B[2]-B[0])*(B[3]-B[1])))));
+  const under=[];
+  for(const f of doc.fills)if(f.t!=='bands'&&f.d&&f.c&&f.c!==color&&hit(f.bb&&f.bb.length===4?f.bb:bbOfD(f.d),B))under.push(f);
+  for(const o of doc.ink)if(!skip.includes(o)&&(o.t==='blob'||o.t==='dot')&&o.c&&o.c!==color&&(o.t==='dot'?hit([o.x-o.r,o.y-o.r,o.x+o.r,o.y+o.r],B):o.bb&&hit(o.bb,B)))under.push(o);
+  if(!under.length)return;
+  const sm=rasterMask(B,res,draw),{w,h}=sm;
+  for(const o of under){
+    const om=rasterMask(B,res,c=>{if(o.t==='dot'){c.beginPath();c.arc(o.x,o.y,o.r,0,Math.PI*2);c.fill();}else c.fill(new Path2D(o.d),'evenodd');});
+    const ov=new Uint8Array(w*h);let any=false;for(let i=0;i<w*h;i++)if(sm.m[i]&&om.m[i]){ov[i]=1;any=true;}
+    if(!any)continue;
+    const od=loopsToD(smoothContours(ov,w,h),0.3*res*res,B[0],B[1],res,0.05*res);if(!od)continue;
+    doc.ink.push({id:uid('i'),t:'blob',c:mixColor(o.c,color,0.5,mode),d:od,edge:'none',ew:1,bb:bbOfD(od)});
+  }
+}
+// live mixing while you color: a see-through canvas over the page shows the mixed colors as the pen moves;
+// when you lift, the real vector shapes replace it
+function liveStart(){
+  if(opt.markerMix==='cover')return null;
+  try{
+    const st=$('#stage'),r=sv.getBoundingClientRect(),sr=st.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);
+    const cw=Math.max(1,Math.ceil(r.width*dpr)),ch=Math.max(1,Math.ceil(r.height*dpr)),F=frame();
+    const T=[F.k*dpr,(F.ox-view.x*F.k)*dpr,(F.oy-view.y*F.k)*dpr];
+    const mk=(c)=>{const x=document.createElement('canvas');x.width=cw;x.height=ch;return x;};
+    const cv=mk();cv.style.cssText=`position:absolute;left:${r.left-sr.left}px;top:${r.top-sr.top}px;width:${r.width}px;height:${r.height}px;pointer-events:none`;st.appendChild(cv);
+    const sn=mk(),sc=sn.getContext('2d',{willReadFrequently:true});sc.setTransform(T[0],0,0,T[0],T[1],T[2]);
+    sc.beginPath();sc.rect(0,0,W,H);sc.clip();
+    for(const f of doc.fills)if(f.t!=='bands'&&f.d&&f.c){sc.fillStyle=f.c;sc.fill(new Path2D(f.d),'evenodd');}
+    for(const o of doc.ink){if(o.t==='blob'){sc.fillStyle=o.c;sc.fill(new Path2D(o.d),'evenodd');}else if(o.t==='dot'){sc.fillStyle=o.c||INK;sc.beginPath();sc.arc(o.x,o.y,o.r,0,Math.PI*2);sc.fill();}}
+    const under=sc.getImageData(0,0,cw,ch).data;
+    const m=mk(),mc=m.getContext('2d',{willReadFrequently:true});mc.setTransform(T[0],0,0,T[0],T[1],T[2]);mc.lineCap='round';mc.lineJoin='round';mc.strokeStyle=mc.fillStyle='#fff';
+    return{cv,ctx:cv.getContext('2d'),mc,under,cw,ch,T,cache:new Map(),sc:rgb255(opt.color),color:opt.color,mode:opt.markerMix};
+  }catch(e){return null;}
+}
+function rgb255(hex){const n=parseInt(hex.slice(1),16);return[n>>16&255,n>>8&255,n&255];}
+function liveSeg(L,a,b){
+  const mc=L.mc;
+  if(!a){mc.beginPath();mc.arc(b.x,b.y,b.w/2,0,Math.PI*2);mc.fill();}
+  else{mc.lineWidth=(a.w+b.w)/2;mc.beginPath();mc.moveTo(a.x,a.y);mc.lineTo(b.x,b.y);mc.stroke();}
+  const p=a||b,rr=Math.max(a?a.w:0,b.w)/2+2,k=L.T[0];
+  const x0=Math.max(0,Math.floor((Math.min(p.x,b.x)-rr)*k+L.T[1])),y0=Math.max(0,Math.floor((Math.min(p.y,b.y)-rr)*k+L.T[2]));
+  const x1=Math.min(L.cw,Math.ceil((Math.max(p.x,b.x)+rr)*k+L.T[1])),y1=Math.min(L.ch,Math.ceil((Math.max(p.y,b.y)+rr)*k+L.T[2]));
+  const w=x1-x0,h=y1-y0;if(w<=0||h<=0)return;
+  const mk=mc.getImageData(x0,y0,w,h).data,out=L.ctx.createImageData(w,h),o=out.data,U=L.under,S=L.sc;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const j=(y*w+x)*4,ma=mk[j+3];if(!ma)continue;
+    const u=((y+y0)*L.cw+(x+x0))*4,ua=U[u+3];let r=S[0],g=S[1],bl=S[2];
+    if(ua>8){const key=U[u]<<16|U[u+1]<<8|U[u+2];let mx=L.cache.get(key);
+      if(!mx){const uh='#'+((1<<24)|key).toString(16).slice(1);mx=uh===L.color?S:rgb255(mixColor(uh,L.color,0.5,L.mode));L.cache.set(key,mx);}
+      const t=ua/255;r=mx[0]*t+r*(1-t);g=mx[1]*t+g*(1-t);bl=mx[2]*t+bl*(1-t);}
+    o[j]=r;o[j+1]=g;o[j+2]=bl;o[j+3]=ma;}
+  L.ctx.putImageData(out,x0,y0);
+}
+function bbOfD(d){const bb=[1e9,1e9,-1e9,-1e9];d.replace(/(-?[\d.]+) (-?[\d.]+)/g,(q,x,y)=>{bb[0]=Math.min(bb[0],+x);bb[1]=Math.min(bb[1],+y);bb[2]=Math.max(bb[2],+x);bb[3]=Math.max(bb[3],+y);return q;});return bb;}
+const bandCache=new Map();
+function strHash(t){let h=2166136261;for(let i=0;i<t.length;i++)h=Math.imul(h^t.charCodeAt(i),16777619);return(h>>>0).toString(36)+'.'+t.length;}
+function bandLayers(f){
+  const key=f.id+'|'+strHash(f.e||'')+'|'+(f.mix||'ink')+'|'+JSON.stringify(f.bands);
+  const hit=bandCache.get(key);if(hit)return hit;
+  const bb=f.bb||[0,0,W,H],B=[bb[0]-3,bb[1]-3,bb[2]+3,bb[3]+3],area=Math.max(1,(B[2]-B[0])*(B[3]-B[1]));
+  const res=Math.min(5,Math.max(1.5,Math.sqrt(3e6/area))),w=Math.ceil((B[2]-B[0])*res),h=Math.ceil((B[3]-B[1])*res);
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;const c=cv.getContext('2d',{willReadFrequently:true});
+  c.setTransform(res,0,0,res,-B[0]*res,-B[1]*res);c.fillStyle='#000';c.fill(new Path2D(f.e),'evenodd');
+  const px=c.getImageData(0,0,w,h).data,m=new Uint8Array(w*h);for(let i=0,j=3;i<w*h;i++,j+=4)m[i]=px[j]>127?1:0;
+  const d2=edt(m,w,h),D=new Float32Array(w*h);for(let i=0;i<w*h;i++)D[i]=m[i]?Math.sqrt(d2[i])-0.5:0;
+  const layers=[],ok=[true];
+  for(let k=1;k<f.bands.length;k++){
+    const b=f.bands[k],c0=f.bands[k-1].c,c1=b.c;
+    const L0=Math.max(0.3,b.t-b.b),L1=Math.max(L0,b.t+b.a),span=L1-L0;
+    // softening the distance by about a third of the blend's width rounds off the creases at corners
+    const Dk=span>0.5?boxBlur(D,w,h,Math.min(60,Math.round(span*res*0.3))):D;
+    const n=span<0.05?1:Math.min(80,Math.max(2,Math.ceil(span/0.5)));
+    // only the cells this gradient can pass through
+    const lo=L0*res,hi=L1*res+1,cand=[];
+    for(let y=-1;y<h;y++)for(let x=-1;x<w;x++){const gk=(X,Y)=>X<0||Y<0||X>=w||Y>=h?0:Dk[Y*w+X];
+      const a=gk(x,y),bq=gk(x+1,y),cq=gk(x+1,y+1),dq=gk(x,y+1),mn=Math.min(a,bq,cq,dq),mx=Math.max(a,bq,cq,dq);
+      if(mx>=lo&&mn<hi)cand.push((y+1)*(w+1)+(x+1));}
+    let last=false;
+    for(let i=0;i<n;i++){const lev=n===1?b.t:L0+(i+0.5)/n*span,col=n===1?c1:mixColor(c0,c1,ease((i+1)/n),f.mix||'ink');
+      const d=loopsToD(contoursIso(Dk,w,h,lev*res,cand),0.3*res*res,B[0],B[1],res,0.06*res);
+      if(d){layers.push({d,c:col});if(i===n-1)last=true;}}
+    ok.push(last);
+  }
+  const out={layers,ok};if(bandCache.size>400)bandCache.clear();bandCache.set(key,out);return out;
+}
+const bandPaths=f=>bandLayers(f);
+function bandsSVG(f,hit){
+  const id='bc'+String(f.id).replace(/[^a-z0-9]/gi,''),da=hit?` data-fill="${f.id}"`:'',L=bandLayers(f);
+  let s=`<clipPath id="${id}"><path d="${f.d}" clip-rule="evenodd"/></clipPath><g clip-path="url(#${id})"><path${da} d="${f.d}" fill="${f.bands[0].c}" fill-rule="evenodd"/>`;
+  for(const l of L.layers)s+=`<path${da} d="${l.d}" fill="${l.c}" fill-rule="evenodd"/>`;
+  return s+'</g>';
+}
+function blurDefs(){return'';}
+function cellPaths(g){ // the space itself (e) and the space grown to tuck under the ink (d)
+  const{R,reg}=g,{w,h,res}=R;
+  const e=loopsToD(smoothContours(reg,w,h),0.3*res*res,R.B[0],R.B[1],res,0.05*res);
+  const grow=Math.ceil(1.6*res),gd=chamfer(reg,w,h),big=new Uint8Array(w*h);for(let i=0;i<w*h;i++)big[i]=gd[i]<=grow*3?1:0;
+  return{e,d:loopsToD(smoothContours(big,w,h),0.3*res*res,R.B[0],R.B[1],res,0.05*res)};
+}
+function bandAt(P){
+  toast('Banding…',0);
+  setTimeout(()=>{try{
+    const g=preciseRegion(P,opt.gap);if(g.err){toast(g.err);return;}
+    const same=x=>x.t==='bands'&&x.a&&Math.abs(x.a-g.a)/g.a<0.05&&x.bb&&x.bb.every((v,i)=>Math.abs(v-g.bb[i])<=2);
+    let f=doc.fills.find(same);begin();
+    if(!f){const{d,e}=cellPaths(g);if(!d){toast('Nothing to fill there');return;}
+      f={id:uid('f'),t:'bands',c:opt.color,d,e,edge:'none',ew:1,a:g.a,bb:g.bb,u:1,bands:[{c:opt.color,t:0,a:0,b:0}],mix:opt.bandMix};doc.fills.push(f);toast('Filled. Tap again with another color for a band.',1800);}
+    else{const n=f.bands.length,last=f.bands[n-1].t;f.bands.push({c:opt.color,t:last+opt.bandW,a:opt.bandA,b:opt.bandB});
+      if(!bandLayers(f).ok[n]){f.bands.pop();toast('No room for another band in that cell');}else $('#toast').hidden=true;}
+    commit();render();
+  }catch(err){toast('Bands failed: '+err.message,3000);}},20);
+}
+function rdpIdx(pts,eps){const n=pts.length;if(n<3)return pts.map((_,i)=>i);const keep=new Uint8Array(n);keep[0]=keep[n-1]=1;const st=[[0,n-1]];
+  while(st.length){const[a,b]=st.pop();const[ax,ay]=pts[a],[bx,by]=pts[b];const dx=bx-ax,dy=by-ay,L=Math.hypot(dx,dy)||1e-9;
+    let md=-1,mi=-1;for(let i=a+1;i<b;i++){const d=Math.abs((pts[i][0]-ax)*dy-(pts[i][1]-ay)*dx)/L;if(d>md){md=d;mi=i;}}
+    if(md>eps){keep[mi]=1;st.push([a,mi],[mi,b]);}}
+  const o=[];for(let i=0;i<n;i++)if(keep[i])o.push(i);return o;}
+/* ================= cells, corners and cell styles =================
+   A cell is a polygon of its corners, placed on the CENTER of the lines around it, so curves leave each
+   line smoothly with no bump. Cell styles turn a cell polygon into ink (lines) and fills. Each style is a
+   small recipe in STYLES; new styles get added there and show up in the Style tool and on pattern pages. */
+const V2={sub:(a,b)=>[a[0]-b[0],a[1]-b[1]],add:(a,b)=>[a[0]+b[0],a[1]+b[1]],mul:(a,k)=>[a[0]*k,a[1]*k],len:a=>Math.hypot(a[0],a[1]),
+  cross:(a,b)=>a[0]*b[1]-a[1]*b[0],dot:(a,b)=>a[0]*b[0]+a[1]*b[1]};
+function polyArea(P){let a=0;for(let i=0,j=P.length-1;i<P.length;j=i++)a+=(P[j][0]+P[i][0])*(P[j][1]-P[i][1]);return a/2;}
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const STYLES={
+  pebble:{name:'Pebble',
+    // round every corner; black (or color) tips in the corners sharper than the tip limit
+    apply(poly,o){const out={lines:[],tips:[]},n=poly.length;if(n<3)return out;const sa=Math.sign(polyArea(poly));
+      for(let i=0;i<n;i++){if(o.only!=null&&i!==o.only)continue;
+        const V=poly[i],Pp=poly[(i-1+n)%n],Nn=poly[(i+1)%n],e1=V2.sub(Pp,V),e2=V2.sub(Nn,V),l1=V2.len(e1),l2=V2.len(e2);
+        if(l1<0.5||l2<0.5)continue;
+        // convex corners only (with y down, a convex turn has the same sign as the polygon's area)
+        if(Math.sign(V2.cross(V2.sub(V,Pp),V2.sub(Nn,V)))!==-sa&&o.only==null)continue;
+        const ang=Math.acos(clamp(V2.dot(e1,e2)/(l1*l2),-1,1));
+        let r=o.rr*(1+((o.rnd||Math.random)()*2-1)*o.vary);r=Math.min(r,o.reach*l1,o.reach*l2);if(r<0.6)continue;
+        const A=V2.add(V,V2.mul(e1,r/l1)),B=V2.add(V,V2.mul(e2,r/l2));
+        const wide=ang*180/Math.PI>o.tipMax;
+        // a circular arc's handle length; for corners too wide for a tip, Gary pulls both handles right to the joint so the curve hugs it
+        const k=wide&&o.wide==='hug'?1:clamp(4/3*Math.tan((Math.PI-ang)/4)*Math.tan(ang/2),0.3,0.75);
+        const hA=V2.add(A,V2.mul(V2.sub(V,A),k)),hB=V2.add(B,V2.mul(V2.sub(V,B),k));
+        out.lines.push({w:o.lineW,closed:false,pts:[{x:A[0],y:A[1],ix:A[0],iy:A[1],ox:hA[0],oy:hA[1]},{x:B[0],y:B[1],ix:hB[0],iy:hB[1],ox:B[0],oy:B[1]}]});
+        if(o.tip!=='none'&&ang*180/Math.PI<=o.tipMax){const f=v=>r2(v[0])+' '+r2(v[1]);
+          out.tips.push({c:o.tip==='black'?INK:o.color,d:`M${f(A)}L${f(V)}L${f(B)}C${f(hB)} ${f(hA)} ${f(A)}Z`});}
+      }
+      return out;}}
+};
+function styleOpts(extra){return Object.assign({rr:opt.rr,vary:opt.vary,reach:opt.reach,tip:opt.tip,tipMax:opt.tipMax,wide:opt.wide,lineW:opt.curveW,color:opt.color},extra||{});}
+function addStyled(res){
+  for(const l of res.lines)doc.ink.push(Object.assign({id:uid('i'),t:'path'},l));
+  for(const t of res.tips)doc.fills.push({id:uid('f'),c:t.c,d:t.d,e:t.d,edge:'none',ew:1});
+}
+// the corner polygon of a traced space, moved out to the middle of the lines around it
+/* Gary's rule: a curve's cell-side edge lines up with the cell-side edge of the line it leaves (edge to edge),
+   so the rest of the curve sits inside that line. Against the page edge, the curve's cell-side edge sits on the page edge.
+   So each cell edge moves outward from the line's center by (line width - curve width)/2, or by curve width/2 at the page edge. */
+function shiftLines(P,lines,ds){const sa=Math.sign(polyArea(P)),N=P.length,out=[];
+  const L2=lines.map((ln,i)=>{const a=P[i],b=P[(i+1)%N],e=V2.sub(b,a),L=V2.len(e)||1,n=V2.mul([e[1],-e[0]],-sa/L*ds[i]);return[V2.add(ln[0],n),V2.add(ln[1],n)];});
+  for(let i=0;i<N;i++){const[p0,q0]=L2[(i-1+N)%N],[p1,q1]=L2[i];const d1=V2.sub(q0,p0),d2=V2.sub(q1,p1),den=V2.cross(d1,d2);
+    if(Math.abs(den)<1e-6)out.push(p1);else{const t=V2.cross(V2.sub(p1,p0),d2)/den;out.push(V2.add(p0,V2.mul(d1,t)));}}
+  return out;}
+const onPageEdge=(a,b)=>(a[0]<2&&b[0]<2)||(a[1]<2&&b[1]<2)||(a[0]>W-2&&b[0]>W-2)||(a[1]>H-2&&b[1]>H-2);
+function cellFromLoop(loop,res,B){
+  const pts=loop.map(([x,y])=>[B[0]+x/res,B[1]+y/res]),n=pts.length;if(n<6)return null;
+  let far=0,fd=-1;for(let i=1;i<n;i++){const q=Math.hypot(pts[i][0]-pts[0][0],pts[i][1]-pts[0][1]);if(q>fd){fd=q;far=i;}}
+  const idx=[...rdpIdx(pts.slice(0,far+1),0.9),...rdpIdx(pts.slice(far).concat([pts[0]]),0.9).slice(1,-1).map(i=>i+far)];
+  const m=idx.length,turn=k=>{const a=pts[idx[(k-1+m)%m]],b=pts[idx[k]],c=pts[idx[(k+1)%m]];let t=Math.abs(Math.atan2(c[1]-b[1],c[0]-b[0])-Math.atan2(b[1]-a[1],b[0]-a[0]));return t>Math.PI?2*Math.PI-t:t;};
+  let cs=[];for(let k=0;k<m;k++)if(turn(k)>0.2)cs.push(k);
+  // little jogs right beside a real corner merge into it
+  const minGap=Math.max(4,2.5*opt.lineW),poly=[];
+  for(const k of cs){const p=pts[idx[k]];const last=poly[poly.length-1];
+    if(last&&Math.hypot(p[0]-last.p[0],p[1]-last.p[1])<minGap){if(turn(k)>last.t)poly[poly.length-1]={p,t:turn(k)};}else poly.push({p,t:turn(k)});}
+  if(poly.length>2&&Math.hypot(poly[0].p[0]-poly[poly.length-1].p[0],poly[0].p[1]-poly[poly.length-1].p[1])<minGap){const a=poly.pop();if(a.t>poly[0].t)poly[0]=a;}
+  const P=poly.map(q=>q.p);if(P.length<3)return null;
+  // push each edge out by half the width of the line it sits against (page edges stay put)
+  const sa=Math.sign(polyArea(P)),N=P.length,onEdge=(a,b)=>(a[0]<2&&b[0]<2)||(a[1]<2&&b[1]<2)||(a[0]>W-2&&b[0]>W-2)||(a[1]>H-2&&b[1]>H-2);
+  // an edge against a straight line snaps exactly onto that line's center; otherwise it moves out by half the line width
+  const straightSeg=(it,mid)=>{if(!it||it.t!=='path')return null;const a=it.pts;let best=null,bd=1e9;
+    for(let i=1;i<a.length+(it.closed?1:0);i++){const P0=a[i-1],P1=a[i%a.length],L=Math.hypot(P1.x-P0.x,P1.y-P0.y)||1;
+      const off=q=>Math.abs((q[0]-P0.x)*(P1.y-P0.y)-(q[1]-P0.y)*(P1.x-P0.x))/L;
+      if(off([P0.ox,P0.oy])>0.6||off([P1.ix,P1.iy])>0.6)continue; // that piece is curved
+      const d=off(mid);if(d<bd){bd=d;best=[[P0.x,P0.y],[P1.x,P1.y]];}}
+    return bd<it.w/2+6?best:null;};
+  const cw=opt.curveW,lines=[],ds=[];
+  P.forEach((a,i)=>{const b=P[(i+1)%N];
+    if(onPageEdge(a,b)){lines.push([a,b]);ds.push(cw/2);return;}
+    const mid=V2.mul(V2.add(a,b),0.5),it=nearestInk({x:mid[0],y:mid[1]},40),w=it?(it.t==='path'?it.w:(it.ew||2)):opt.lineW;
+    const sl=straightSeg(it,mid);
+    if(sl){lines.push(sl);ds.push((w-cw)/2);}      // the line's exact center, then out to edge-to-edge
+    else{lines.push([a,b]);ds.push(w-cw/2);}       // traced inner edge: out past the center to edge-to-edge
+  });
+  return shiftLines(P,lines,ds);
+}
+function cellAt(P){const g=preciseRegion(P,0);if(g.err)return g;const{R,reg}=g,loops=contours(reg,R.w,R.h);if(!loops.length)return{err:'No space there'};
+  let L=loops[0],A=0;for(const l of loops){const a=Math.abs(polyArea(l));if(a>A){A=a;L=l;}}
+  const poly=cellFromLoop(L,R.res,R.B);return poly?{poly}:{err:'No corners found in that space'};}
+function roundAt(P){
+  toast('Rounding…',0);
+  setTimeout(()=>{try{
+    const c=cellAt(P);if(c.err){toast(c.err);return;}
+    let best=0,bd=1e18;c.poly.forEach((v,i)=>{const d=(v[0]-P.x)**2+(v[1]-P.y)**2;if(d<bd){bd=d;best=i;}});
+    const res=STYLES.pebble.apply(c.poly,styleOpts({only:best,reach:0.98}));
+    if(!res.lines.length){toast('That corner is too small to round');return;}
+    begin();addStyled(res);commit();render();$('#toast').hidden=true;
+  }catch(err){toast('Round failed: '+err.message,3000);}},20);
+}
+function styleAt(P){
+  toast('Styling…',0);
+  setTimeout(()=>{try{
+    const c=cellAt(P);if(c.err){toast(c.err);return;}
+    const res=STYLES[opt.cstyle].apply(c.poly,styleOpts());
+    if(!res.lines.length&&!res.tips.length){toast('Nothing to style in that cell');return;}
+    begin();addStyled(res);commit();render();$('#toast').hidden=true;
+  }catch(err){toast('Style failed: '+err.message,3000);}},20);
+}
+// every enclosed space on the page, found in one pass
+function allCells(){
+  const res=2,R=rasterInk([0,0,W,H],res),{w,h,wall}=R,lab=new Int32Array(w*h),cells=[];let id=0;
+  for(let s0=0;s0<w*h;s0++){if(wall[s0]||lab[s0])continue;id++;const st=[s0];lab[s0]=id;let x0=w,y0=h,x1=0,y1=0,n=0;
+    while(st.length){const i=st.pop(),x=i%w,y=(i/w)|0;n++;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
+      if(x>0&&!wall[i-1]&&!lab[i-1]){lab[i-1]=id;st.push(i-1);}if(x<w-1&&!wall[i+1]&&!lab[i+1]){lab[i+1]=id;st.push(i+1);}
+      if(y>0&&!wall[i-w]&&!lab[i-w]){lab[i-w]=id;st.push(i-w);}if(y<h-1&&!wall[i+w]&&!lab[i+w]){lab[i+w]=id;st.push(i+w);}}
+    if(n/(res*res)<40)continue;
+    const cw=x1-x0+1,ch=y1-y0+1,m=new Uint8Array(cw*ch);for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(lab[y*w+x]===id)m[(y-y0)*cw+(x-x0)]=1;
+    const loops=contours(m,cw,ch);if(!loops.length)continue;let L=loops[0],A=0;for(const l of loops){const a=Math.abs(polyArea(l));if(a>A){A=a;L=l;}}
+    const poly=cellFromLoop(L,res,[x0/res,y0/res]);if(poly)cells.push(poly);}
+  return cells;
+}
+function styleAll(){
+  toast('Styling every cell…',0);
+  setTimeout(()=>{try{const cells=allCells();if(!cells.length){toast('No cells found');return;}
+    const rnd=mulberry((Math.random()*1e9)|0);begin();let n=0;
+    for(const poly of cells){const res=STYLES[opt.cstyle].apply(poly,styleOpts({rnd}));addStyled(res);n++;}
+    commit();render();toast('Styled '+n+' cells');
+  }catch(err){toast('Style failed: '+err.message,3000);}},20);
+}
+
+/* ================= pattern pages =================
+   Shattered lines: straight lines from one page edge to another, added one at a time. A line is only kept
+   if every cell it makes stays at least "Smallest cell" wide and every cell edge at least "Shortest edge" long. */
+function splitConvex(poly,a,b){const d=V2.sub(b,a),side=p=>V2.cross(d,V2.sub(p,a));const L=[],Rr=[],n=poly.length;
+  for(let i=0;i<n;i++){const p=poly[i],q=poly[(i+1)%n],sp=side(p),sq=side(q);
+    if(sp>=0)L.push(p);if(sp<=0)Rr.push(p);
+    if((sp>0&&sq<0)||(sp<0&&sq>0)){const t=sp/(sp-sq),x=V2.add(p,V2.mul(V2.sub(q,p),t));L.push(x);Rr.push(x);}}
+  const ok=P=>P.length>=3&&Math.abs(polyArea(P))>1e-3;return ok(L)&&ok(Rr)?[L,Rr]:null;}
+function cellWidth(P){let mn=1e9;const n=P.length;for(let i=0;i<n;i++){const a=P[i],b=P[(i+1)%n],e=V2.sub(b,a),L=V2.len(e)||1;let mx=0;
+  for(const p of P)mx=Math.max(mx,Math.abs(V2.cross(e,V2.sub(p,a)))/L);mn=Math.min(mn,mx);}return mn;}
+function shortestEdge(P){let mn=1e9;for(let i=0;i<P.length;i++)mn=Math.min(mn,V2.len(V2.sub(P[(i+1)%P.length],P[i])));return mn;}
+const PATTERNS={
+  shatter:{name:'Shattered lines',make(o,rnd){
+    let cells=[[[0,0],[W,0],[W,H],[0,H]]];const lines=[];
+    const edgePt=(side,t)=>side===0?[t*W,0]:side===1?[W,t*H]:side===2?[t*W,H]:[0,t*H];
+    for(let k=0;k<o.lines;k++){let placed=false;
+      for(let tries=0;tries<500&&!placed;tries++){
+        const s1=(rnd()*4)|0;let s2=(rnd()*3)|0;if(s2>=s1)s2++;
+        const a=edgePt(s1,0.04+rnd()*0.92),b=edgePt(s2,0.04+rnd()*0.92);
+        if(V2.len(V2.sub(b,a))<o.minW*2)continue;
+        const next=[];let bad=false;
+        for(const c of cells){const sp=splitConvex(c,a,b);
+          if(!sp){next.push(c);continue;}
+          for(const q of sp){if(cellWidth(q)<o.minW||shortestEdge(q)<o.minE){bad=true;break;}next.push(q);}
+          if(bad)break;}
+        if(bad)continue;cells=next;lines.push([a,b]);placed=true;}
+      if(!placed)break;}
+    return{lines,cells};}}
+};
+function makePattern(){
+  const rnd=mulberry((Math.random()*1e9)|0),o={lines:opt.pLines,minW:opt.pMinW,minE:opt.pMinE};
+  const pat=PATTERNS.shatter.make(o,rnd);
+  pen=null;sel=null;selPt=-1;begin();doc={v:1,ink:[],fills:[]};
+  for(const[a,b]of pat.lines){const ext=(p,q)=>{const d=V2.sub(p,q),L=V2.len(d)||1;return V2.add(p,V2.mul(d,3/L));};
+    const A=ext(a,b),B=ext(b,a);doc.ink.push({id:uid('i'),t:'path',w:opt.lineW,closed:false,pts:[{x:A[0],y:A[1],ix:A[0],iy:A[1],ox:A[0],oy:A[1]},{x:B[0],y:B[1],ix:B[0],iy:B[1],ox:B[0],oy:B[1]}]});}
+  if(opt.pStyle!=='none')for(const c of pat.cells){const cw=opt.curveW,n=c.length,ds=c.map((a,i)=>onPageEdge(a,c[(i+1)%n])?cw/2:(opt.lineW-cw)/2);
+    addStyled(STYLES[opt.pStyle].apply(shiftLines(c,c.map((a,i)=>[a,c[(i+1)%n]]),ds),styleOpts({rnd})));}
+  commit();renderOpts();fit();
+  return{lines:pat.lines.length,cells:pat.cells.length};
+}
+
+/* ================= load from SVG code (this page's own Save / Copy SVG) ================= */
+function parseLineD(d,w){
+  const t=d.match(/[MCLZ]|-?\d*\.?\d+(?:e-?\d+)?/gi);if(!t||t[0].toUpperCase()!=='M')return null;
+  let i=1;const num=()=>+t[i++];const pts=[];const x0=num(),y0=num();pts.push({x:x0,y:y0,ix:x0,iy:y0,ox:x0,oy:y0});let closed=false;
+  while(i<t.length){const c=t[i++].toUpperCase();
+    if(c==='C'){const a=num(),b=num(),c2=num(),d2=num(),x=num(),y=num();const P=pts[pts.length-1];P.ox=a;P.oy=b;pts.push({x,y,ix:c2,iy:d2,ox:x,oy:y});}
+    else if(c==='L'){const x=num(),y=num();pts.push({x,y,ix:x,iy:y,ox:x,oy:y});}
+    else if(c==='Z')closed=true;}
+  if(closed&&pts.length>2){const l=pts[pts.length-1];if(Math.abs(l.x-x0)<0.05&&Math.abs(l.y-y0)<0.05){pts[0].ix=l.ix;pts[0].iy=l.iy;pts.pop();}}
+  return{id:uid('i'),t:'path',w,closed,pts};
+}
+function importSVG(txt){
+  const dom=new DOMParser().parseFromString(txt,'image/svg+xml'),svg=dom.querySelector('svg');
+  if(!svg||dom.querySelector('parsererror'))throw new Error('That isn’t SVG code from this page.');
+  const gl=[...svg.children].filter(e=>e.tagName.toLowerCase()==='g');
+  const inkG=gl.find(g=>g.getAttribute('stroke-linecap')),edgeG=gl.find(g=>g!==inkG&&g.getAttribute('fill')==='none'),fillG=gl.find(g=>g!==inkG&&g!==edgeG);
+  if(!inkG)throw new Error('That SVG wasn’t saved from Ink & Fill.');
+  const empty=document.createElementNS('http://www.w3.org/2000/svg','g'),gs=[fillG||empty,edgeG||empty,inkG];
+  const hex=v=>v&&HEX.test(v)?v.toLowerCase():null,nd={v:1,ink:[],fills:[]};
+  for(const g of[...gs[0].children].filter(x=>x.getAttribute&&x.getAttribute('data-bands'))){
+    try{const o=JSON.parse(atob(g.getAttribute('data-bands'))),cp=g.querySelector('clipPath path');
+      if(o&&cp)nd.fills.push({t:'bands',c:(o.bands&&o.bands[0]&&o.bands[0].c)||'#ffffff',d:cp.getAttribute('d')||'',e:o.e||'',a:o.a,bb:o.bb,bands:o.bands,mix:o.mix,edge:'none',ew:1});}catch(_){}}
+  const fp=[...gs[0].children].filter(x=>x.tagName.toLowerCase()==='path'),ep=[...gs[1].querySelectorAll('path')],pair=ep.length===fp.length;
+  fp.forEach((p,i)=>{const c=hex(p.getAttribute('fill'));if(!c)return;const e=pair?ep[i]:null;
+    nd.fills.push({c,d:p.getAttribute('d')||'',e:e?e.getAttribute('d'):(p.getAttribute('d')||''),edge:e?(hex(e.getAttribute('stroke'))===INK?'black':'shade'):'none',ew:e?(+e.getAttribute('stroke-width')||2.5):2.5});});
+  for(const el of gs[2].children){const tag=el.tagName.toLowerCase(),st=hex(el.getAttribute('stroke')),sw=+el.getAttribute('stroke-width')||2;
+    const edge=!st?'none':(st===INK?'black':'shade');
+    if(tag==='circle')nd.ink.push({t:'dot',x:+el.getAttribute('cx'),y:+el.getAttribute('cy'),r:+el.getAttribute('r'),c:hex(el.getAttribute('fill'))||INK,edge,ew:sw});
+    else if(tag==='path'){const f=hex(el.getAttribute('fill')),d=el.getAttribute('d')||'';
+      if(f){const bb=[1e9,1e9,-1e9,-1e9];d.replace(/(-?[\d.]+) (-?[\d.]+)/g,(q,x,y)=>{bb[0]=Math.min(bb[0],+x);bb[1]=Math.min(bb[1],+y);bb[2]=Math.max(bb[2],+x);bb[3]=Math.max(bb[3],+y);return q;});nd.ink.push({t:'blob',c:f,d,edge,ew:sw,bb});}
+      else{const l=parseLineD(d,+el.getAttribute('stroke-width')||3);if(l)nd.ink.push(l);}}}
+  const clean=cleanDoc(nd);if(!clean||(!clean.ink.length&&!clean.fills.length))throw new Error('Nothing in that SVG could be read.');
+  pen=null;sel=null;selPt=-1;begin();doc=clean;commit();renderOpts();fit();
+  return clean.ink.length+clean.fills.length;
+}
+
+/* ================= palettes =================
+   The catalog is Licorice's own (PSETS.catalog from the app). Palettes you made on the Licorice palette page
+   live in that site's storage, so they come over by pasting a combination's Share link. */
+const PS=typeof PSETS!=='undefined'?PSETS:null;
+let CAT=[];try{CAT=PS?PS.catalog():[];}catch(e){CAT=[];}
+/* Radiance's preset library (github.com/grbsoftware/Radiance, the palette maker with the hexagon comb picker):
+   anchors, with a bridge between each pair computed the way Radiance does it, in Blend and in Wheel. */
+const RADIANCE_PRESETS={"2":[{"name":"Fire & Ice","colors":["#FF4500","#00CED1"]},{"name":"Day & Night","colors":["#FFD700","#191970"]},{"name":"Forest","colors":["#228B22","#8B4513"]},{"name":"Ocean","colors":["#006994","#40E0D0"]},{"name":"Sunset","colors":["#FF6B6B","#4ECDC4"]},{"name":"Berry","colors":["#8B008B","#FF69B4"]},{"name":"Earth","colors":["#DAA520","#2F4F4F"]},{"name":"Neon","colors":["#FF1493","#00FF7F"]}],"3":[{"name":"Primary","colors":["#FF0000","#FFFF00","#0000FF"]},{"name":"Secondary","colors":["#FF8000","#00FF00","#8000FF"]},{"name":"Pastel","colors":["#FFB6C1","#98FB98","#87CEEB"]},{"name":"Sunset","colors":["#FF6B6B","#FFE66D","#4ECDC4"]},{"name":"Neon","colors":["#FF1493","#00FF7F","#00BFFF"]},{"name":"Earthy","colors":["#8B4513","#228B22","#4682B4"]},{"name":"Vintage","colors":["#DC143C","#DAA520","#008080"]},{"name":"Candy","colors":["#FF69B4","#FFD700","#00CED1"]},{"name":"Forest","colors":["#006400","#8B4513","#F4A460"]},{"name":"Ocean","colors":["#000080","#20B2AA","#F0E68C"]},{"name":"Berry","colors":["#8B0000","#FF1493","#9400D3"]},{"name":"Tropical","colors":["#FF4500","#32CD32","#1E90FF"]}],"4":[{"name":"Jewel","colors":["#9B2335","#F5DF4D","#009473","#0F4C81"]},{"name":"Retro","colors":["#FF6F61","#88B04B","#6B5B95","#F7CAC9"]},{"name":"Ocean","colors":["#003B46","#07575B","#66A5AD","#C4DFE6"]},{"name":"Autumn","colors":["#8B0000","#FF8C00","#FFD700","#006400"]},{"name":"Candy","colors":["#FF6B6B","#FEC89A","#90EE90","#DDA0DD"]},{"name":"Nordic","colors":["#2E4057","#048A81","#54C6EB","#F8F4E3"]},{"name":"Sunset","colors":["#F9C80E","#F86624","#EA3546","#662E9B"]},{"name":"Forest","colors":["#1B4332","#2D6A4F","#52B788","#D8F3DC"]},{"name":"Dusk","colors":["#22223B","#4A4E69","#9A8C98","#C9ADA7"]},{"name":"Tropical","colors":["#F72585","#7209B7","#3A0CA3","#4CC9F0"]}],"5":[{"name":"Rainbow","colors":["#FF0000","#FFFF00","#00FF00","#00FFFF","#8000FF"]},{"name":"Warm","colors":["#FF0000","#FF4500","#FF8C00","#FFD700","#FFFF00"]},{"name":"Cool","colors":["#00CED1","#20B2AA","#3CB371","#2E8B57","#006400"]},{"name":"Berry","colors":["#8B008B","#9932CC","#BA55D3","#DA70D6","#FF69B4"]},{"name":"Coastal","colors":["#0077B6","#00B4D8","#90E0EF","#CAF0F8","#FFDDD2"]},{"name":"Vintage","colors":["#D62828","#F77F00","#FCBF49","#EAE2B7","#003049"]},{"name":"Neon","colors":["#FF00FF","#FF1493","#00FFFF","#00FF00","#FFFF00"]},{"name":"Earth","colors":["#5C4033","#8B4513","#DAA520","#6B8E23","#2F4F4F"]},{"name":"Pastel","colors":["#FFB3BA","#FFDFBA","#FFFFBA","#BAFFC9","#BAE1FF"]},{"name":"Moody","colors":["#10002B","#240046","#3C096C","#5A189A","#7B2CBF"]},{"name":"Citrus","colors":["#FF595E","#FFCA3A","#8AC926","#1982C4","#6A4C93"]},{"name":"Sunset","colors":["#03071E","#370617","#9D0208","#DC2F02","#FFBA08"]}]};
+try{const RC=typeof RadianceColor!=='undefined'?RadianceColor:null;
+  if(RC&&RC.midpointColor){const full=(a,mode)=>{const out=[];a.forEach((c,i)=>{out.push(c.toLowerCase());if(i<a.length-1)out.push(RC.midpointColor(c,a[i+1],mode).toLowerCase());});return out;};
+    const items=[];for(const k of Object.keys(RADIANCE_PRESETS))for(const p of RADIANCE_PRESETS[k]){const id='radiance:'+k+':'+p.name.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+      items.push({name:p.name,sub:(2*p.colors.length-1)+' colors',lines:[{id:id+':blend',label:'Blend',colors:full(p.colors,'blend')},{id:id+':wheel',label:'Wheel',colors:full(p.colors,'wheel')}]});}
+    CAT.push({id:'radiance',name:'Radiance',items});}}catch(e){}
+let shared=[];try{const s=JSON.parse(store.get('licorice-ink-shared')||'[]');if(Array.isArray(s))shared=s.filter(x=>x&&x.id&&Array.isArray(x.colors)&&x.colors.every(c=>HEX.test(c)));}catch(e){}
+const LINES=new Map();
+function indexLines(){LINES.clear();
+  for(const g of CAT)for(const it of g.items)for(const ln of it.lines)LINES.set(ln.id,{name:it.name+(ln.label?' · '+ln.label:''),colors:ln.colors.map(c=>Array.isArray(c)?c[0]:c)});
+  for(const s of shared)LINES.set(s.id,{name:s.name,colors:s.colors});}
+indexLines();
+const FALLBACK={name:'Markers',colors:['#ff5d73','#ffa552','#ffe066','#7bd389','#4ecdc4','#2f80d1','#9fd3ff','#b48ef0','#f7a8c8','#fdfbf7']};
+let curLine=store.get('licorice-ink-pal')||'classic:markers';
+const lineInfo=id=>LINES.get(id)||LINES.get('classic:markers')||FALLBACK;
+function renderSwatches(){
+  const L=lineInfo(curLine);$('#palBtn').textContent=L.name+' ▾';
+  $('#sw').innerHTML=`<button class="swb${opt.color===INK?' on':''}" data-c="${INK}" style="background:${INK}" aria-label="Black ink" title="Black ink"></button>`+L.colors.map(c=>`<button class="swb${c.toLowerCase()===opt.color.toLowerCase()?' on':''}" data-c="${c}" style="background:${c}" aria-label="Color ${c}" title="${c}"></button>`).join('');
+  $('#curChip').style.background=opt.color;$('#curHex').textContent=opt.color;$('#picker').value=opt.color;
+}
+function pickColor(c){
+  opt.color=c.toLowerCase();saveOpt();renderSwatches();
+  if(tool==='edit'&&sel){const t=sel.k==='fill'?findFill(sel.id):findInk(sel.id);
+    if(t&&t.t==='bands'){const kk=clamp(selBand,0,t.bands.length-1);begin();t.bands[kk].c=opt.color;if(kk===0)t.c=opt.color;commit();renderOpts();render();return;}
+    if(t&&t.t!=='path'){begin();t.c=opt.color;commit();render();}return;}
+  if(tool==='pen'||tool==='edit')setTool('marker');
+}
+$('#sw').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(b)pickColor(b.dataset.c);});
+$('#picker').addEventListener('input',e=>pickColor(e.target.value));
+
+let palTab=null;
+function renderPalSheet(){
+  const groups=CAT.map(g=>({id:g.id,name:g.name,items:g.items}));
+  groups.push({id:'shared',name:'Yours',items:shared.map(s=>({name:s.name,sub:'',lines:[{id:s.id,label:'',colors:s.colors}]}))});
+  if(!palTab){const g=groups.find(g=>g.items.some(it=>it.lines.some(l=>l.id===curLine)));palTab=g?g.id:groups[0].id;}
+  $('#palTabs').innerHTML=groups.map(g=>`<button data-tab="${g.id}" class="${g.id===palTab?'on':''}">${g.name}</button>`).join('');
+  const g=groups.find(x=>x.id===palTab)||groups[0];
+  const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  let h=g.items.map(it=>`<div class="item"><span class="nm">${esc(it.name)}</span>${it.sub?`<span class="sub">${esc(it.sub)}</span>`:''}`+
+    it.lines.map(ln=>{const cols=ln.colors.map(c=>Array.isArray(c)?c[0]:c);return`<button class="line${ln.id===curLine?' on':''}" data-line="${esc(ln.id)}"><span class="lab">${esc(ln.label||'')}</span><span class="strip">${cols.map(c=>`<i style="background:${c}"></i>`).join('')}</span></button>`;}).join('')+`</div>`).join('');
+  if(g.id==='shared')h=(shared.length?h:'<p class="hint" style="padding:12px 0;white-space:normal">Nothing brought over yet.</p>')+
+    `<div class="imp"><p>Palettes you made on the Licorice palette page stay on that site. To bring them here: on the palette page, save them as a combination, tap <b>Share</b>, then paste that link below.</p>
+     <textarea id="impTxt" placeholder="https://grbsoftware.github.io/licorice/palettes/#set=…"></textarea>
+     <div class="grp"><button id="impGo" class="hot">Bring them in</button>${shared.length?'<button id="impClear" class="warn">Remove all of yours</button>':''}</div><p class="msg" id="impMsg"></p></div>`;
+  $('#palBody').innerHTML=h;
+  const go=$('#impGo');if(go)go.onclick=importLink;
+  const cl=$('#impClear');if(cl)cl.onclick=()=>{if(cl.dataset.armed){shared=[];store.set('licorice-ink-shared','[]');indexLines();renderPalSheet();renderSwatches();}else{cl.dataset.armed=1;cl.textContent='Tap again to remove';}};
+}
+$('#palTabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b){palTab=b.dataset.tab;renderPalSheet();$('#palBody').scrollTop=0;}});
+$('#palBody').addEventListener('click',e=>{const b=e.target.closest('[data-line]');if(!b)return;curLine=b.dataset.line;store.set('licorice-ink-pal',curLine);
+  const L=lineInfo(curLine);if(!L.colors.some(c=>c.toLowerCase()===opt.color))opt.color=L.colors[0].toLowerCase();saveOpt();renderSwatches();$('#palSheet').hidden=true;});
+$('#palBtn').onclick=()=>{palTab=null;renderPalSheet();$('#palSheet').hidden=false;
+  requestAnimationFrame(()=>{const on=$('#palBody .line.on');if(on)on.scrollIntoView({block:'center'});});};
+$('#palClose').onclick=()=>$('#palSheet').hidden=true;
+$('#palSheet').addEventListener('click',e=>{if(e.target.id==='palSheet')e.target.hidden=true;});
+function cleanRecipe(r){if(!r||!Array.isArray(r.families)||!r.families.length||r.families.length>8)return null;const fams=[];let n=0;
+  for(const f of r.families){if(!f||!Array.isArray(f.controls)||!f.controls.length||f.controls.length>24)return null;const cs=[];
+    for(const c of f.controls){if(!Array.isArray(c)||!HEX.test(c[1]))return null;cs.push([String(c[0]??'').slice(0,60),c[1].toLowerCase()]);}
+    const rounds=[0,1,2,3].includes(f.rounds)?f.rounds:0;let m=cs.length;for(let k=0;k<rounds;k++)m=2*m-1;n+=m;
+    fams.push({controls:cs,rounds,mode:f.mode==='blend'?'blend':'wheel'});}
+  return n>96?null:{families:fams};}
+function importLink(){
+  const msg=$('#impMsg'),t=$('#impTxt').value.trim(),m=t.match(/#set=([A-Za-z0-9_\-]+)/)||t.match(/^([A-Za-z0-9_\-]{8,})$/);
+  if(!m){msg.textContent='That doesn’t look like a Share link. It should have #set= in it.';return;}
+  let o;try{o=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,'+').replace(/_/g,'/')))));}catch(e){msg.textContent='Couldn’t read that link. Copy it again from the palette page.';return;}
+  if(!o||!Array.isArray(o.p)){msg.textContent='That link has no palettes in it.';return;}
+  let added=0,skipped=0,first=null;const setName=String(o.n||'Shared').slice(0,60);
+  for(const x of o.p.slice(0,12)){
+    if(typeof x==='string'){const L=LINES.get(x);if(!L){skipped++;continue;}const id='yours:'+x;if(!shared.some(s=>s.id===id))shared.push({id,name:L.name,colors:L.colors.slice()});first=first||id;added++;}
+    else if(x&&typeof x==='object'){const r=cleanRecipe(x.r);if(!r||!PS){skipped++;continue;}
+      let cols;try{cols=PS.build(r).map(c=>c[0]);}catch(e){skipped++;continue;}
+      const id='yours:'+uid('p');shared.push({id,name:String(x.n||setName).slice(0,60),colors:cols});first=first||id;added++;}
+  }
+  store.set('licorice-ink-shared',JSON.stringify(shared));indexLines();
+  if(first){curLine=first;store.set('licorice-ink-pal',curLine);opt.color=lineInfo(first).colors[0].toLowerCase();saveOpt();renderSwatches();}
+  renderPalSheet();const mm=$('#impMsg');if(mm)mm.textContent=added?`Brought in ${added} palette${added>1?'s':''}${skipped?` (${skipped} couldn’t be read)`:''}.`:'None of those palettes could be read.';
+}
+
+/* ================= page menu: save & export ================= */
+function exportSVG(){
+  let s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="${PAPER}"/><g>`;
+  // (the viewBox already keeps everything inside the page)
+  for(const f of doc.fills)s+=f.t==='bands'?`<g data-bands="${btoa(JSON.stringify({e:f.e,a:f.a,bb:f.bb,bands:f.bands,mix:f.mix}))}">${bandsSVG(f,false)}</g>`:`<path d="${f.d}" fill="${f.c}" fill-rule="evenodd"/>`;
+  s+='</g><g fill="none" stroke-linejoin="round">';
+  if(opt.showEdges)for(const f of doc.fills)if(f.edge!=='none')s+=`<path d="${f.e}" stroke="${edgeColor(f)}" stroke-width="${f.ew}"/>`;
+  s+=`</g><g fill="none" stroke="${INK}" stroke-linecap="round" stroke-linejoin="round">`;
+  for(const it of doc.ink){const st=it.t!=='path'&&it.edge!=='none'&&it.c!==INK?`stroke="${edgeColor(it)}" stroke-width="${it.ew}"`:'stroke="none"';
+    s+=it.t==='dot'?`<circle cx="${r1(it.x)}" cy="${r1(it.y)}" r="${r1(it.r)}" fill="${it.c||INK}" ${st}/>`:it.t==='blob'?`<path d="${it.d}" fill="${it.c}" fill-rule="evenodd" ${st}/>`:`<path d="${pathD(it)}" stroke-width="${it.w}"/>`;}
+  return s.replace('<g>',`<defs>${blurDefs()}</defs><g>`)+'</g></svg>';
+}
+function pngBlob(){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=W*2;c.height=H*2;const x=c.getContext('2d');x.drawImage(img,0,0,c.width,c.height);c.toBlob(b=>b?res(b):rej(new Error('no image')),'image/png');};img.onerror=()=>rej(new Error('render failed'));img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(exportSVG());});}
+let downloads=null;
+if(window.claude&&window.claude.use)window.claude.use('downloads').then(d=>{downloads=d;}).catch(()=>{});
+async function saveFile(name,data){const m=$('#mMsg');
+  if(!downloads){ // a saved copy opened from your own computer: a plain download works there
+    try{const blob=data instanceof Blob?data:new Blob([data],{type:name.endsWith('.svg')?'image/svg+xml':'application/octet-stream'});
+      const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(u),4000);m.textContent='Saved '+name+' to your downloads.';}
+    catch(e){m.textContent='Saving didn’t work here. Use “Show picture here” and press and hold it to save.';}
+    return;}
+  try{await downloads.save({filename:name,data});m.textContent='Saved '+name+'.';}
+  catch(e){m.textContent=e&&e.code==='declined'?'Not saved.':'Couldn’t save ('+(e&&e.code||'error')+'). Try “Show picture here”.';}}
+const stamp=()=>new Date().toISOString().slice(0,16).replace(/[:T]/g,'-');
+$('#bMenu').onclick=()=>{renderPatBox();if(pen){endPen();renderOpts();render();}$('#mMsg').textContent='';$('#shot').hidden=true;$('#mEdges').checked=opt.showEdges;$('#mNew').textContent='New blank page';delete $('#mNew').dataset.armed;$('#menuSheet').hidden=false;};
+$('#menuClose').onclick=()=>$('#menuSheet').hidden=true;
+$('#menuSheet').addEventListener('click',e=>{if(e.target.id==='menuSheet')e.target.hidden=true;});
+$('#mPng').onclick=async()=>{try{await saveFile('licorice-ink-'+stamp()+'.png',await pngBlob());}catch(e){$('#mMsg').textContent='Couldn’t make the picture.';}};
+$('#mSvg').onclick=()=>saveFile('licorice-ink-'+stamp()+'.svg',exportSVG());
+$('#mCopy').onclick=async()=>{try{await navigator.clipboard.writeText(exportSVG());$('#mMsg').textContent='SVG code copied.';}catch(e){$('#mMsg').textContent='Copy was blocked here.';}};
+$('#mShow').onclick=async()=>{try{const b=await pngBlob();const im=$('#shot');im.src=URL.createObjectURL(b);im.hidden=false;$('#mMsg').textContent='Press and hold (or right-click) the picture to save it.';}catch(e){$('#mMsg').textContent='Couldn’t make the picture.';}};
+$('#mLoad').onclick=()=>{try{const n=importSVG($('#mImp').value.trim());$('#mMsg').textContent='Loaded '+n+' pieces.';$('#menuSheet').hidden=true;toast('Drawing loaded');}catch(e){$('#mMsg').textContent=e.message;}};
+function renderPatBox(){
+  const b=$('#patSliders');
+  b.innerHTML=slider('pLines','Lines',2,40,1,opt.pLines)+slider('pLW','Line width',0.5,10,0.5,opt.lineW)+slider('pMinW','Smallest cell',10,200,1,opt.pMinW)+slider('pMinE','Shortest edge',5,150,1,opt.pMinE)+
+    `<span class="grp"><span class="lb">Cell style</span>${seg('pstyle',opt.pStyle,[['none','None'],...Object.entries(STYLES).map(([k,v])=>[k,v.name])])}</span>`+
+    // the cell style's own settings, mirrored here: they are the same settings the Style tool uses, so changing one changes both
+    (opt.pStyle==='pebble'?`<b style="color:var(--bright);margin-top:4px">Pebble</b><p>Bigger roundness means bigger black areas where lines cross. Vary mixes big and small ones.</p>`+
+      slider('pRR','Roundness',3,250,1,opt.rr)+slider('pVary','Vary',0,0.6,0.05,opt.vary)+slider('pReach','Reach',0.1,0.5,0.05,opt.reach)+
+      `<span class="grp"><span class="lb">Tips</span>${seg('ptip',opt.tip,[['black','Black'],['color','Color'],['none','None']])}</span>`+
+      slider('pTipMax','Tips up to',60,180,5,opt.tipMax,v=>v+'°')+
+      `<span class="grp"><span class="lb">Wider corners</span>${seg('pwide',opt.wide,[['hug','Hug the joint'],['leave','Round curve']])}</span>`+
+      slider('pCW','Curve width',0.5,14,0.5,opt.curveW)+`<p class="warn" id="pWarn"${opt.curveW>opt.lineW?'':' hidden'}>Curve width is wider than Line width, so curves will stick out past the lines as little bumps. Keep Curve width at or below Line width.</p><p>These are shared with the Style tool.</p>`:'');
+  const keys=[['pLW','lineW'],['pLines','pLines'],['pMinW','pMinW'],['pMinE','pMinE'],['pRR','rr'],['pVary','vary'],['pReach','reach'],['pTipMax','tipMax'],['pCW','curveW']];
+  for(const[id,key]of keys){const el=b.querySelector('#'+id);if(el)el.addEventListener('input',e=>{opt[key]=+e.target.value;b.querySelector('#'+id+'V').value=opt[key];saveOpt();
+    const w=b.querySelector('#pWarn');if(w)w.hidden=!(opt.curveW>opt.lineW);});}
+  b.querySelectorAll('[data-ptip]').forEach(x=>x.addEventListener('click',()=>{opt.tip=x.dataset.ptip;saveOpt();renderPatBox();}));
+  b.querySelectorAll('[data-pwide]').forEach(x=>x.addEventListener('click',()=>{opt.wide=x.dataset.pwide;saveOpt();renderPatBox();}));
+  b.querySelectorAll('[data-pstyle]').forEach(x=>x.addEventListener('click',()=>{opt.pStyle=x.dataset.pstyle;saveOpt();renderPatBox();}));
+}
+$('#mGen').onclick=()=>{try{const r=makePattern();$('#menuSheet').hidden=true;renderOpts();
+  toast(r.lines<opt.pLines?`Fit ${r.lines} of ${opt.pLines} lines (${r.cells} cells). Lower the limits for more.`:`${r.lines} lines, ${r.cells} cells. Undo brings your old page back.`,3200);}catch(e){$('#mMsg').textContent='Pattern failed: '+e.message;}};
+$('#mEdges').onchange=e=>{opt.showEdges=e.target.checked;saveOpt();render();};
+$('#mNew').onclick=()=>{const b=$('#mNew');if(!b.dataset.armed){b.dataset.armed=1;b.textContent='Tap again to clear the page (Undo still brings it back)';return;}
+  pen=null;sel=null;selPt=-1;begin();doc={v:1,ink:[],fills:[]};commit();renderOpts();render();$('#menuSheet').hidden=true;};
+
+/* ================= full screen =================
+   Real full screen where the browser allows it; otherwise "Big" mode hides the options bar
+   and tightens the rails so the page gets every pixel the window has. */
+const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement;
+function syncFull(){const on=!!fsEl()||document.body.classList.contains('big');$('#bFullT').textContent=on?'Exit':'Full';$('#bFull').classList.toggle('on',on);
+  requestAnimationFrame(()=>{applyView();render();});}
+$('#bFull').onclick=async()=>{
+  if(fsEl()){try{await(document.exitFullscreen||document.webkitExitFullscreen).call(document);}catch(e){}return;}
+  if(document.body.classList.contains('big')){document.body.classList.remove('big');syncFull();return;}
+  const el=document.documentElement,req=el.requestFullscreen||el.webkitRequestFullscreen;
+  let ok=false;if(req){try{await req.call(el,{navigationUI:'hide'});ok=true;}catch(e){}}
+  if(!ok){document.body.classList.add('big');toast('Full screen is blocked here, so the bars are tucked away instead',2600);}
+  syncFull();
+};
+document.addEventListener('fullscreenchange',syncFull);document.addEventListener('webkitfullscreenchange',syncFull);
+
+/* ================= start ================= */
+applyView();setTool('marker');renderSwatches();syncUndo();
+requestAnimationFrame(()=>{applyView();render();});
+window.__ink={get doc(){return doc;},fillAt,roundAt,styleAt,styleAll,makePattern,get opt(){return opt;},importSVG,get view(){return view;},setTool,exportSVG,toPage};
+})();
+</script>
+</body>
+</html>
