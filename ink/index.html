@@ -960,7 +960,7 @@ function cleanDoc(o){
   const okD=d=>typeof d==='string'&&/^[MLCZ0-9 .\-]*$/.test(d);
   const ink=o.ink.filter(it=>it&&((it.t==='blob'&&okD(it.d)&&HEX.test(it.c))||(it.t==='dot'&&n(it.x)&&n(it.y)&&n(it.r))||(it.t==='path'&&Array.isArray(it.pts)&&it.pts.every(p=>p&&['x','y','ix','iy','ox','oy'].every(k=>n(p[k]))))));
   const fills=o.fills.filter(f=>f&&HEX.test(f.c)&&okD(f.d)&&okD(f.e));
-  ink.forEach(it=>{if(!it.id)it.id=uid('i');if(it.t!=='path'){if(!HEX.test(it.c||''))it.c=INK;if(!['shade','black','none'].includes(it.edge))it.edge='black';it.ew=n(it.ew)?it.ew:2;}if(it.t==='path'){it.w=n(it.w)?it.w:3;it.closed=!!it.closed;}});
+  ink.forEach(it=>{if(!it.id)it.id=uid('i');if(it.t!=='path'){if(!HEX.test(it.c||''))it.c=INK;if(!['shade','black','none'].includes(it.edge))it.edge='black';it.ew=n(it.ew)?it.ew:2;}if(it.t==='path'){it.w=n(it.w)?it.w:3;it.closed=!!it.closed;if(it.c&&!HEX.test(it.c))delete it.c;if(it.mk&&!it.c)delete it.mk;}});
   fills.forEach(f=>{if(f.t==='bands'){
       if(!Array.isArray(f.bands)||!f.bands.length)delete f.t;
       else{f.bands=f.bands.filter(b=>b&&HEX.test(b.c)).map(b=>({c:b.c.toLowerCase(),t:n(b.t)?b.t:0,a:n(b.a)?b.a:0,b:n(b.b)?b.b:0}));
@@ -987,7 +987,7 @@ function afterHistory(){if(sel&&!(sel.k==='ink'?findInk(sel.id):findFill(sel.id)
 function syncUndo(){$('#bUndo').disabled=!undo.length;$('#bRedo').disabled=!redo.length;}
 
 /* ================= settings ================= */
-let opt={markerMix:'cover',bandMix:'ink',fillMode:'flat',bandW:16,bandA:6,bandB:6,wide:'hug',curveW:2.5,reach:0.5,tipMax:140,cstyle:'pebble',pLines:12,pMinW:45,pMinE:26,pStyle:'pebble',rr:30,vary:0.15,tip:'black',nibScreen:true,dotR:5,grow:true,nib:12,mEdge:'none',mEW:2,inside:'gaps',join:true,steady:0.5,lineW:3,edge:'shade',edgeW:2.5,gap:0.5,color:'#141414',showEdges:true};
+let opt={lineAs:'ink',markerMix:'cover',bandMix:'ink',fillMode:'flat',bandW:16,bandA:6,bandB:6,wide:'hug',curveW:2.5,reach:0.5,tipMax:140,cstyle:'pebble',pLines:12,pMinW:45,pMinE:26,pStyle:'pebble',rr:30,vary:0.15,tip:'black',nibScreen:true,dotR:5,grow:true,nib:12,mEdge:'none',mEW:2,inside:'gaps',join:true,steady:0.5,lineW:3,edge:'shade',edgeW:2.5,gap:0.5,color:'#141414',showEdges:true};
 try{Object.assign(opt,JSON.parse(store.get('licorice-ink-opt')||'{}'));}catch(e){}
 if(!HEX.test(opt.color))opt.color='#ff5d73';
 if(!opt.noLineDefault){opt.mEdge='none';opt.noLineDefault=1;} // markers start with no line around (once; your later choice is kept)
@@ -1041,7 +1041,7 @@ function render(){if(applyPage()){view={x:0,y:0,s:1};applyView();renderShape();}
     const st=it.t!=='path'&&it.edge!=='none'&&it.c!==INK?` stroke="${edgeColor(it)}" stroke-width="${it.ew}" stroke-linejoin="round"`:'';
     if(it.t==='dot')ih+=`<circle data-id="${it.id}" cx="${r1(it.x)}" cy="${r1(it.y)}" r="${r1(it.r)}" fill="${it.c||INK}"${st}/>`;
     else if(it.t==='blob')ih+=`<path data-id="${it.id}" d="${it.d}" fill="${it.c}" fill-rule="evenodd"${st}/>`;
-    else ih+=`<path data-id="${it.id}" d="${pathD(it)}" fill="none" stroke="${INK}" stroke-width="${it.w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    else ih+=`<path data-id="${it.id}" d="${pathD(it)}" fill="none" stroke="${it.c||INK}"${it.mk&&it.id===pen?' stroke-opacity=".8"':''} stroke-width="${it.w}" stroke-linecap="round" stroke-linejoin="round"/>`;
     if(tool==='edit'){
       if(it.t==='dot')hh+=`<circle data-id="${it.id}" cx="${r1(it.x)}" cy="${r1(it.y)}" r="${r1(Math.max(it.r,14*u))}" fill="transparent"/>`;
       else if(it.t==='blob')hh+=`<path data-id="${it.id}" d="${it.d}" fill="transparent" stroke="transparent" stroke-width="${r1(16*u)}" stroke-linejoin="round"/>`;
@@ -1086,13 +1086,16 @@ document.addEventListener('change',e=>{const n=e.target;if(!n.classList||!n.clas
   let v=parseFloat(n.value);if(!isFinite(v)){n.value=r.value;return;}v=Math.min(+r.max,Math.max(+r.min,v));r.value=v;n.value=r.value;r.dispatchEvent(new Event('input',{bubbles:true}));});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('numin'))e.target.blur();},true);
 function seg(name,cur,list){return`<div class="seg" role="group">`+list.map(([v,t])=>`<button data-${name}="${v}" class="${v===cur?'on':''}">${t}</button>`).join('')+`</div>`;}
+function markerRules(){return`<span class="grp"><span class="lb">Overlaps</span>${seg('mmix',opt.markerMix,[['cover','Cover'],['ink','Ink'],['pigment','Pigment'],['smooth','Smooth']])}</span>${opt.markerMix!=='cover'?'<span class="hint">Overlaps mix as you color, with fills too · no line around while mixing</span>':''}<span class="grp"${opt.markerMix!=='cover'?' style="opacity:.45"':''}><span class="lb">Line around</span>${seg('medge',opt.mEdge,[['black','Black'],['shade','Shade'],['none','None']])}</span>${slider('oMEW','Line',0.5,8,0.5,opt.mEW)}<span class="grp"><span class="lb">Holes</span>${seg('inside',opt.inside,[['gaps','Fill small'],['all','Fill all'],['off','Keep']])}</span><label class="grp"><input type="checkbox" id="oJoin" ${opt.join?'checked':''}><span>Join same color</span></label>`;}
 function renderOpts(){
   const o=$('#opts');let h='';
   if(tool==='marker'){
-    h=`<span class="tname">Marker</span>${slider('oNib','Nib',0.5,60,0.5,opt.nib)}<label class="grp"><input type="checkbox" id="oNS" ${opt.nibScreen?'checked':''}><span>Same size when zoomed</span></label>${slider('oSteady','Steady',0,0.9,0.05,opt.steady)}<span class="grp"><span class="lb">Overlaps</span>${seg('mmix',opt.markerMix,[['cover','Cover'],['ink','Ink'],['pigment','Pigment'],['smooth','Smooth']])}</span>${opt.markerMix!=='cover'?'<span class="hint">Overlaps mix as you color, with fills too · no line around while mixing</span>':''}<span class="grp"${opt.markerMix!=='cover'?' style="opacity:.45"':''}><span class="lb">Line around</span>${seg('medge',opt.mEdge,[['black','Black'],['shade','Shade'],['none','None']])}</span>${slider('oMEW','Line',0.5,8,0.5,opt.mEW)}<span class="grp"><span class="lb">Holes</span>${seg('inside',opt.inside,[['gaps','Fill small'],['all','Fill all'],['off','Keep']])}</span><label class="grp"><input type="checkbox" id="oJoin" ${opt.join?'checked':''}><span>Join same color</span></label><span class="vsep"></span>${slider('oDot','Dot',0.5,30,0.5,opt.dotR)}<label class="grp"><input type="checkbox" id="oGrow" ${opt.grow?'checked':''}><span>Hold to grow</span></label><span class="hint">Tap = dot · press and color = a shape</span>`;
+    h=`<span class="tname">Marker</span>${slider('oNib','Nib',0.5,60,0.5,opt.nib)}<label class="grp"><input type="checkbox" id="oNS" ${opt.nibScreen?'checked':''}><span>Same size when zoomed</span></label>${slider('oSteady','Steady',0,0.9,0.05,opt.steady)}${markerRules()}<span class="vsep"></span>${slider('oDot','Dot',0.5,30,0.5,opt.dotR)}<label class="grp"><input type="checkbox" id="oGrow" ${opt.grow?'checked':''}><span>Hold to grow</span></label><span class="hint">Tap = dot · press and color = a shape</span>`;
   }else if(tool==='pen'){
     const p=pen&&findInk(pen);
-    h=`<span class="tname">Line</span>${slider('oLine','Width',0.5,14,0.5,p?p.w:opt.lineW)}${p?`<button id="oDone" class="hot">Done</button><button id="oClose">Close shape</button>`:''}<span class="hint">Drag from A to B for a line · tap to add more points · drag any round handle to bend · tap the gold point to close</span>`;
+    const mk=opt.lineAs==='marker';
+    h=`<span class="tname">Line</span><span class="grp"><span class="lb">Draws</span>${seg('lineas',opt.lineAs,[['ink','Ink line'],['color','Color line'],['marker','Marker']])}</span>`+
+      (mk?`${slider('oNib','Nib',0.5,60,0.5,opt.nib)}${markerRules()}`:slider('oLine','Width',0.5,14,0.5,p?p.w:opt.lineW))+`${p?`<button id="oDone" class="hot">Done</button><button id="oClose">Close shape</button>`:''}<span class="hint">${mk?'Draw it like a line, then Done: it becomes a marker shape using the rules here · Close shape + Holes “Fill all” = a solid shape':'Drag from A to B for a line · tap to add more points · drag any round handle to bend · tap the gold point to close'}</span>`;
   }else if(tool==='round'){
     h=`<span class="tname">Round</span>${slider('oRR','Roundness',3,250,1,opt.rr)}${slider('oVary','Vary',0,0.6,0.05,opt.vary)}<span class="grp"><span class="lb">Tip</span>${seg('tip',opt.tip,[['black','Black'],['color','Color'],['none','None']])}</span>${slider('oCW','Curve width',0.5,14,0.5,opt.curveW)}${slider('oTipMax','Tips up to',60,180,5,opt.tipMax,v=>v+'°')}<span class="hint">Tap inside a section, close to the corner you want rounded</span>`;
   }else if(tool==='style'){
@@ -1124,9 +1127,12 @@ function renderOpts(){
   const on=(id,ev,fn)=>{const el=o.querySelector('#'+id);if(el)el.addEventListener(ev,fn);};
   const live=(id,fn)=>on(id,'input',e=>{const v=+e.target.value;o.querySelector('#'+id+'V').value=v;fn(v);});
   live('oDot',v=>{opt.dotR=v;saveOpt();});
-  live('oNib',v=>{opt.nib=v;saveOpt();});live('oSteady',v=>{opt.steady=v;saveOpt();});live('oMEW',v=>{opt.mEW=v;saveOpt();});
+  live('oNib',v=>{opt.nib=v;saveOpt();const p=pen&&findInk(pen);if(p&&p.mk){p.w=v*zf();render();}});live('oSteady',v=>{opt.steady=v;saveOpt();});live('oMEW',v=>{opt.mEW=v;saveOpt();});
   on('oJoin','change',e=>{opt.join=e.target.checked;saveOpt();});
   on('oNS','change',e=>{opt.nibScreen=e.target.checked;saveOpt();});
+  o.querySelectorAll('[data-lineas]').forEach(b=>b.addEventListener('click',()=>{opt.lineAs=b.dataset.lineas;saveOpt();
+    const p=pen&&findInk(pen);if(p){begin();if(opt.lineAs==='ink'){delete p.c;delete p.mk;p.w=opt.lineW;}else{p.c=opt.color;if(opt.lineAs==='marker'){p.mk=1;p.w=opt.nib*zf();}else{delete p.mk;p.w=opt.lineW;}}commit();}
+    renderOpts();render();}));
   o.querySelectorAll('[data-mmix]').forEach(b=>b.addEventListener('click',()=>{opt.markerMix=b.dataset.mmix;saveOpt();renderOpts();}));
   o.querySelectorAll('[data-medge]').forEach(b=>b.addEventListener('click',()=>{opt.mEdge=b.dataset.medge;saveOpt();renderOpts();}));
   o.querySelectorAll('[data-inside]').forEach(b=>b.addEventListener('click',()=>{opt.inside=b.dataset.inside;saveOpt();renderOpts();}));
@@ -1217,6 +1223,16 @@ function autoH(path,i){ // handles marked auto sit a third of the way along the 
   const P=path.pts[i],Q=path.pts[j],dx=(Q.x-P.x)/3,dy=(Q.y-P.y)/3;
   if(P.ao){P.ox=P.x+dx;P.oy=P.y+dy;}if(Q.ai){Q.ix=Q.x-dx;Q.iy=Q.y-dy;}}
 function endPen(){const p=pen&&findInk(pen);pen=null;
+  if(p&&p.mk&&p.pts.length>=2){
+    const pts=[],a=p.pts,n=a.length,segs=p.closed?n:n-1;
+    for(let i=0;i<segs;i++){const P=a[i],Q=a[(i+1)%n];
+      const L=Math.hypot(P.ox-P.x,P.oy-P.y)+Math.hypot(Q.ix-P.ox,Q.iy-P.oy)+Math.hypot(Q.x-Q.ix,Q.y-Q.iy),k=Math.max(2,Math.ceil(L/1.5));
+      for(let j=i?1:0;j<=k;j++){const t=j/k,u=1-t;
+        pts.push({x:u*u*u*P.x+3*u*u*t*P.ox+3*u*t*t*Q.ix+t*t*t*Q.x,y:u*u*u*P.y+3*u*u*t*P.oy+3*u*t*t*Q.iy+t*t*t*Q.y,w:p.w});}}
+    begin();doc.ink=doc.ink.filter(x=>x!==p);
+    const keep=opt.color;opt.color=p.c||keep;
+    try{markerCommit(pts);}catch(err){rollback();toast('Marker failed: '+err.message,3000);}
+    opt.color=keep;return;}
   if(p&&p.pts.length<2){toast('That line only had one point, so it was removed',2400);const before=JSON.stringify(doc);doc.ink=doc.ink.filter(x=>x!==p);saveDoc();if(undo.length&&undo[undo.length-1]===JSON.stringify(doc))undo.pop();syncUndo();}}
 document.querySelectorAll('#rail [data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));
 
@@ -1251,7 +1267,8 @@ sv.addEventListener('pointerdown',e=>{
   }
   if(tool==='pen'){
     begin();let path=pen&&findInk(pen);const np={x:p.x,y:p.y,ix:p.x,iy:p.y,ox:p.x,oy:p.y,ai:1,ao:1};
-    if(!path){path={id:uid('i'),t:'path',w:opt.lineW,closed:false,pts:[np]};doc.ink.push(path);pen=path.id;G={type:'pen',id:path.id,i:0,first:true,cx:e.clientX,cy:e.clientY};}
+    if(!path){path={id:uid('i'),t:'path',w:opt.lineW,closed:false,pts:[np]};
+      if(opt.lineAs!=='ink')path.c=opt.color;if(opt.lineAs==='marker'){path.mk=1;path.w=opt.nib*zf();}doc.ink.push(path);pen=path.id;G={type:'pen',id:path.id,i:0,first:true,cx:e.clientX,cy:e.clientY};}
     else{path.pts.push(np);autoH(path,path.pts.length-2);G={type:'pen',id:path.id,i:path.pts.length-1,cx:e.clientX,cy:e.clientY};}
     renderOpts();render();return;
   }
@@ -1921,7 +1938,7 @@ function importSVG(txt){
     if(tag==='circle')nd.ink.push({t:'dot',x:+el.getAttribute('cx'),y:+el.getAttribute('cy'),r:+el.getAttribute('r'),c:hex(el.getAttribute('fill'))||INK,edge,ew:sw});
     else if(tag==='path'){const f=hex(el.getAttribute('fill')),d=el.getAttribute('d')||'';
       if(f){const bb=[1e9,1e9,-1e9,-1e9];d.replace(/(-?[\d.]+) (-?[\d.]+)/g,(q,x,y)=>{bb[0]=Math.min(bb[0],+x);bb[1]=Math.min(bb[1],+y);bb[2]=Math.max(bb[2],+x);bb[3]=Math.max(bb[3],+y);return q;});nd.ink.push({t:'blob',c:f,d,edge,ew:sw,bb});}
-      else{const l=parseLineD(d,+el.getAttribute('stroke-width')||3);if(l)nd.ink.push(l);}}}
+      else{const l=parseLineD(d,+el.getAttribute('stroke-width')||3);if(l){if(st&&st!==INK)l.c=st;nd.ink.push(l);}}}}
   const clean=cleanDoc(nd);if(!clean||(!clean.ink.length&&!clean.fills.length))throw new Error('Nothing in that SVG could be read.');
   pen=null;sel=null;selPt=-1;begin();doc=clean;commit();renderOpts();fit();
   return clean.ink.length+clean.fills.length;
@@ -1971,7 +1988,8 @@ function pickColor(c){
   if(tool==='edit'&&sel){const t=sel.k==='fill'?findFill(sel.id):findInk(sel.id);
     if(t&&t.t==='bands'){const kk=clamp(selBand,0,t.bands.length-1);begin();t.bands[kk].c=opt.color;if(kk===0)t.c=opt.color;commit();renderOpts();render();return;}
     if(t&&t.t!=='path'){begin();t.c=opt.color;commit();render();}return;}
-  if(tool==='pen'||tool==='edit')setTool('marker');
+  if(tool==='pen'){if(opt.lineAs==='ink'){opt.lineAs='color';saveOpt();}const p=pen&&findInk(pen);if(p){begin();p.c=opt.color;commit();}renderOpts();render();return;}
+  if(tool==='edit')setTool('marker');
 }
 $('#slots').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(b){pickColor(b.dataset.c);return;}
   const p=e.target.closest('[data-slot]');if(p)openPalSheet(+p.dataset.slot);});
@@ -2039,7 +2057,7 @@ function exportSVG(){
   if(opt.showEdges)for(const f of doc.fills)if(f.edge!=='none')s+=`<path d="${f.e}" stroke="${edgeColor(f)}" stroke-width="${f.ew}"/>`;
   s+=`</g><g fill="none" stroke="${INK}" stroke-linecap="round" stroke-linejoin="round">`;
   for(const it of doc.ink){const st=it.t!=='path'&&it.edge!=='none'&&it.c!==INK?`stroke="${edgeColor(it)}" stroke-width="${it.ew}"`:'stroke="none"';
-    s+=it.t==='dot'?`<circle cx="${r1(it.x)}" cy="${r1(it.y)}" r="${r1(it.r)}" fill="${it.c||INK}" ${st}/>`:it.t==='blob'?`<path d="${it.d}" fill="${it.c}" fill-rule="evenodd" ${st}/>`:`<path d="${pathD(it)}" stroke-width="${it.w}"/>`;}
+    s+=it.t==='dot'?`<circle cx="${r1(it.x)}" cy="${r1(it.y)}" r="${r1(it.r)}" fill="${it.c||INK}" ${st}/>`:it.t==='blob'?`<path d="${it.d}" fill="${it.c}" fill-rule="evenodd" ${st}/>`:`<path d="${pathD(it)}" stroke-width="${it.w}"${it.c&&it.c!==INK?` stroke="${it.c}"`:''}/>`;}
   return s.replace('<g>',`<defs>${blurDefs()}</defs><g>`)+'</g></svg>';
 }
 function pngBlob(){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=W*2;c.height=H*2;const x=c.getContext('2d');x.drawImage(img,0,0,c.width,c.height);c.toBlob(b=>b?res(b):rej(new Error('no image')),'image/png');};img.onerror=()=>rej(new Error('render failed'));img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(exportSVG());});}
