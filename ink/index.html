@@ -4,6 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Licorice Ink &amp; Fill</title>
+<meta name="description" content="Licorice Ink &amp; Fill: a free vector coloring editor. Pattern pages, markers that mix as you color, and banded alcohol-marker fills.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Licorice">
+<meta property="og:url" content="https://grbsoftware.github.io/licorice/ink/">
+<meta property="og:title" content="Licorice Ink &amp; Fill">
+<meta property="og:description" content="Pattern pages, markers that mix as you color, and banded alcohol-marker fills. Free, in your browser.">
+<meta property="og:image" content="https://grbsoftware.github.io/licorice/img/social.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Licorice logo next to a colorful page colored in with the app">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="icon" type="image/png" href="../img/favicon.png">
+<link rel="canonical" href="https://grbsoftware.github.io/licorice/ink/">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="theme-color" content="#1c1c1c">
 <style>
 /* Licorice Ink & Fill: a small vector coloring editor. Dark Licorice-app look.
@@ -173,6 +187,11 @@ body.big #zoomui{bottom:6px;right:6px}
       <button id="mCopy">Copy SVG code</button>
       <button id="mShow">Show picture here (press and hold to save)</button>
       <label class="grp" style="padding:6px 2px"><input type="checkbox" id="mEdges" checked> <span>Show fill edge lines</span></label>
+      <div style="display:grid;gap:6px;padding:6px 0;border-top:1px solid var(--edge)">
+        <b style="color:var(--bright)">Page shape</b>
+        <span class="seg" id="shapeSeg"><button data-shape="tall">Tall</button><button data-shape="square">Square</button><button data-shape="wide">Wide</button></span>
+        <p style="margin:0">Your drawing stays centered. Undo switches back.</p>
+      </div>
       <div id="patBox" style="display:grid;gap:8px;padding:6px 0;border-top:1px solid var(--edge);border-bottom:1px solid var(--edge)">
         <b style="color:var(--bright)">New pattern page: Shattered lines</b>
         <p>Random straight lines edge to edge. A line is only kept if it doesn't make any cell smaller than the limits.</p>
@@ -184,6 +203,7 @@ body.big #zoomui{bottom:6px;right:6px}
       <textarea id="mImp" style="width:100%;min-height:70px;background:var(--well);color:var(--ink);border:1px solid var(--edge2);border-radius:8px;padding:8px;font:12px var(--mono)" placeholder="<svg xmlns=…"></textarea>
       <button id="mLoad">Load it</button>
       <p class="msg" id="mMsg"></p>
+      <p style="border-top:1px solid var(--edge);padding-top:10px;margin-top:4px">More Licorice: <a href="https://grbsoftware.github.io/licorice/" style="color:var(--hot)">Home</a> · <a href="https://grbsoftware.github.io/licorice/palettes/" style="color:var(--hot)">Palettes</a> · <a href="https://grbsoftware.github.io/licorice/app/" style="color:var(--hot)">Coloring app</a></p>
       <img id="shot" alt="Your page" hidden>
     </div></div>
   </div>
@@ -914,7 +934,7 @@ SOFTWARE.
 (()=>{
 'use strict';
 const $=s=>document.querySelector(s);
-const W=800,H=1000,PAPER='#fdfbf7',INK='#141414',RES=1.5;
+let W=800,H=1000;const SHAPES={tall:[800,1000],square:[900,900],wide:[1200,800]},PAPER='#fdfbf7',INK='#141414',RES=1.5;
 const sv=$('#sv'),gFill=$('#gFill'),gEdge=$('#gEdge'),gInk=$('#gInk'),gHit=$('#gHit'),gUI=$('#gUI');
 const store={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
 const r1=v=>Math.round(v*10)/10,r2=v=>Math.round(v*100)/100;
@@ -925,7 +945,7 @@ let seq=0;const uid=p=>p+(Date.now().toString(36))+(++seq).toString(36);
 /* ================= document =================
    ink:   {id,t:'dot',x,y,r,c,edge,ew} | {id,t:'blob',c,d,edge,ew,bb} (a marker shape) | {id,t:'path',w,closed,pts:[{x,y,ix,iy,ox,oy}]}  (handles are absolute and move on their own)
    fills: {id,c,d,e,edge:'shade'|'black'|'none',ew,a,bb}  d = filled area (tucks under the ink), e = the edge line */
-let doc={v:1,ink:[],fills:[]};
+let doc={v:1,page:[800,1000],ink:[],fills:[]};
 function cleanDoc(o){
   if(!o||!Array.isArray(o.ink)||!Array.isArray(o.fills))return null;
   const n=v=>typeof v==='number'&&isFinite(v);
@@ -938,7 +958,8 @@ function cleanDoc(o){
       else{f.bands=f.bands.filter(b=>b&&HEX.test(b.c)).map(b=>({c:b.c.toLowerCase(),t:n(b.t)?b.t:0,a:n(b.a)?b.a:0,b:n(b.b)?b.b:0}));
         if(!f.bands.length)delete f.t;else{f.u=1;delete f.bp;if(!['smooth','pigment'].includes(f.mix))f.mix='ink';}}}
     if(!f.id)f.id=uid('f');if(!['shade','black','none'].includes(f.edge))f.edge='shade';f.ew=n(f.ew)?f.ew:2.5;});
-  return{v:1,ink,fills};
+  const pg=Array.isArray(o.page)&&o.page.length===2&&o.page.every(v=>n(v)&&v>=200&&v<=4000)?o.page.slice():[800,1000];
+  return{v:1,page:pg,ink,fills};
 }
 try{const o=cleanDoc(JSON.parse(store.get('licorice-ink-doc')||'null'));if(o)doc=o;}catch(e){}
 const saveDoc=()=>store.set('licorice-ink-doc',JSON.stringify(doc));
@@ -996,7 +1017,11 @@ function zoomCenter(f){const r=sv.getBoundingClientRect(),cx=r.left+r.width/2,cy
 const pxk=()=>frame().k; // screen pixels per page unit
 
 /* ================= render ================= */
-function render(){
+function applyPage(){const p=doc.page||[800,1000];if(p[0]===W&&p[1]===H)return false;W=p[0];H=p[1];
+  const pr=$('#paper');pr.setAttribute('width',W);pr.setAttribute('height',H);
+  const cr=document.querySelector('#pageClip rect');cr.setAttribute('width',W+6);cr.setAttribute('height',H+6);
+  bandCache.clear();return true;}
+function render(){if(applyPage()){view={x:0,y:0,s:1};applyView();renderShape();}
   const k=pxk()||1,u=1/k; // u = one screen pixel in page units
   let fh='',eh='',ih='',hh='',uh='';
   for(const f of doc.fills){
@@ -1848,7 +1873,7 @@ const PATTERNS={
 function makePattern(){
   const rnd=mulberry((Math.random()*1e9)|0),o={lines:opt.pLines,minW:opt.pMinW,minE:opt.pMinE};
   const pat=PATTERNS.shatter.make(o,rnd);
-  pen=null;sel=null;selPt=-1;begin();doc={v:1,ink:[],fills:[]};
+  pen=null;sel=null;selPt=-1;begin();doc={v:1,page:[W,H],ink:[],fills:[]};
   for(const[a,b]of pat.lines){const ext=(p,q)=>{const d=V2.sub(p,q),L=V2.len(d)||1;return V2.add(p,V2.mul(d,3/L));};
     const A=ext(a,b),B=ext(b,a);doc.ink.push({id:uid('i'),t:'path',w:opt.lineW,closed:false,pts:[{x:A[0],y:A[1],ix:A[0],iy:A[1],ox:A[0],oy:A[1]},{x:B[0],y:B[1],ix:B[0],iy:B[1],ox:B[0],oy:B[1]}]});}
   if(opt.pStyle!=='none')for(const c of pat.cells){const cw=opt.curveW,n=c.length,ds=c.map((a,i)=>onPageEdge(a,c[(i+1)%n])?cw/2:(opt.lineW-cw)/2);
@@ -1876,6 +1901,7 @@ function importSVG(txt){
   if(!inkG)throw new Error('That SVG wasn’t saved from Ink & Fill.');
   const empty=document.createElementNS('http://www.w3.org/2000/svg','g'),gs=[fillG||empty,edgeG||empty,inkG];
   const hex=v=>v&&HEX.test(v)?v.toLowerCase():null,nd={v:1,ink:[],fills:[]};
+  {const vb=(svg.getAttribute('viewBox')||'').trim().split(/[\s,]+/).map(Number);if(vb.length===4&&vb[2]>=200&&vb[3]>=200)nd.page=[vb[2],vb[3]];}
   for(const g of[...gs[0].children].filter(x=>x.getAttribute&&x.getAttribute('data-bands'))){
     try{const o=JSON.parse(atob(g.getAttribute('data-bands'))),cp=g.querySelector('clipPath path');
       if(o&&cp)nd.fills.push({t:'bands',c:(o.bands&&o.bands[0]&&o.bands[0].c)||'#ffffff',d:cp.getAttribute('d')||'',e:o.e||'',a:o.a,bb:o.bb,bands:o.bands,mix:o.mix,edge:'none',ew:1});}catch(_){}}
@@ -2031,9 +2057,19 @@ function renderPatBox(){
 }
 $('#mGen').onclick=()=>{try{const r=makePattern();$('#menuSheet').hidden=true;renderOpts();
   toast(r.lines<opt.pLines?`Fit ${r.lines} of ${opt.pLines} lines (${r.cells} cells). Lower the limits for more.`:`${r.lines} lines, ${r.cells} cells. Undo brings your old page back.`,3200);}catch(e){$('#mMsg').textContent='Pattern failed: '+e.message;}};
+function shapeName(){for(const k in SHAPES)if(SHAPES[k][0]===W&&SHAPES[k][1]===H)return k;return'';}
+function renderShape(){const k=shapeName();document.querySelectorAll('#shapeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.shape===k));}
+$('#shapeSeg').addEventListener('click',e=>{const b=e.target.closest('[data-shape]');if(!b)return;const np=SHAPES[b.dataset.shape];if(np[0]===W&&np[1]===H)return;
+  pen=null;sel=null;selPt=-1;begin();
+  const dx=(np[0]-W)/2,dy=(np[1]-H)/2; // slide everything so the drawing stays in the middle of the new shape
+  for(const it of doc.ink){if(it.t==='dot'){it.x+=dx;it.y+=dy;}else if(it.t==='blob'){it.d=moveD(it.d,dx,dy);if(it.bb)it.bb=[it.bb[0]+dx,it.bb[1]+dy,it.bb[2]+dx,it.bb[3]+dy];}
+    else it.pts.forEach(q=>{q.x+=dx;q.y+=dy;q.ix+=dx;q.iy+=dy;q.ox+=dx;q.oy+=dy;});}
+  for(const f of doc.fills)moveFill(f,{d0:f.d,e0:f.e||f.d,bb0:f.bb&&f.bb.slice(),tx:dx,ty:dy});
+  doc.page=np.slice();commit();renderOpts();render();renderShape();});
+renderShape();
 $('#mEdges').onchange=e=>{opt.showEdges=e.target.checked;saveOpt();render();};
 $('#mNew').onclick=()=>{const b=$('#mNew');if(!b.dataset.armed){b.dataset.armed=1;b.textContent='Tap again to clear the page (Undo still brings it back)';return;}
-  pen=null;sel=null;selPt=-1;begin();doc={v:1,ink:[],fills:[]};commit();renderOpts();render();$('#menuSheet').hidden=true;};
+  pen=null;sel=null;selPt=-1;begin();doc={v:1,page:[W,H],ink:[],fills:[]};commit();renderOpts();render();$('#menuSheet').hidden=true;};
 
 /* ================= full screen =================
    Real full screen where the browser allows it; otherwise "Big" mode hides the options bar
