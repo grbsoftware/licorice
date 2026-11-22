@@ -84,8 +84,15 @@ input[type=checkbox]{accent-color:var(--hot);width:16px;height:16px;margin:0}
 #strip{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--panel);border-top:1px solid #111;
   overflow-x:auto;scrollbar-width:none}
 #strip::-webkit-scrollbar{display:none}
-#palBtn{flex:none;max-width:42vw;overflow:hidden;text-overflow:ellipsis}
-#sw{display:flex;gap:6px;flex:none}
+#slots{display:flex;gap:12px;flex:none;align-items:center}
+.slot{display:flex;align-items:center;gap:6px;flex:none}
+.slot+.slot{padding-left:12px;border-left:1px solid var(--edge2)}
+.palBtn{flex:none;max-width:42vw;overflow:hidden;text-overflow:ellipsis}
+#slots.multi .palBtn{max-width:170px}
+.palBtn.add{color:var(--dim);border-style:dashed}
+.sw{display:flex;gap:6px;flex:none}
+#slots.multi .sw{gap:5px}
+#slots.multi .swb{width:30px;height:30px}
 .swb{width:34px;height:34px;min-height:0;padding:0;border-radius:50%;border:2px solid var(--panel);box-shadow:0 0 0 1px var(--edge2);flex:none}
 .swb.on{box-shadow:0 0 0 2px #fff}
 .cur{flex:none;display:flex;align-items:center;gap:6px}
@@ -150,8 +157,7 @@ body.big #zoomui{bottom:6px;right:6px}
     <div id="zoomui"><button id="zOut" title="Zoom out" aria-label="Zoom out">−</button><button id="zFit" title="Fit page">Fit</button><button id="zIn" title="Zoom in" aria-label="Zoom in">+</button><button id="bFull" title="Full screen"><span id="bFullT">Full</span></button></div>
   </div>
   <div id="strip">
-    <button id="palBtn" title="Browse Licorice palettes">Palettes ▾</button>
-    <div id="sw" role="group" aria-label="Palette colors"></div>
+    <div id="slots"></div>
     <div class="cur"><span class="chip" id="curChip" title="Pick any color"><input type="color" id="picker" aria-label="Pick any color"></span><span class="hex" id="curHex"></span></div>
   </div>
   <nav id="rail" aria-label="Tools">
@@ -171,7 +177,7 @@ body.big #zoomui{bottom:6px;right:6px}
 
 <div class="scrim" id="palSheet" hidden>
   <div class="sheet" role="dialog" aria-label="Palettes">
-    <div class="shead"><h2>Licorice palettes</h2><button id="palClose">Done</button></div>
+    <div class="shead"><h2 id="palTitle">Licorice palettes</h2><button id="palRemove" hidden>Take off the strip</button><button id="palClose">Done</button></div>
     <div class="tabs" id="palTabs"></div>
     <div class="sbody" id="palBody"></div>
   </div>
@@ -190,6 +196,8 @@ body.big #zoomui{bottom:6px;right:6px}
       <div style="display:grid;gap:6px;padding:6px 0;border-top:1px solid var(--edge)">
         <b style="color:var(--bright)">Page shape</b>
         <span class="seg" id="shapeSeg"><button data-shape="tall">Tall</button><button data-shape="square">Square</button><button data-shape="wide">Wide</button></span>
+        <span class="grp" style="gap:6px;flex-wrap:wrap"><span class="lb">Your own</span><input class="numin" id="arW" type="number" min="1" max="99" step="0.1" value="16" style="width:58px"><span>:</span><input class="numin" id="arH" type="number" min="1" max="99" step="0.1" value="9" style="width:58px"><button id="arUse">Use</button><button id="arFit" title="Match the shape of the space the page sits in">Fit my screen</button></span>
+        <p style="margin:0" id="shapeNow"></p>
         <p style="margin:0">Your drawing stays centered. Undo switches back.</p>
       </div>
       <div id="patBox" style="display:grid;gap:8px;padding:6px 0;border-top:1px solid var(--edge);border-bottom:1px solid var(--edge)">
@@ -1941,11 +1949,23 @@ indexLines();
 const FALLBACK={name:'Markers',colors:['#ff5d73','#ffa552','#ffe066','#7bd389','#4ecdc4','#2f80d1','#9fd3ff','#b48ef0','#f7a8c8','#fdfbf7']};
 let curLine=store.get('licorice-ink-pal')||'classic:markers';
 const lineInfo=id=>LINES.get(id)||LINES.get('classic:markers')||FALLBACK;
+let extra=(()=>{try{const a=JSON.parse(store.get('licorice-ink-pals')||'[]');return Array.isArray(a)?a.filter(x=>typeof x==='string').slice(0,2):[];}catch(e){return[];}})();
+let palSlot=0;
+const saveExtra=()=>store.set('licorice-ink-pals',JSON.stringify(extra));
+const slotCount=()=>{const w=window.innerWidth;return w>=1280?3:w>=820?2:1;}; // room for 2 palettes on a tablet, 3 on a computer
+const slotLine=i=>i===0?curLine:(extra[i-1]||null);
 function renderSwatches(){
-  const L=lineInfo(curLine);$('#palBtn').textContent=L.name+' ▾';
-  $('#sw').innerHTML=`<button class="swb${opt.color===INK?' on':''}" data-c="${INK}" style="background:${INK}" aria-label="Black ink" title="Black ink"></button>`+L.colors.map(c=>`<button class="swb${c.toLowerCase()===opt.color.toLowerCase()?' on':''}" data-c="${c}" style="background:${c}" aria-label="Color ${c}" title="${c}"></button>`).join('');
+  const n=slotCount(),esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));let h='';
+  const sb=c=>`<button class="swb${c.toLowerCase()===opt.color.toLowerCase()?' on':''}" data-c="${c}" style="background:${c}" aria-label="Color ${c}" title="${c}"></button>`;
+  for(let i=0;i<n;i++){const id=slotLine(i);
+    if(!id){h+=`<div class="slot"><button class="palBtn add" data-slot="${i}" title="Put another palette on the strip">+ Palette</button></div>`;break;}
+    const L=lineInfo(id);
+    h+=`<div class="slot"><button class="palBtn" data-slot="${i}" title="Change this palette">${esc(L.name)} ▾</button><div class="sw" role="group" aria-label="${esc(L.name)} colors">`+
+      (i===0?`<button class="swb${opt.color===INK?' on':''}" data-c="${INK}" style="background:${INK}" aria-label="Black ink" title="Black ink"></button>`:'')+L.colors.map(sb).join('')+`</div></div>`;}
+  const el=$('#slots');el.innerHTML=h;el.classList.toggle('multi',n>1);
   $('#curChip').style.background=opt.color;$('#curHex').textContent=opt.color;$('#picker').value=opt.color;
 }
+let swRT=0;window.addEventListener('resize',()=>{clearTimeout(swRT);swRT=setTimeout(renderSwatches,120);});
 function pickColor(c){
   opt.color=c.toLowerCase();saveOpt();renderSwatches();
   if(tool==='edit'&&sel){const t=sel.k==='fill'?findFill(sel.id):findInk(sel.id);
@@ -1953,19 +1973,22 @@ function pickColor(c){
     if(t&&t.t!=='path'){begin();t.c=opt.color;commit();render();}return;}
   if(tool==='pen'||tool==='edit')setTool('marker');
 }
-$('#sw').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(b)pickColor(b.dataset.c);});
+$('#slots').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(b){pickColor(b.dataset.c);return;}
+  const p=e.target.closest('[data-slot]');if(p)openPalSheet(+p.dataset.slot);});
 $('#picker').addEventListener('input',e=>pickColor(e.target.value));
 
 let palTab=null;
 function renderPalSheet(){
   const groups=CAT.map(g=>({id:g.id,name:g.name,items:g.items}));
   groups.push({id:'shared',name:'Yours',items:shared.map(s=>({name:s.name,sub:'',lines:[{id:s.id,label:'',colors:s.colors}]}))});
-  if(!palTab){const g=groups.find(g=>g.items.some(it=>it.lines.some(l=>l.id===curLine)));palTab=g?g.id:groups[0].id;}
+  const cur=slotLine(palSlot);
+  $('#palTitle').textContent=palSlot?'Palette '+(palSlot+1)+' on the strip':'Licorice palettes';$('#palRemove').hidden=!(palSlot&&cur);
+  if(!palTab){const g=cur&&groups.find(g=>g.items.some(it=>it.lines.some(l=>l.id===cur)));palTab=g?g.id:groups[0].id;}
   $('#palTabs').innerHTML=groups.map(g=>`<button data-tab="${g.id}" class="${g.id===palTab?'on':''}">${g.name}</button>`).join('');
   const g=groups.find(x=>x.id===palTab)||groups[0];
   const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   let h=g.items.map(it=>`<div class="item"><span class="nm">${esc(it.name)}</span>${it.sub?`<span class="sub">${esc(it.sub)}</span>`:''}`+
-    it.lines.map(ln=>{const cols=ln.colors.map(c=>Array.isArray(c)?c[0]:c);return`<button class="line${ln.id===curLine?' on':''}" data-line="${esc(ln.id)}"><span class="lab">${esc(ln.label||'')}</span><span class="strip">${cols.map(c=>`<i style="background:${c}"></i>`).join('')}</span></button>`;}).join('')+`</div>`).join('');
+    it.lines.map(ln=>{const cols=ln.colors.map(c=>Array.isArray(c)?c[0]:c);return`<button class="line${ln.id===cur?' on':''}" data-line="${esc(ln.id)}"><span class="lab">${esc(ln.label||'')}</span><span class="strip">${cols.map(c=>`<i style="background:${c}"></i>`).join('')}</span></button>`;}).join('')+`</div>`).join('');
   if(g.id==='shared')h=(shared.length?h:'<p class="hint" style="padding:12px 0;white-space:normal">Nothing brought over yet.</p>')+
     `<div class="imp"><p>Palettes you made on the Licorice palette page stay on that site. To bring them here: on the palette page, save them as a combination, tap <b>Share</b>, then paste that link below.</p>
      <textarea id="impTxt" placeholder="https://grbsoftware.github.io/licorice/palettes/#set=…"></textarea>
@@ -1975,9 +1998,12 @@ function renderPalSheet(){
   const cl=$('#impClear');if(cl)cl.onclick=()=>{if(cl.dataset.armed){shared=[];store.set('licorice-ink-shared','[]');indexLines();renderPalSheet();renderSwatches();}else{cl.dataset.armed=1;cl.textContent='Tap again to remove';}};
 }
 $('#palTabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b){palTab=b.dataset.tab;renderPalSheet();$('#palBody').scrollTop=0;}});
-$('#palBody').addEventListener('click',e=>{const b=e.target.closest('[data-line]');if(!b)return;curLine=b.dataset.line;store.set('licorice-ink-pal',curLine);
+$('#palBody').addEventListener('click',e=>{const b=e.target.closest('[data-line]');if(!b)return;const id=b.dataset.line;
+  if(palSlot>0){extra[palSlot-1]=id;extra=extra.filter(Boolean);saveExtra();renderSwatches();$('#palSheet').hidden=true;return;}
+  curLine=id;store.set('licorice-ink-pal',curLine);
   const L=lineInfo(curLine);if(!L.colors.some(c=>c.toLowerCase()===opt.color))opt.color=L.colors[0].toLowerCase();saveOpt();renderSwatches();$('#palSheet').hidden=true;});
-$('#palBtn').onclick=()=>{palTab=null;renderPalSheet();$('#palSheet').hidden=false;
+$('#palRemove').onclick=()=>{if(palSlot>0){extra.splice(palSlot-1,1);saveExtra();renderSwatches();}$('#palSheet').hidden=true;};
+function openPalSheet(i){palSlot=i||0;palTab=null;renderPalSheet();$('#palSheet').hidden=false;
   requestAnimationFrame(()=>{const on=$('#palBody .line.on');if(on)on.scrollIntoView({block:'center'});});};
 $('#palClose').onclick=()=>$('#palSheet').hidden=true;
 $('#palSheet').addEventListener('click',e=>{if(e.target.id==='palSheet')e.target.hidden=true;});
@@ -2058,14 +2084,22 @@ function renderPatBox(){
 $('#mGen').onclick=()=>{try{const r=makePattern();$('#menuSheet').hidden=true;renderOpts();
   toast(r.lines<opt.pLines?`Fit ${r.lines} of ${opt.pLines} lines (${r.cells} cells). Lower the limits for more.`:`${r.lines} lines, ${r.cells} cells. Undo brings your old page back.`,3200);}catch(e){$('#mMsg').textContent='Pattern failed: '+e.message;}};
 function shapeName(){for(const k in SHAPES)if(SHAPES[k][0]===W&&SHAPES[k][1]===H)return k;return'';}
-function renderShape(){const k=shapeName();document.querySelectorAll('#shapeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.shape===k));}
-$('#shapeSeg').addEventListener('click',e=>{const b=e.target.closest('[data-shape]');if(!b)return;const np=SHAPES[b.dataset.shape];if(np[0]===W&&np[1]===H)return;
+function renderShape(){const k=shapeName();document.querySelectorAll('#shapeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.shape===k));
+  const g=(a,b)=>b?g(b,a%b):a,r=W/H;let txt=W+' × '+H;
+  for(const[a,b]of[[1,1],[4,5],[5,4],[3,2],[2,3],[4,3],[3,4],[16,9],[9,16],[16,10],[21,9],[2,1],[1,2]])if(Math.abs(r-a/b)<0.006){txt+=` (${a}:${b})`;break;}
+  const sn=$('#shapeNow');if(sn)sn.textContent='Now: '+txt;}
+// pages keep about the same amount of room whatever the shape, so pens and patterns feel the same
+function sizeFor(r){r=clamp(r,0.25,4);const A=800*1000,h=Math.round(Math.sqrt(A/r)),w=Math.round(h*r);return[w,h];}
+$('#arUse').onclick=()=>{const a=+$('#arW').value,b=+$('#arH').value;if(!(a>0&&b>0)){toast('Type two numbers, like 16 and 9');return;}setPage(sizeFor(a/b));};
+$('#arFit').onclick=()=>{const st=$('#stage');const r=st.clientWidth/Math.max(1,st.clientHeight);setPage(sizeFor(r));};
+$('#shapeSeg').addEventListener('click',e=>{const b=e.target.closest('[data-shape]');if(!b)return;setPage(SHAPES[b.dataset.shape]);});
+function setPage(np){if(np[0]===W&&np[1]===H)return;
   pen=null;sel=null;selPt=-1;begin();
   const dx=(np[0]-W)/2,dy=(np[1]-H)/2; // slide everything so the drawing stays in the middle of the new shape
   for(const it of doc.ink){if(it.t==='dot'){it.x+=dx;it.y+=dy;}else if(it.t==='blob'){it.d=moveD(it.d,dx,dy);if(it.bb)it.bb=[it.bb[0]+dx,it.bb[1]+dy,it.bb[2]+dx,it.bb[3]+dy];}
     else it.pts.forEach(q=>{q.x+=dx;q.y+=dy;q.ix+=dx;q.iy+=dy;q.ox+=dx;q.oy+=dy;});}
   for(const f of doc.fills)moveFill(f,{d0:f.d,e0:f.e||f.d,bb0:f.bb&&f.bb.slice(),tx:dx,ty:dy});
-  doc.page=np.slice();commit();renderOpts();render();renderShape();});
+  doc.page=np.slice();commit();renderOpts();render();renderShape();}
 renderShape();
 $('#mEdges').onchange=e=>{opt.showEdges=e.target.checked;saveOpt();render();};
 $('#mNew').onclick=()=>{const b=$('#mNew');if(!b.dataset.armed){b.dataset.armed=1;b.textContent='Tap again to clear the page (Undo still brings it back)';return;}
