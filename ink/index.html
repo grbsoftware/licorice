@@ -93,6 +93,20 @@ input[type=checkbox]{accent-color:var(--hot);width:16px;height:16px;margin:0}
 .sw{display:flex;gap:6px;flex:none}
 #slots.multi .sw{gap:5px}
 #slots.multi .swb{width:30px;height:30px}
+.fbar{display:flex;flex:1 1 220px;min-width:160px;height:34px;border-radius:8px;overflow:hidden;border:1px solid #000;touch-action:none;cursor:pointer;position:relative}
+.fbar i{flex:1;min-width:0}
+.fbar i.on{box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 4px #000}
+.slot.wide{flex:1 1 auto;min-width:0}
+@media(max-width:560px){.palBtn{max-width:30vw}.fbar{min-width:120px}}
+.mk{display:grid;gap:10px;padding:12px 0}
+.mk .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mk input[type=color]{width:44px;height:34px;padding:0;border:1px solid var(--edge2);border-radius:6px;background:none}
+.mk input.hex{width:92px;background:var(--well,#1a1a1a);color:var(--bright);border:1px solid var(--edge2);border-radius:5px;padding:6px;font:12px ui-monospace,monospace}
+.mk input.nm{flex:1;min-width:160px;background:var(--well,#1a1a1a);color:var(--bright);border:1px solid var(--edge2);border-radius:5px;padding:7px}
+.way{display:flex;align-items:center;gap:8px;width:100%;background:none;border:1px solid var(--edge2);border-radius:7px;padding:6px;min-height:44px}
+.way.on{border-color:var(--hot);background:#2c2a24}
+.way .lab{width:110px;flex:none;text-align:left}
+.warnbox{border:1px solid #c0473f;background:#2a1a1a;border-radius:8px;padding:12px;display:grid;gap:8px}
 .swb{width:34px;height:34px;min-height:0;padding:0;border-radius:50%;border:2px solid var(--panel);box-shadow:0 0 0 1px var(--edge2);flex:none}
 .swb.on{box-shadow:0 0 0 2px #fff}
 .cur{flex:none;display:flex;align-items:center;gap:6px}
@@ -2216,10 +2230,14 @@ try{const RC=typeof RadianceColor!=='undefined'?RadianceColor:null;
       items.push({name:p.name,sub:(2*p.colors.length-1)+' colors',lines:[{id:id+':blend',label:'Blend',colors:full(p.colors,'blend')},{id:id+':wheel',label:'Wheel',colors:full(p.colors,'wheel')}]});}
     CAT.push({id:'radiance',name:'Radiance',items});}}catch(e){}
 let shared=[];try{const s=JSON.parse(store.get('licorice-ink-shared')||'[]');if(Array.isArray(s))shared=s.filter(x=>x&&x.id&&Array.isArray(x.colors)&&x.colors.every(c=>HEX.test(c)));}catch(e){}
+let myFades=[];try{const s=JSON.parse(store.get('licorice-ink-myfades')||'[]');if(Array.isArray(s))myFades=s.filter(x=>x&&x.id&&Array.isArray(x.colors)&&x.colors.every(c=>HEX.test(c)));}catch(e){}
+let palSets=[];try{const s=JSON.parse(store.get('licorice-ink-sets')||'[]');if(Array.isArray(s))palSets=s.filter(x=>x&&x.id&&Array.isArray(x.lines));}catch(e){}
+const saveMine=()=>{store.set('licorice-ink-myfades',JSON.stringify(myFades));store.set('licorice-ink-sets',JSON.stringify(palSets));};
 const LINES=new Map();
 function indexLines(){LINES.clear();
   for(const g of CAT)for(const it of g.items)for(const ln of it.lines)LINES.set(ln.id,{name:it.name+(ln.label?' · '+ln.label:''),colors:ln.colors.map(c=>Array.isArray(c)?c[0]:c)});
-  for(const s of shared)LINES.set(s.id,{name:s.name,colors:s.colors});}
+  for(const s of shared)LINES.set(s.id,{name:s.name,colors:s.colors});
+  for(const s of myFades)LINES.set(s.id,{name:s.name,colors:s.colors});}
 indexLines();
 const FALLBACK={name:'Markers',colors:['#ff5d73','#ffa552','#ffe066','#7bd389','#4ecdc4','#2f80d1','#9fd3ff','#b48ef0','#f7a8c8','#fdfbf7']};
 let curLine=store.get('licorice-ink-pal')||'classic:markers';
@@ -2227,19 +2245,31 @@ const lineInfo=id=>LINES.get(id)||LINES.get('classic:markers')||FALLBACK;
 let extra=(()=>{try{const a=JSON.parse(store.get('licorice-ink-pals')||'[]');return Array.isArray(a)?a.filter(x=>typeof x==='string').slice(0,2):[];}catch(e){return[];}})();
 let palSlot=0;
 const saveExtra=()=>store.set('licorice-ink-pals',JSON.stringify(extra));
-const slotCount=()=>{const w=window.innerWidth;return w>=1280?3:w>=820?2:1;}; // room for 2 palettes on a tablet, 3 on a computer
+const BIG=25; // a palette this long takes the whole strip
+const slotCount=()=>{const w=window.innerWidth;if(lineInfo(curLine).colors.length>=BIG)return 1;return w>=1280?3:w>=820?2:1;}; // room for 2 palettes on a tablet, 3 on a computer
 const slotLine=i=>i===0?curLine:(extra[i-1]||null);
 function renderSwatches(){
   const n=slotCount(),esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));let h='';
   const sb=c=>`<button class="swb${c.toLowerCase()===opt.color.toLowerCase()?' on':''}" data-c="${c}" style="background:${c}" aria-label="Color ${c}" title="${c}"></button>`;
+  // room for each palette's swatches (about 35px each); a palette that won't fit becomes a fade bar
+  const room=Math.max(160,(window.innerWidth-170)/Math.max(1,n)-150);
   for(let i=0;i<n;i++){const id=slotLine(i);
     if(!id){h+=`<div class="slot"><button class="palBtn add" data-slot="${i}" title="Put another palette on the strip">+ Palette</button></div>`;break;}
-    const L=lineInfo(id);
-    h+=`<div class="slot"><button class="palBtn" data-slot="${i}" title="Change this palette">${esc(L.name)} ▾</button><div class="sw" role="group" aria-label="${esc(L.name)} colors">`+
-      (i===0?`<button class="swb${opt.color===INK?' on':''}" data-c="${INK}" style="background:${INK}" aria-label="Black ink" title="Black ink"></button>`:'')+L.colors.map(sb).join('')+`</div></div>`;}
+    const L=lineInfo(id),bar=L.colors.length>=14&&L.colors.length*35>room; // short palettes keep round swatches (they scroll if they must)
+    const ink=i===0?`<button class="swb${opt.color===INK?' on':''}" data-c="${INK}" style="background:${INK}" aria-label="Black ink" title="Black ink"></button>`:'';
+    h+=`<div class="slot${bar?' wide':''}"><button class="palBtn" data-slot="${i}" title="Change this palette">${esc(L.name)} ▾</button>`+
+      (bar?`${ink}<div class="fbar" role="slider" aria-label="${esc(L.name)}: slide along to pick a color" title="Tap or slide along to pick a color">${L.colors.map(c=>`<i data-fc="${c}" class="${c.toLowerCase()===opt.color.toLowerCase()?'on':''}" style="background:${c}"></i>`).join('')}</div>`
+          :`<div class="sw" role="group" aria-label="${esc(L.name)} colors">${ink}${L.colors.map(sb).join('')}</div>`)+`</div>`;}
   const el=$('#slots');el.innerHTML=h;el.classList.toggle('multi',n>1);
   $('#curChip').style.background=opt.color;$('#curHex').textContent=opt.color;$('#picker').value=opt.color;
 }
+// fade bars: tap, or slide your finger along, and the color under it is picked
+(()=>{let bar=null;const pickAt=e=>{const r=bar.getBoundingClientRect(),cs=bar.children,i=clamp(Math.floor((e.clientX-r.left)/r.width*cs.length),0,cs.length-1);
+    const c=cs[i].dataset.fc;if(c&&c.toLowerCase()!==opt.color.toLowerCase()){opt.color=c.toLowerCase();saveOpt();[...cs].forEach((x,k)=>x.classList.toggle('on',k===i));
+      $('#curChip').style.background=opt.color;$('#curHex').textContent=opt.color;$('#picker').value=opt.color;}};
+  document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('.fbar');if(!b)return;bar=b;try{b.setPointerCapture(e.pointerId);}catch(_){}pickAt(e);e.preventDefault();});
+  document.addEventListener('pointermove',e=>{if(bar)pickAt(e);});
+  const up=()=>{if(bar){bar=null;pickColor(opt.color);}};document.addEventListener('pointerup',up);document.addEventListener('pointercancel',up);})();
 let swRT=0;window.addEventListener('resize',()=>{clearTimeout(swRT);swRT=setTimeout(renderSwatches,120);});
 function pickColor(c){
   opt.color=c.toLowerCase();saveOpt();renderSwatches();
@@ -2254,9 +2284,106 @@ $('#slots').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if
 $('#picker').addEventListener('input',e=>pickColor(e.target.value));
 
 let palTab=null;
+/* Make your own fade: two colors (and an optional middle), walked around the color wheel either way, or straight across.
+   Saturated stays saturated: the middle keeps at least the weaker end's color strength instead of dipping toward grey. */
+const FADE={a:'#f7c612',b:'#1f2a7a',mid:null,way:0,n:17,name:''};
+function lchOf(h){const o=RadianceColor.hexToOklab(h),C=Math.hypot(o.a,o.b);return{L:o.L,C,h:Math.atan2(o.b,o.a)};}
+function inGamut(L,a,b){const l=(L+0.3963377774*a+0.2158037573*b)**3,m=(L-0.1055613458*a-0.0638541728*b)**3,s=(L-0.0894841775*a-1.2914855480*b)**3;
+  const r=4.0767416621*l-3.3077115913*m+0.2309699292*s,g=-1.2684380046*l+2.6097574011*m-0.3413193965*s,bb=-0.0041960863*l-0.7034186147*m+1.7076147010*s;
+  return r>=-1e-4&&r<=1.0001&&g>=-1e-4&&g<=1.0001&&bb>=-1e-4&&bb<=1.0001;}
+function lchHex(L,C,h){let lo=0,hi=C; // pull color strength in until it's a real screen color, keeping lightness and hue
+  if(!inGamut(L,C*Math.cos(h),C*Math.sin(h))){for(let i=0;i<18;i++){const m=(lo+hi)/2;if(inGamut(L,m*Math.cos(h),m*Math.sin(h)))lo=m;else hi=m;}C=lo;}
+  return RadianceColor.oklabToHex({L,a:C*Math.cos(h),b:C*Math.sin(h)}).toLowerCase();}
+const HUES=[[20,'pink'],[35,'red'],[55,'orange'],[80,'amber'],[100,'yellow'],[136,'lime'],[150,'green'],[175,'teal'],[200,'cyan'],[235,'azure'],[265,'blue'],[290,'indigo'],[310,'violet'],[335,'purple'],[360,'magenta']];
+const hueName=h=>{const d=((h*180/Math.PI)%360+360)%360;for(const[t,n]of HUES)if(d<t)return n;return'pink';};
+// one leg of a fade: dir +1 = hue goes up, -1 = down, 0 = straight across in OKLab
+function leg(A,B,dir,n){const out=[];const P=lchOf(A),Q=lchOf(B);let h1=P.h,h2=Q.h;if(P.C<0.02)h1=h2;if(Q.C<0.02)h2=h1;
+  let dh=h2-h1;while(dh>Math.PI)dh-=2*Math.PI;while(dh<-Math.PI)dh+=2*Math.PI;
+  if(dir>0&&dh<0)dh+=2*Math.PI;if(dir<0&&dh>0)dh-=2*Math.PI;
+  const floorC=Math.min(P.C,Q.C)*0.92;
+  for(let i=0;i<n;i++){const t=n===1?0:i/(n-1),L=P.L+(Q.L-P.L)*t;
+    if(dir===0){const a=RadianceColor.hexToOklab(A),b=RadianceColor.hexToOklab(B);out.push(RadianceColor.oklabToHex({L,a:a.a+(b.a-a.a)*t,b:a.b+(b.b-a.b)*t}).toLowerCase());}
+    else out.push(lchHex(L,Math.max(P.C+(Q.C-P.C)*t,floorC),h1+dh*t));}
+  return out;}
+function fadeWays(){const{a,b,mid,n}=FADE,ways=[];
+  if(mid){const h=Math.ceil(n/2);
+    // with a middle color each half takes the short way round
+    const sh=(X,Y)=>{const P=lchOf(X),Q=lchOf(Y);let d=Q.h-P.h;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return d>=0?1:-1;};
+    ways.push({label:'through '+hueName(lchOf(mid).h),cols:leg(a,mid,sh(a,mid),h).concat(leg(mid,b,sh(mid,b),n-h+1).slice(1))});
+    ways.push({label:'straight',cols:leg(a,mid,0,h).concat(leg(mid,b,0,n-h+1).slice(1))});return ways;}
+  for(const dir of[1,-1]){const cols=leg(a,b,dir,n);ways.push({label:'through '+hueName(lchOf(cols[Math.floor(n/2)]).h),cols});}
+  if(ways[0].label===ways[1].label)ways[1].label+=' (long way)';
+  ways.push({label:'straight',cols:leg(a,b,0,n)});return ways;}
+function renderMaker(){
+  const ways=fadeWays();if(FADE.way>=ways.length)FADE.way=0;
+  const strip=cols=>`<span class="strip">${cols.map(c=>`<i style="background:${c}"></i>`).join('')}</span>`;
+  const nm=FADE.name||'';
+  return`<div class="mk">
+    <p style="margin:0">Pick two colors. The fade can walk around the color wheel either way, or go straight across (that way passes through grey).</p>
+    <div class="row"><span class="lb" style="width:52px">Start</span><input type="color" id="fA" value="${FADE.a}"><input class="hex" id="fAh" value="${FADE.a}"></div>
+    <div class="row"><span class="lb" style="width:52px">End</span><input type="color" id="fB" value="${FADE.b}"><input class="hex" id="fBh" value="${FADE.b}"><button id="fSwap">Swap</button></div>
+    <div class="row"><label class="grp"><input type="checkbox" id="fMidOn" ${FADE.mid?'checked':''}> <span>Middle color</span></label>${FADE.mid?`<input type="color" id="fM" value="${FADE.mid}"><input class="hex" id="fMh" value="${FADE.mid}">`:''}</div>
+    <div class="row"><span class="lb">Colors</span>${seg('fn',String(FADE.n),[['9','9'],['17','17'],['33','33']])}</div>
+    ${ways.map((w,i)=>`<button class="way${i===FADE.way?' on':''}" data-way="${i}"><span class="lab">${w.label}</span>${strip(w.cols)}</button>`).join('')}
+    <div class="row"><input class="nm" id="fName" placeholder="Name it (optional)" value="${nm.replace(/"/g,'&quot;')}"><button id="fSave">Save</button><button id="fUse" class="hot">Save and use</button></div>
+    <p class="msg" id="fMsg"></p></div>`;}
+function bindMaker(){
+  const re=()=>{const st=$('#palBody').scrollTop;renderPalSheet();$('#palBody').scrollTop=st;};
+  const pair=(c,hx,key)=>{const a=$('#'+c),b=$('#'+hx);if(!a)return;
+    a.addEventListener('input',()=>{FADE[key]=a.value.toLowerCase();b.value=FADE[key];clearTimeout(pair.t);pair.t=setTimeout(re,90);});
+    b.addEventListener('change',()=>{let v=b.value.trim();if(!v.startsWith('#'))v='#'+v;if(HEX.test(v)){FADE[key]=v.toLowerCase();re();}else{b.value=FADE[key];toast('Type a color like f7c612');}});};
+  pair('fA','fAh','a');pair('fB','fBh','b');pair('fM','fMh','mid');
+  $('#fSwap').onclick=()=>{[FADE.a,FADE.b]=[FADE.b,FADE.a];re();};
+  $('#fMidOn').onchange=e=>{FADE.mid=e.target.checked?midOf(FADE.a,FADE.b):null;FADE.way=0;re();};
+  document.querySelectorAll('#palBody [data-fn]').forEach(b=>b.onclick=()=>{FADE.n=+b.dataset.fn;re();});
+  document.querySelectorAll('#palBody [data-way]').forEach(b=>b.onclick=()=>{FADE.way=+b.dataset.way;re();});
+  $('#fName').oninput=e=>{FADE.name=e.target.value;};
+  const save=use=>{const w=fadeWays()[FADE.way];const name=(FADE.name.trim()||(hexName(FADE.a)+' to '+hexName(FADE.b)+(w.label==='straight'?'':' · '+w.label))).slice(0,60);
+    const id='my:'+uid('f');myFades.unshift({id,name,colors:w.cols});saveMine();indexLines();
+    if(use)choosePal(id);else{$('#fMsg').textContent='Saved to Yours.';}};
+  $('#fSave').onclick=()=>save(false);$('#fUse').onclick=()=>save(true);
+}
+const midOf=(a,b)=>{const P=lchOf(a),Q=lchOf(b);let d=Q.h-P.h;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return lchHex((P.L+Q.L)/2,Math.max(P.C,Q.C),P.h+d/2);};
+const hexName=h=>{const c=lchOf(h);return c.C<0.03?(c.L>0.85?'white':c.L<0.25?'black':'grey'):hueName(c.h);};
+/* Palette sets: save what's on the strip now (up to 3 palettes) and bring it back later. */
+function renderSets(){
+  const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const now=[curLine,...extra].filter(Boolean);
+  let h=`<div class="mk"><p style="margin:0">Save the palettes on your strip right now as a set, and bring them all back with one tap.</p>
+    <div class="row">${now.map(id=>`<span class="strip" style="flex:1;min-width:80px">${lineInfo(id).colors.map(c=>`<i style="background:${c}"></i>`).join('')}</span>`).join('')}</div>
+    <div class="row"><input class="nm" id="setName" placeholder="Name this set" value=""><button id="setSave" class="hot">Save this set</button></div></div>`;
+  h+=palSets.length?palSets.map(st=>`<div class="item"><span class="nm">${esc(st.name)}</span><span class="sub">${st.lines.length} palette${st.lines.length>1?'s':''}</span>
+      ${st.lines.map(id=>`<span class="strip" style="display:flex;margin-top:6px;height:18px">${lineInfo(id).colors.map(c=>`<i style="background:${c}"></i>`).join('')}</span>`).join('')}
+      <div class="grp" style="margin-top:8px"><button class="hot" data-setuse="${st.id}">Put on the strip</button><button class="warn" data-setdel="${st.id}">Delete</button></div></div>`).join('')
+    :'<p class="hint" style="padding:12px 0;white-space:normal">No sets saved yet.</p>';
+  return h;}
+function bindSets(){
+  $('#setSave').onclick=()=>{const name=($('#setName').value.trim()||'Set '+(palSets.length+1)).slice(0,60);
+    palSets.unshift({id:uid('s'),name,lines:[curLine,...extra].filter(Boolean)});saveMine();renderPalSheet();toast('Set saved');};
+  document.querySelectorAll('#palBody [data-setuse]').forEach(b=>b.onclick=()=>{const st=palSets.find(x=>x.id===b.dataset.setuse);if(!st)return;
+    curLine=st.lines[0];store.set('licorice-ink-pal',curLine);extra=st.lines.slice(1,3);saveExtra();
+    const L=lineInfo(curLine);if(!L.colors.some(c=>c.toLowerCase()===opt.color))opt.color=L.colors[0].toLowerCase();saveOpt();renderSwatches();$('#palSheet').hidden=true;toast('Set “'+st.name+'” is on the strip');});
+  document.querySelectorAll('#palBody [data-setdel]').forEach(b=>b.onclick=()=>{if(!b.dataset.armed){b.dataset.armed=1;b.textContent='Tap again to delete';return;}
+    palSets=palSets.filter(x=>x.id!==b.dataset.setdel);saveMine();renderPalSheet();});
+}
+// choosing a palette for the strip; a big one (25+ colors) takes the whole strip, so warn first if others would come off
+function choosePal(id,force){
+  const L=lineInfo(id);
+  if(palSlot===0&&!force&&L.colors.length>=BIG&&extra.length&&window.innerWidth>=820){
+    $('#palBody').innerHTML=`<div class="warnbox"><b style="color:#ff9a8a">This fade has ${L.colors.length} colors, so it takes the whole strip.</b>
+      <p style="margin:0">The other palette${extra.length>1?'s':''} on your strip (${extra.map(x=>lineInfo(x).name).join(', ')}) will come off. You can save them as a set first and bring them back later.</p>
+      <div class="grp"><button id="bigSet">Save them as a set first</button><button id="bigGo" class="warn">Go ahead</button><button id="bigNo">Cancel</button></div></div>`;
+    $('#bigSet').onclick=()=>{palSets.unshift({id:uid('s'),name:'Before '+L.name,lines:[curLine,...extra].filter(Boolean)});saveMine();toast('Saved as a set');choosePal(id,true);};
+    $('#bigGo').onclick=()=>choosePal(id,true);$('#bigNo').onclick=()=>renderPalSheet();return;}
+  if(palSlot>0){extra[palSlot-1]=id;extra=extra.filter(Boolean);saveExtra();renderSwatches();$('#palSheet').hidden=true;return;}
+  curLine=id;store.set('licorice-ink-pal',curLine);
+  if(L.colors.length>=BIG&&extra.length){extra=[];saveExtra();}
+  if(!L.colors.some(c=>c.toLowerCase()===opt.color))opt.color=L.colors[0].toLowerCase();saveOpt();renderSwatches();$('#palSheet').hidden=true;
+}
 function renderPalSheet(){
   const groups=CAT.map(g=>({id:g.id,name:g.name,items:g.items}));
-  groups.push({id:'shared',name:'Yours',items:shared.map(s=>({name:s.name,sub:'',lines:[{id:s.id,label:'',colors:s.colors}]}))});
+  groups.push({id:'shared',name:'Yours',items:myFades.map(s=>({name:s.name,sub:'your fade',lines:[{id:s.id,label:'',colors:s.colors}]})).concat(shared.map(s=>({name:s.name,sub:'',lines:[{id:s.id,label:'',colors:s.colors}]})))});
+  groups.push({id:'make',name:'Make a fade',items:[]},{id:'sets',name:'Sets',items:[]});
   const cur=slotLine(palSlot);
   $('#palTitle').textContent=palSlot?'Palette '+(palSlot+1)+' on the strip':'Licorice palettes';$('#palRemove').hidden=!(palSlot&&cur);
   if(!palTab){const g=cur&&groups.find(g=>g.items.some(it=>it.lines.some(l=>l.id===cur)));palTab=g?g.id:groups[0].id;}
@@ -2265,19 +2392,17 @@ function renderPalSheet(){
   const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   let h=g.items.map(it=>`<div class="item"><span class="nm">${esc(it.name)}</span>${it.sub?`<span class="sub">${esc(it.sub)}</span>`:''}`+
     it.lines.map(ln=>{const cols=ln.colors.map(c=>Array.isArray(c)?c[0]:c);return`<button class="line${ln.id===cur?' on':''}" data-line="${esc(ln.id)}"><span class="lab">${esc(ln.label||'')}</span><span class="strip">${cols.map(c=>`<i style="background:${c}"></i>`).join('')}</span></button>`;}).join('')+`</div>`).join('');
-  if(g.id==='shared')h=(shared.length?h:'<p class="hint" style="padding:12px 0;white-space:normal">Nothing brought over yet.</p>')+
+  if(g.id==='shared')h=(shared.length||myFades.length?h:'<p class="hint" style="padding:12px 0;white-space:normal">Nothing here yet. Fades you make (Make a fade) and palettes you bring over land here.</p>')+
     `<div class="imp"><p>Palettes you made on the Licorice palette page stay on that site. To bring them here: on the palette page, save them as a combination, tap <b>Share</b>, then paste that link below.</p>
      <textarea id="impTxt" placeholder="https://grbsoftware.github.io/licorice/palettes/#set=…"></textarea>
      <div class="grp"><button id="impGo" class="hot">Bring them in</button>${shared.length?'<button id="impClear" class="warn">Remove all of yours</button>':''}</div><p class="msg" id="impMsg"></p></div>`;
-  $('#palBody').innerHTML=h;
+  if(g.id==='make')h=renderMaker();if(g.id==='sets')h=renderSets();
+  $('#palBody').innerHTML=h;if(g.id==='make')bindMaker();if(g.id==='sets')bindSets();
   const go=$('#impGo');if(go)go.onclick=importLink;
   const cl=$('#impClear');if(cl)cl.onclick=()=>{if(cl.dataset.armed){shared=[];store.set('licorice-ink-shared','[]');indexLines();renderPalSheet();renderSwatches();}else{cl.dataset.armed=1;cl.textContent='Tap again to remove';}};
 }
 $('#palTabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b){palTab=b.dataset.tab;renderPalSheet();$('#palBody').scrollTop=0;}});
-$('#palBody').addEventListener('click',e=>{const b=e.target.closest('[data-line]');if(!b)return;const id=b.dataset.line;
-  if(palSlot>0){extra[palSlot-1]=id;extra=extra.filter(Boolean);saveExtra();renderSwatches();$('#palSheet').hidden=true;return;}
-  curLine=id;store.set('licorice-ink-pal',curLine);
-  const L=lineInfo(curLine);if(!L.colors.some(c=>c.toLowerCase()===opt.color))opt.color=L.colors[0].toLowerCase();saveOpt();renderSwatches();$('#palSheet').hidden=true;});
+$('#palBody').addEventListener('click',e=>{const b=e.target.closest('[data-line]');if(!b)return;choosePal(b.dataset.line);});
 $('#palRemove').onclick=()=>{if(palSlot>0){extra.splice(palSlot-1,1);saveExtra();renderSwatches();}$('#palSheet').hidden=true;};
 function openPalSheet(i){palSlot=i||0;palTab=null;renderPalSheet();$('#palSheet').hidden=false;
   requestAnimationFrame(()=>{const on=$('#palBody .line.on');if(on)on.scrollIntoView({block:'center'});});};
