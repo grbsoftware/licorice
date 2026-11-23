@@ -1604,11 +1604,18 @@ const lin=c=>{c/=255;return c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4);},g
 const rgbOf=h=>[1,3,5].map(i=>lin(parseInt(h.slice(i,i+2),16))),hexOf=a=>'#'+a.map(c=>gam(c).toString(16).padStart(2,'0')).join('');
 function mixColor(c0,c1,t,mode){
   if(t<=0)return c0;if(t>=1)return c1;
-  if(mode==='pigment'&&typeof spectral!=='undefined'){try{return spectral.mix([new spectral.Color(c0),1-t],[new spectral.Color(c1),t]).toString().toLowerCase();}catch(e){}}
+  // pigment: paint mixing (Kubelka-Munk via Spectral.js). Darker, more vivid colors are stronger pigments and pull the mix their way
+  if(mode==='pigment'&&typeof spectral!=='undefined'){try{const A=new spectral.Color(c0),B=new spectral.Color(c1);A.tintingStrength=tintOf(c0);B.tintingStrength=tintOf(c1);
+    return spectral.mix([A,1-t],[B,t]).toString().toLowerCase();}catch(e){}}
   if(mode==='smooth'){try{const RC=RadianceColor,A=RC.hexToOklab(c0),B=RC.hexToOklab(c1);return RC.oklabToHex({L:A.L+(B.L-A.L)*t,a:A.a+(B.a-A.a)*t,b:A.b+(B.b-A.b)*t});}catch(e){}}
-  // ink: transparent dyes layered, each one filtering the light (a weighted multiply)
-  const A=rgbOf(c0),B=rgbOf(c1);return hexOf(A.map((v,i)=>Math.exp(Math.log(Math.max(v,0.003))*(1-t)+Math.log(Math.max(B[i],0.003))*t)));
+  // ink: transparent dyes, each one filtering the light (a weighted multiply). Where two dyes overlap they stack, so the middle goes darker
+  const A=rgbOf(c0),B=rgbOf(c1),k=1-0.35*4*t*(1-t);return hexOf(A.map((v,i)=>Math.exp(Math.log(Math.max(v,0.003))*(1-t)+Math.log(Math.max(B[i],0.003))*t)*k));
 }
+const tintMemo=new Map();
+function tintOf(h){let v=tintMemo.get(h);if(v===undefined){try{const o=RadianceColor.hexToOklab(h),C=Math.hypot(o.a,o.b);v=clamp(0.3+1.6*(1-o.L)+1.5*C,0.4,2.5);}catch(e){v=1;}tintMemo.set(h,v);}return v;}
+// a blend that leans: p is where the band's start line falls inside the blend (0 = at the outer end, 1 = at the inner end).
+// The change is quickest at that line and eases off toward both ends, so the side that reaches farther gets the long, gentle tail.
+const lean=(s,p)=>p<=0.001?1-(1-s)*(1-s):p>=0.999?s*s:s<p?s*s/p:1-(1-s)*(1-s)/(1-p);
 const ease=x=>x*x*x*(x*(x*6-15)+10); // a smooth S-curve, gentle at both ends
 function boxBlur(src,w,h,r){ // two passes of a running-average blur, close to a soft Gaussian
   if(r<1)return src;let a=Float32Array.from(src),t=new Float32Array(w*h);
@@ -1707,7 +1714,8 @@ function bandLayers(f){
       const a=gk(x,y),bq=gk(x+1,y),cq=gk(x+1,y+1),dq=gk(x,y+1),mn=Math.min(a,bq,cq,dq),mx=Math.max(a,bq,cq,dq);
       if(mx>=lo&&mn<hi)cand.push((y+1)*(w+1)+(x+1));}
     let last=false;
-    for(let i=0;i<n;i++){const lev=n===1?b.t:L0+(i+0.5)/n*span,col=n===1?c1:mixColor(c0,c1,ease((i+1)/n),f.mix||'ink');
+    const pk=span>0?clamp((b.t-L0)/span,0,1):0.5;
+    for(let i=0;i<n;i++){const lev=n===1?b.t:L0+(i+0.5)/n*span,col=n===1?c1:mixColor(c0,c1,lean((i+1)/n,pk),f.mix||'ink');
       const d=loopsToD(contoursIso(Dk,w,h,lev*res,cand),0.3*res*res,B[0],B[1],res,0.06*res);
       if(d){layers.push({d,c:col});if(i===n-1)last=true;}}
     ok.push(last);
