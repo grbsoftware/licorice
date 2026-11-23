@@ -172,7 +172,7 @@ body.big #zoomui{bottom:6px;right:6px}
   </div>
   <div id="strip">
     <div id="slots"></div>
-    <div class="cur"><span class="chip" id="curChip" title="Pick any color"><input type="color" id="picker" aria-label="Pick any color"></span><span class="hex" id="curHex"></span></div>
+    <div class="cur" title="Keyboard: ] next color · [ previous color"><span class="chip" id="curChip" title="Pick any color"><input type="color" id="picker" aria-label="Pick any color"></span><span class="hex" id="curHex"></span></div>
   </div>
   <nav id="rail" aria-label="Tools">
     <button data-tool="marker" title="Marker: tap for a dot, color to make a shape (M)"><svg viewBox="0 0 24 24"><path d="M14 4l6 6-8 8H6v-6z"/><path d="M4 21c3-2 6 1 9-1"/></svg>Marker</button>
@@ -1432,6 +1432,10 @@ window.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key==='Escape')&&copyFill){copyFill=null;renderOpts();render();return;}
   if(e.key==='Enter'||e.key==='Escape'){if(pen){endPen();renderOpts();render();}else if(sel){sel=null;selPt=-1;renderOpts();render();}return;}
   if((e.key==='Delete'||e.key==='Backspace')&&tool==='edit'){e.preventDefault();if(sel&&sel.k==='ink'&&selPt>=0){const b=document.getElementById('eDelPt');if(b)b.click();}else deleteSel();return;}
+  // ] next color, [ previous: walks the strip in the order you see it, wrapping around (with a fill's band picked in Edit, it recolors that band as you go)
+  if((e.key===']'||e.key==='[')&&!mod){e.preventDefault();const cs=[...document.querySelectorAll('#slots [data-c]')].map(b=>b.dataset.c.toLowerCase());if(!cs.length)return;
+    let i=cs.indexOf(opt.color.toLowerCase());i=i<0?0:(i+(e.key===']'?1:-1)+cs.length)%cs.length;pickColor(cs[i]);
+    const on=document.querySelector('#slots .swb.on');if(on)on.scrollIntoView({block:'nearest',inline:'nearest'});return;}
   const m={d:'marker',m:'marker',p:'pen',l:'pen',r:'round',s:'style',f:'fill',v:'edit',e:'edit',h:'hand'}[e.key.toLowerCase()];if(m&&!mod)setTool(m);
 });
 window.addEventListener('keyup',e=>{if(e.key===' ')spaceDown=false;});
