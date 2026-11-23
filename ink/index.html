@@ -662,6 +662,22 @@ const FADES=[
  ['Cherry blossom','dark bark, pink petals',[['wet bark','#2e1e22'],['blossom','#e89ab4'],['petal','#fff4f6']],'blend'],
  ['Copper','green patina to bright copper',[['patina','#2a6a5a'],['copper','#b8642a'],['polished','#f2c09a']],'blend'],
 ];
+/* ---- 2d. color fades: saturated to saturated, never through grey. Near-opposite colors, walked around the
+   colour wheel both ways; each way is named for the vivid colour it passes through.
+   A named, vivid colour sits halfway so the walk takes the way we mean; wheel bridges keep the colour strong. (Gary) */
+const COLOR_FADES=[
+ ['Gold to indigo','f7c612 round to deep indigo',[['gold','#f7c612'],['rose red','#e0306a'],['indigo','#1f2a7a']],[['gold','#f7c612'],['teal','#109a8e'],['indigo','#1f2a7a']]],
+ ['Indigo to lime','violet-blue round to lime',[['indigo','#3a1fa8'],['coral red','#f04a3a'],['lime','#9be22e']],[['indigo','#3a1fa8'],['azure','#1a9ad8'],['lime','#9be22e']]],
+ ['Purple to orange','the dusk pair',[['purple','#7a22c0'],['magenta red','#e2286e'],['orange','#ff7a12']],[['purple','#7a22c0'],['teal','#14a89a'],['orange','#ff7a12']]],
+ ['Magenta to green','hot pink round to leaf green',[['magenta','#e01e9a'],['amber','#f59a12'],['green','#22b04a']],[['magenta','#e01e9a'],['azure','#2a6ee0'],['green','#22b04a']]],
+ ['Red to cyan','fire round to clear water',[['red','#e5242c'],['lime yellow','#b8d41a'],['cyan','#10c4d6']],[['red','#e5242c'],['violet','#6a34e0'],['cyan','#10c4d6']]],
+ ['Blue to orange','cobalt round to tangerine',[['blue','#1e56e0'],['magenta','#d8228a'],['orange','#ff8a14']],[['blue','#1e56e0'],['green','#36b84a'],['orange','#ff8a14']]],
+ ['Teal to coral','lagoon round to coral',[['teal','#0aa8a0'],['citron','#c2c81a'],['coral','#ff5a52']],[['teal','#0aa8a0'],['violet','#7a46e0'],['coral','#ff5a52']]],
+ ['Violet to yellow','violet round to lemon',[['violet','#6a1ed0'],['scarlet','#ff3a4a'],['yellow','#ffe014']],[['violet','#6a1ed0'],['turquoise','#14b09a'],['yellow','#ffe014']]],
+ ['Hot pink to lime','neon pair',[['hot pink','#ff2a8a'],['tangerine','#ff9214'],['lime','#9ae01a']],[['hot pink','#ff2a8a'],['cornflower','#3a7ae8'],['lime','#9ae01a']]],
+ ['Crimson to jade','berry round to jade',[['crimson','#c8143c'],['gold','#f2c014'],['jade','#14b48a']],[['crimson','#c8143c'],['royal violet','#5a3ad8'],['jade','#14b48a']]],
+ ['Sky to scarlet','blue sky round to scarlet',[['sky','#1ab4f0'],['purple','#9a2ad0'],['scarlet','#e81e2c']],[['sky','#1ab4f0'],['green','#4ac23a'],['scarlet','#e81e2c']]],
+];
 // bridges all the way: keep the named controls, put a bridge between every pair, repeat (3 controls, 3 rounds -> 17)
 function bridgesAll(ctrl,rounds,mode='blend'){let p=ctrl.map(([n,h])=>[h,n]);
   for(let k=0;k<rounds;k++){const q=[p[0]];for(let i=1;i<p.length;i++){q.push([RC.midpointColor(p[i-1][0],p[i][0],mode),'bridge']);q.push(p[i]);}p=q;}
@@ -910,6 +926,8 @@ function catalog(){
    {id:'skies',name:'Skies',items:SKIES.map(([n,sub,day,dusk,how])=>{const id='sky:'+slug(n),mk=x=>how=='bridges'?fams([x],3,'blend'):fams(x,1,'wheel');
      return{id,name:n,sub,lines:[withColors(id+':day','day',mk(day)),withColors(id+':sunset','sunset',mk(dusk))]};})},
    {id:'fades',name:'Fades',items:FADES.map(([n,sub,c,m])=>({id:'fade:'+slug(n),name:n,sub,lines:[withColors('fade:'+slug(n),'',fams([c],3,m))]}))},
+   {id:'cfades',name:'Color fades',items:COLOR_FADES.map(([n,sub,w,c])=>{const id='cfade:'+slug(n);
+     return{id,name:n,sub,lines:[withColors(id+':warm','through '+w[1][0],fams([w],3,'wheel')),withColors(id+':cool','through '+c[1][0],fams([c],3,'wheel'))]};})},
    {id:'pairs',name:'Pairs',items:DUOS.map(d=>({id:'pair:'+slug(d[0]),name:d[0],sub:'duotone',lines:[withColors('pair:'+slug(d[0]),'',chunks(duo(d),[5,5]))]}))
      .concat(TRIS.map(t=>({id:'pair:'+slug(t[0]),name:t[0],sub:'tritone',lines:[withColors('pair:'+slug(t[0]),'',chunks(tri(t),[5,4,3]))]})))},
   ];
@@ -919,7 +937,7 @@ function methodRecipe(k,seed){const m=METHODS[k],r=mulberry32(seed),res=m.make(r
   if(m.id=='line')return{families:[{controls:[['dark control',items[0][0]],['light control',items.at(-1)[0]]],rounds:3,mode:'wheel'}]}; // keep its build: 2 controls, 3 rounds
   return{families:[{controls:items.map(([h,w])=>[w||'',h]),rounds:0,mode:'wheel'}]};}
 return{RC,clamp,wrap,mulberry32,lch,guard,vivid,cuspL,shifted,ramp,neutralRamp,grey,closest,lineOrder,
-  PRESETS,BIOMES,BIOTA,SKIES,FADES,DUOS,TRIS,family,bridgesAll,biome,duo,tri,METHODS,catalog,SUGGEST,warm,expand,build,methodRecipe};
+  PRESETS,BIOMES,BIOTA,SKIES,FADES,COLOR_FADES,DUOS,TRIS,family,bridgesAll,biome,duo,tri,METHODS,catalog,SUGGEST,warm,expand,build,methodRecipe};
 })();
 
 </script>
@@ -1119,6 +1137,9 @@ function renderOpts(){
     h=`<span class="tname">Fill</span>${seg('fmode',opt.fillMode,[['flat','Flat'],['bands','Bands']])}<span class="vsep"></span>`;
     if(opt.fillMode==='bands')h+=`<span class="grp"><span class="lb">Mix</span>${seg('bmix',opt.bandMix,[['ink','Ink'],['pigment','Pigment'],['smooth','Smooth']])}</span>${slider('oBW','Band width',2,80,1,opt.bandW)}${slider('oBA','Outer reaches in',0,60,1,opt.bandA)}${slider('oBB','Inner reaches out',0,60,1,opt.bandB)}${slider('oGap','Close gaps',0,8,0.5,opt.gap)}<span class="hint">First tap fills the cell · each next tap adds a band inside it in your color · change blends later in Edit</span>`;
     else h+=`<span class="grp"><span class="lb">Edge</span>${seg('edge',opt.edge,[['shade','Shade'],['black','Black'],['none','None']])}</span>${slider('oEW','Edge width',0.5,8,0.5,opt.edgeW)}${slider('oGap','Close gaps',0,8,0.5,opt.gap)}<span class="hint">Tap a space to fill it · tap again to recolor</span>`;
+  }else if(copyFill){
+    const cf=copyFill,sw=cf.t==='bands'?`linear-gradient(90deg,${cf.bands.map(b=>b.c).join(',')})`:cf.c;
+    h=`<span class="tname">Copying</span><i style="display:inline-block;width:46px;height:22px;border-radius:5px;border:1px solid #000;background:${sw}"></i><span class="hint">${cf.t==='bands'?cf.bands.length+' bands':'flat fill'} · tap any space to give it this fill, filled or empty · bands that don’t fit a smaller space are left out</span><button id="cDone" class="hot">Done</button>`;
   }else{
     h=`<span class="tname">Edit</span>`;
     const it=sel&&sel.k==='ink'?findInk(sel.id):null,f=sel&&sel.k==='fill'?findFill(sel.id):null;
@@ -1131,8 +1152,8 @@ function renderOpts(){
     else if(f&&f.t==='bands'){const k=clamp(selBand,0,f.bands.length-1);selBand=k;
       h+=`<span class="grp"><span class="lb">Band</span>${seg('band',String(k),f.bands.map((b,i)=>[String(i),`<i style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${b.c};vertical-align:-1px"></i>&nbsp;${i+1}`]))}</span>`;
       if(k>0)h+=slider('bT','Starts at',1,250,1,f.bands[k].t)+slider('bA','Outer reaches in',0,60,1,f.bands[k].a)+slider('bB','Inner reaches out',0,60,1,f.bands[k].b)+'<button id="bDel">Remove band</button>';
-      h+=`<span class="grp"><span class="lb">Mix</span>${seg('emix',f.mix||'ink',[['ink','Ink'],['pigment','Pigment'],['smooth','Smooth']])}</span><button id="eBack">Send to back</button><button id="eDel" class="warn">Delete fill</button><span class="hint">${k>0?'Tap a color below to recolor this band':'Band 1 is the outermost color · tap a color below to recolor it'}</span>`;}
-    else if(f){h+=`<span class="grp"><span class="lb">Edge</span>${seg('fedge',f.edge,[['shade','Shade'],['black','Black'],['none','None']])}</span>${slider('eEW','Edge width',0.5,8,0.5,f.ew)}<button id="eBack">Send to back</button><button id="eDel" class="warn">Delete fill</button><span class="hint">Drag to move · tap a color below to recolor</span>`;}
+      h+=`<button id="eCopy" class="hot">Copy to other spaces</button><span class="grp"><span class="lb">Mix</span>${seg('emix',f.mix||'ink',[['ink','Ink'],['pigment','Pigment'],['smooth','Smooth']])}</span><button id="eBack">Send to back</button><button id="eDel" class="warn">Delete fill</button><span class="hint">${k>0?'Tap a color below to recolor this band':'Band 1 is the outermost color · tap a color below to recolor it'}</span>`;}
+    else if(f){h+=`<button id="eCopy" class="hot">Copy to other spaces</button><span class="grp"><span class="lb">Edge</span>${seg('fedge',f.edge,[['shade','Shade'],['black','Black'],['none','None']])}</span>${slider('eEW','Edge width',0.5,8,0.5,f.ew)}<button id="eBack">Send to back</button><button id="eDel" class="warn">Delete fill</button><span class="hint">Drag to move · tap a color below to recolor</span>`;}
     else h+=`<span class="hint">Tap a line, dot or fill to change it · tap the same spot again for the piece underneath · two fingers to zoom and move</span>`;
     if(it||f)h=h.replace('<span class="tname">Edit</span>','<span class="tname">Edit</span><span class="grp nudge" role="group" aria-label="Nudge"><button data-nudge="-1,0" aria-label="Left">←</button><button data-nudge="0,-1" aria-label="Up">↑</button><button data-nudge="0,1" aria-label="Down">↓</button><button data-nudge="1,0" aria-label="Right">→</button><label class="grp"><input type="checkbox" id="eBig" '+(nudgeBig?'checked':'')+'><span>×10</span></label></span><span class="vsep"></span>');
   }
@@ -1191,6 +1212,8 @@ function renderOpts(){
     bl('bT','t');bl('bA','a');bl('bB','b');
     on('bDel','click',()=>{if(selBand>0){begin();f.bands.splice(selBand,1);selBand=Math.min(selBand,f.bands.length-1);commit();renderOpts();render();}});
   }
+  on('eCopy','click',()=>{const f2=sel&&sel.k==='fill'&&findFill(sel.id);if(!f2)return;copyFill=JSON.parse(JSON.stringify(f2));sel=null;renderOpts();render();toast('Now tap the spaces that should get this fill',2200);});
+  on('cDone','click',()=>{copyFill=null;renderOpts();render();});
   on('eBack','click',()=>{if(f){begin();doc.fills=[f,...doc.fills.filter(x=>x!==f)];commit();render();}});
 }
 function smoothPoint(p,i){const a=p.pts,P=a[i],n=a.length;
@@ -1229,7 +1252,7 @@ function deleteSel(){if(!sel)return;begin();
   sel=null;selPt=-1;commit();renderOpts();render();}
 
 /* ================= tools ================= */
-function setTool(t,keepPen){if(!keepPen&&pen&&t!=='pen')endPen();tool=t;if(t!=='edit'){sel=null;selPt=-1;}
+function setTool(t,keepPen){if(!keepPen&&pen&&t!=='pen')endPen();if(t!=='edit')copyFill=null;tool=t;if(t!=='edit'){sel=null;selPt=-1;}
   document.querySelectorAll('#rail [data-tool]').forEach(b=>b.classList.toggle('on',b.dataset.tool===t));renderOpts();render();}
 function autoH(path,i){ // handles marked auto sit a third of the way along the segment, so it starts straight and each handle is grabbable
   const n=path.pts.length;if(n<2)return;const j=i+1<n?i+1:(path.closed?0:-1);if(j<0||i<0)return;
@@ -1289,6 +1312,7 @@ sv.addEventListener('pointerdown',e=>{
   if(tool==='round'){G={type:'round',p,cx:e.clientX,cy:e.clientY};return;}
   if(tool==='style'){G={type:'style',p,cx:e.clientX,cy:e.clientY};return;}
   if(tool==='fill'){G={type:'fill',p,cx:e.clientX,cy:e.clientY};return;}
+  if(tool==='edit'&&copyFill){G={type:'paste',p,cx:e.clientX,cy:e.clientY};return;}
   if(tool==='edit'){
     const ie=t&&t.closest&&t.closest('[data-id]'),fe=t&&t.closest&&t.closest('[data-fill]');
     // everything under the tap, top first: a line or shape hit dead-on, the fill you tapped inside, then a line close by
@@ -1355,6 +1379,7 @@ function up(e){
   const g=G;G=null;if(g.raf)cancelAnimationFrame(g.raf);
   if(e.type==='pointercancel'){if(g.lv)g.lv.cv.remove();rollback();if(pen&&!findInk(pen))pen=null;render();return;}
   if(g.type==='closeTap'){const path=findInk(g.id);if(path){begin();path.closed=true;autoH(path,path.pts.length-1);commit();}endPen();renderOpts();render();return;}
+  if(g.type==='paste'){if(Math.hypot(e.clientX-g.cx,e.clientY-g.cy)<10)pasteFillAt(g.p);return;}
   if(g.type==='fill'){if(Math.hypot(e.clientX-g.cx,e.clientY-g.cy)<10)(opt.fillMode==='bands'?bandAt:fillAt)(g.p);return;}
   if(g.type==='round'){if(Math.hypot(e.clientX-g.cx,e.clientY-g.cy)<10)roundAt(g.p);return;}
   if(g.type==='style'){if(Math.hypot(e.clientX-g.cx,e.clientY-g.cy)<10)styleAt(g.p);return;}
@@ -1390,6 +1415,7 @@ window.addEventListener('keydown',e=>{
   const ar={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];
   if(ar&&tool==='edit'&&sel){e.preventDefault();const m=e.shiftKey?10:1;
     nudge(ar[0]*m,ar[1]*m);return;}
+  if((e.key==='Enter'||e.key==='Escape')&&copyFill){copyFill=null;renderOpts();render();return;}
   if(e.key==='Enter'||e.key==='Escape'){if(pen){endPen();renderOpts();render();}else if(sel){sel=null;selPt=-1;renderOpts();render();}return;}
   if((e.key==='Delete'||e.key==='Backspace')&&tool==='edit'){e.preventDefault();if(sel&&sel.k==='ink'&&selPt>=0){const b=document.getElementById('eDelPt');if(b)b.click();}else deleteSel();return;}
   const m={d:'marker',m:'marker',p:'pen',l:'pen',r:'round',s:'style',f:'fill',v:'edit',e:'edit',h:'hand'}[e.key.toLowerCase()];if(m&&!mod)setTool(m);
@@ -1551,6 +1577,26 @@ function markerCommit(pts){
   doc.ink=doc.ink.filter(x=>!join.includes(x));doc.ink.push(blob);
   if(mixing)addMixes(SB,drawStroke,opt.color,[blob,...join]);
   commit();
+}
+let copyFill=null;
+// give a space the copied fill: restyle a fill that's already there, or fill an empty space with it
+function styleLike(f,src){f.c=src.c;f.edge=src.edge;f.ew=src.ew;
+  if(src.t==='bands'){f.t='bands';f.mix=src.mix||'ink';f.u=1;
+    const room=bandRegion(f).maxD;f.bands=src.bands.filter((b,i)=>i===0||room>=b.t+0.5).map(b=>({...b}));
+    return f.bands.length<src.bands.length;}
+  delete f.t;delete f.bands;delete f.mix;return false;}
+function pasteFillAt(P){
+  const src=copyFill;if(!src)return;toast('Copying…',0);
+  setTimeout(()=>{try{
+    const cx=document.createElement('canvas').getContext('2d');let f=null;
+    for(let i=doc.fills.length-1;i>=0;i--){const x=doc.fills[i];if(x.e&&cx.isPointInPath(new Path2D(x.e),P.x,P.y,'evenodd')){f=x;break;}}
+    let short=false;
+    if(f){begin();short=styleLike(f,src);}
+    else{const g=preciseRegion(P,opt.gap);if(g.err){toast(g.err);return;}const{d,e}=cellPaths(g);if(!d){toast('Nothing to fill there');return;}
+      f={id:uid('f'),c:src.c,d,e,edge:src.edge,ew:src.ew,a:g.a,bb:g.bb,u:1};begin();doc.fills.push(f);short=styleLike(f,src);}
+    commit();render();
+    if(short)toast('That space is smaller, so the inner bands that didn’t fit were left out',2600);else $('#toast').hidden=true;
+  }catch(err){toast('Copy failed: '+err.message,3000);}},20);
 }
 function fillAt(P){
   toast('Filling…',0);
