@@ -183,6 +183,17 @@ body.big #zoomui{bottom:6px;right:6px}
   </div>
 </div>
 
+<div class="scrim" id="backSheet" hidden>
+  <div class="sheet" role="dialog" aria-label="Welcome back" style="max-width:460px">
+    <div class="shead"><h2>Welcome back</h2></div>
+    <div class="sbody" style="display:grid;gap:10px;padding:14px">
+      <p id="backInfo" style="margin:0"></p>
+      <button id="backOpen" class="hot" style="min-height:44px;justify-content:center">Open my last page</button>
+      <button id="backNew" style="min-height:44px;justify-content:center;background:#5a2323;border-color:#c0473f;color:#fff">Start a new page</button>
+      <p style="margin:0;color:#ff9a8a;font-size:12.5px">A new page replaces your last one. Undo can still bring it back until you close this tab; after that it’s gone.</p>
+    </div>
+  </div>
+</div>
 <div class="scrim" id="menuSheet" hidden>
   <div class="sheet" role="dialog" aria-label="Page">
     <div class="shead"><h2>Page</h2><button id="menuClose">Done</button></div>
@@ -969,7 +980,7 @@ function cleanDoc(o){
   const pg=Array.isArray(o.page)&&o.page.length===2&&o.page.every(v=>n(v)&&v>=200&&v<=4000)?o.page.slice():[800,1000];
   return{v:1,page:pg,ink,fills};
 }
-try{const o=cleanDoc(JSON.parse(store.get('licorice-ink-doc')||'null'));if(o)doc=o;}catch(e){}
+let savedDoc=null;try{const o=cleanDoc(JSON.parse(store.get('licorice-ink-doc')||'null'));if(o&&(o.ink.length||o.fills.length))savedDoc=o;}catch(e){}
 const saveDoc=()=>store.set('licorice-ink-doc',JSON.stringify(doc));
 const findInk=id=>doc.ink.find(x=>x.id===id);
 const findFill=id=>doc.fills.find(x=>x.id===id);
@@ -1707,7 +1718,7 @@ function bandLayers(f){
     const L0=Math.max(0.3,b.t-b.b),L1=Math.max(L0,b.t+b.a),span=L1-L0;
     // softening the distance by about a third of the blend's width rounds off the creases at corners
     const Dk=span>0.5?boxBlur(D,w,h,Math.min(60,Math.round(span*res*0.3))):D;
-    const n=span<0.05?1:Math.min(80,Math.max(2,Math.ceil(span/0.5)));
+    const n=span<0.05?1:Math.min(32,Math.max(2,Math.ceil(span/1.2)));
     // only the cells this gradient can pass through
     const lo=L0*res,hi=L1*res+1,cand=[];
     for(let y=-1;y<h;y++)for(let x=-1;x<w;x++){const gk=(X,Y)=>X<0||Y<0||X>=w||Y>=h?0:Dk[Y*w+X];
@@ -1723,7 +1734,55 @@ function bandLayers(f){
   const out={layers,ok};if(bandCache.size>400)bandCache.clear();bandCache.set(key,out);return out;
 }
 const bandPaths=f=>bandLayers(f);
-function bandsSVG(f,hit){
+// Bands on screen: one picture per banded fill, colored pixel by pixel from the distance to the fill's edge.
+// Much faster than tracing every step of every blend as its own outline (25 bands went from ~6.6 s to a fraction of a second).
+// The fill's edge stays a crisp vector clip. Saved SVG files still get real vector bands.
+const regionCache=new Map(),lutCache=new Map(),bandImgCache=new Map(),lastBandUrl=new Map();
+function bandRegion(f){
+  const key=f.id+'|'+strHash(f.e||'');let r=regionCache.get(key);if(r)return r;
+  const bb=f.bb||[0,0,W,H],B=[bb[0]-3,bb[1]-3,bb[2]+3,bb[3]+3],area=Math.max(1,(B[2]-B[0])*(B[3]-B[1]));
+  const res=Math.min(4,Math.max(1,Math.sqrt(2.5e6/area))),w=Math.ceil((B[2]-B[0])*res),h=Math.ceil((B[3]-B[1])*res);
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;const c=cv.getContext('2d',{willReadFrequently:true});
+  c.setTransform(res,0,0,res,-B[0]*res,-B[1]*res);c.fillStyle='#000';c.fill(new Path2D(f.e||f.d),'evenodd');
+  const px=c.getImageData(0,0,w,h).data,m=new Uint8Array(w*h);for(let i=0,j=3;i<w*h;i++,j+=4)m[i]=px[j]>127?1:0;
+  const d2=edt(m,w,h),D=new Float32Array(w*h);let mx=0;for(let i=0;i<w*h;i++){D[i]=m[i]?Math.sqrt(d2[i])-0.5:0;if(D[i]>mx)mx=D[i];}
+  r={D,w,h,res,B,maxD:mx/res,blurs:new Map()};if(regionCache.size>60)regionCache.clear();regionCache.set(key,r);return r;
+}
+function bandLUT(c0,c1,mix,pk){const key=c0+c1+mix+pk.toFixed(3);let L=lutCache.get(key);if(L)return L;
+  L=new Uint8Array(257*3);for(let i=0;i<=256;i++){const c=rgb255(mixColor(c0,c1,lean(i/256,pk),mix));L[i*3]=c[0];L[i*3+1]=c[1];L[i*3+2]=c[2];}
+  if(lutCache.size>2000)lutCache.clear();lutCache.set(key,L);return L;}
+let bandRT=0;const bandReady=()=>{if(!bandRT)bandRT=requestAnimationFrame(()=>{bandRT=0;render();});};
+function bandImage(f){
+  const key=f.id+'|'+strHash(f.e||'')+'|'+(f.mix||'ink')+'|'+JSON.stringify(f.bands);
+  let e=bandImgCache.get(key);if(e)return e;
+  const R=bandRegion(f),{D,w,h,res}=R,mix=f.mix||'ink',blurs=R.blurs,pb=[];
+  for(let k=1;k<f.bands.length;k++){const b=f.bands[k],c0=f.bands[k-1].c,c1=b.c;
+    const L0=Math.max(0.3,b.t-b.b),L1=Math.max(L0,b.t+b.a),span=L1-L0,r=span>0.5?Math.min(60,Math.round(span*res*0.3)):0;
+    let Dk=blurs.get(r);if(!Dk){Dk=r?boxBlur(D,w,h,r):D;blurs.set(r,Dk);}
+    pb.push({Dk,lo:L0*res,hi:L1*res,sp:span*res,lut:span>0.05?bandLUT(c0,c1,mix,clamp((b.t-L0)/span,0,1)):null,c1:rgb255(c1)});}
+  const out=new ImageData(w,h),o=out.data,base=rgb255(f.bands[0].c),n=pb.length;
+  for(let p=0,j=0;p<w*h;p++,j+=4){let r0=base[0],g0=base[1],b0=base[2];
+    for(let k=n-1;k>=0;k--){const b=pb[k],d=b.Dk[p];if(d<b.lo)continue;
+      if(!b.lut||d>=b.hi){r0=b.c1[0];g0=b.c1[1];b0=b.c1[2];}else{const i=Math.round((d-b.lo)/b.sp*256)*3;r0=b.lut[i];g0=b.lut[i+1];b0=b.lut[i+2];}break;}
+    o[j]=r0;o[j+1]=g0;o[j+2]=b0;o[j+3]=255;}
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').putImageData(out,0,0);
+  e={cv,url:null,B:R.B};
+  if(bandImgCache.size>80){for(const[k2,v]of bandImgCache){bandImgCache.delete(k2);if(bandImgCache.size<=40)break;}}
+  bandImgCache.set(key,e);
+  cv.toBlob(bl=>{if(!bl)return;e.url=URL.createObjectURL(bl);const old=lastBandUrl.get(f.id);lastBandUrl.set(f.id,e.url);
+    if(old&&old!==e.url)setTimeout(()=>{if(![...bandImgCache.values()].some(x=>x.url===old))URL.revokeObjectURL(old);},3000);bandReady();},'image/png');
+  return e;
+}
+function bandsSVG(f,hit,raster){
+  if(hit||raster){const id='bc'+String(f.id).replace(/[^a-z0-9]/gi,''),e=bandImage(f),B=e.B;
+    const url=raster?e.cv.toDataURL('image/png'):(e.url||lastBandUrl.get(f.id));
+    let s=`<clipPath id="${id}"><path d="${f.d}" clip-rule="evenodd"/></clipPath><g clip-path="url(#${id})">`;
+    s+=url?`<image href="${url}" x="${B[0]}" y="${B[1]}" width="${B[2]-B[0]}" height="${B[3]-B[1]}" preserveAspectRatio="none"/>`:`<path d="${f.d}" fill="${f.bands[0].c}" fill-rule="evenodd"/>`;
+    if(hit)s+=`<path data-fill="${f.id}" d="${f.d}" fill="#000" fill-opacity="0" fill-rule="evenodd"/>`;
+    return s+'</g>';}
+  return bandsVecSVG(f,hit);
+}
+function bandsVecSVG(f,hit){
   const id='bc'+String(f.id).replace(/[^a-z0-9]/gi,''),da=hit?` data-fill="${f.id}"`:'',L=bandLayers(f);
   let s=`<clipPath id="${id}"><path d="${f.d}" clip-rule="evenodd"/></clipPath><g clip-path="url(#${id})"><path${da} d="${f.d}" fill="${f.bands[0].c}" fill-rule="evenodd"/>`;
   for(const l of L.layers)s+=`<path${da} d="${l.d}" fill="${l.c}" fill-rule="evenodd"/>`;
@@ -1739,13 +1798,18 @@ function cellPaths(g){ // the space itself (e) and the space grown to tuck under
 function bandAt(P){
   toast('Banding…',0);
   setTimeout(()=>{try{
-    const g=preciseRegion(P,opt.gap);if(g.err){toast(g.err);return;}
-    const same=x=>x.t==='bands'&&x.a&&Math.abs(x.a-g.a)/g.a<0.05&&x.bb&&x.bb.every((v,i)=>Math.abs(v-g.bb[i])<=2);
-    let f=doc.fills.find(same);begin();
+    let f=null,g=null;
+    {const cx=document.createElement('canvas').getContext('2d');for(let i=doc.fills.length-1;i>=0;i--){const x=doc.fills[i];if(x.t==='bands'&&x.e&&cx.isPointInPath(new Path2D(x.e),P.x,P.y,'evenodd')){f=x;break;}}}
+    if(!f){g=preciseRegion(P,opt.gap);if(g.err){toast(g.err);return;}
+      const same=x=>x.t==='bands'&&x.a&&Math.abs(x.a-g.a)/g.a<0.05&&x.bb&&x.bb.every((v,i)=>Math.abs(v-g.bb[i])<=2);
+      f=doc.fills.find(same)||null;}
+    begin();
     if(!f){const{d,e}=cellPaths(g);if(!d){toast('Nothing to fill there');return;}
       f={id:uid('f'),t:'bands',c:opt.color,d,e,edge:'none',ew:1,a:g.a,bb:g.bb,u:1,bands:[{c:opt.color,t:0,a:0,b:0}],mix:opt.bandMix};doc.fills.push(f);toast('Filled. Tap again with another color for a band.',1800);}
     else{const n=f.bands.length,last=f.bands[n-1].t;f.bands.push({c:opt.color,t:last+opt.bandW,a:opt.bandA,b:opt.bandB});
-      if(!bandLayers(f).ok[n]){f.bands.pop();toast('No room for another band in that cell');}else $('#toast').hidden=true;}
+      const nb=f.bands[n];if(bandRegion(f).maxD<nb.t+0.5){f.bands.pop();toast('No room for another band in that cell');}
+      else{$('#toast').hidden=true;const tot=doc.fills.reduce((a,x)=>a+(x.bands?x.bands.length:0),0);
+        if(tot>=60&&!window.__bandWarned){window.__bandWarned=1;toast('That’s a lot of bands on one page. Phones and older computers may slow down, and saving an SVG will take a moment.',6000);}}}
     commit();render();
   }catch(err){toast('Bands failed: '+err.message,3000);}},20);
 }
@@ -2088,10 +2152,10 @@ function importLink(){
 }
 
 /* ================= page menu: save & export ================= */
-function exportSVG(){
+function exportSVG(raster){
   let s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="${PAPER}"/><g>`;
   // (the viewBox already keeps everything inside the page)
-  for(const f of doc.fills)s+=f.t==='bands'?`<g data-bands="${btoa(JSON.stringify({e:f.e,a:f.a,bb:f.bb,bands:f.bands,mix:f.mix}))}">${bandsSVG(f,false)}</g>`:`<path d="${f.d}" fill="${f.c}" fill-rule="evenodd"/>`;
+  for(const f of doc.fills)s+=f.t==='bands'?`<g data-bands="${btoa(JSON.stringify({e:f.e,a:f.a,bb:f.bb,bands:f.bands,mix:f.mix}))}">${bandsSVG(f,false,raster)}</g>`:`<path d="${f.d}" fill="${f.c}" fill-rule="evenodd"/>`;
   s+='</g><g fill="none" stroke-linejoin="round">';
   if(opt.showEdges)for(const f of doc.fills)if(f.edge!=='none')s+=`<path d="${f.e}" stroke="${edgeColor(f)}" stroke-width="${f.ew}"/>`;
   s+=`</g><g fill="none" stroke="${INK}" stroke-linecap="round" stroke-linejoin="round">`;
@@ -2099,7 +2163,7 @@ function exportSVG(){
     s+=it.t==='dot'?`<circle cx="${r1(it.x)}" cy="${r1(it.y)}" r="${r1(it.r)}" fill="${it.c||INK}" ${st}/>`:it.t==='blob'?`<path d="${it.d}" fill="${it.c}" fill-rule="evenodd" ${st}/>`:`<path d="${pathD(it)}" stroke-width="${it.w}"${it.c&&it.c!==INK?` stroke="${it.c}"`:''}/>`;}
   return s.replace('<g>',`<defs>${blurDefs()}</defs><g>`)+'</g></svg>';
 }
-function pngBlob(){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=W*2;c.height=H*2;const x=c.getContext('2d');x.drawImage(img,0,0,c.width,c.height);c.toBlob(b=>b?res(b):rej(new Error('no image')),'image/png');};img.onerror=()=>rej(new Error('render failed'));img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(exportSVG());});}
+function pngBlob(){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=W*2;c.height=H*2;const x=c.getContext('2d');x.drawImage(img,0,0,c.width,c.height);c.toBlob(b=>b?res(b):rej(new Error('no image')),'image/png');};img.onerror=()=>rej(new Error('render failed'));img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(exportSVG(true));});}
 let downloads=null;
 if(window.claude&&window.claude.use)window.claude.use('downloads').then(d=>{downloads=d;}).catch(()=>{});
 async function saveFile(name,data){const m=$('#mMsg');
@@ -2188,6 +2252,13 @@ document.addEventListener('fullscreenchange',syncFull);document.addEventListener
 /* ================= start ================= */
 applyView();setTool('marker');renderSwatches();syncUndo();
 requestAnimationFrame(()=>{applyView();render();});
+if(savedDoc){
+  const nb=savedDoc.fills.reduce((a,x)=>a+(x.bands?x.bands.length:0),0),nl=savedDoc.ink.filter(x=>x.t==='path').length,nm=savedDoc.ink.length-nl;
+  $('#backInfo').textContent=`Your last page has ${nl} line${nl===1?'':'s'}, ${nm} marker shape${nm===1?'':'s'} and ${savedDoc.fills.length} fill${savedDoc.fills.length===1?'':'s'}${nb?` (${nb} bands)`:''}.`+(nb>40?' Lots of bands, so it may take a few seconds to open.':'');
+  $('#backSheet').hidden=false;
+  $('#backOpen').onclick=()=>{$('#backSheet').hidden=true;toast('Opening…',0);setTimeout(()=>{doc=savedDoc;savedDoc=null;applyPage();fit();render();$('#toast').hidden=true;},30);};
+  $('#backNew').onclick=()=>{$('#backSheet').hidden=true;const old=savedDoc;savedDoc=null;doc=old;begin();doc={v:1,page:old.page||[W,H],ink:[],fills:[]};commit();fit();render();toast('New page. Undo brings the last one back.',2600);};
+}
 window.__ink={get doc(){return doc;},fillAt,roundAt,styleAt,styleAll,makePattern,get opt(){return opt;},importSVG,get view(){return view;},setTool,exportSVG,toPage};
 })();
 </script>
