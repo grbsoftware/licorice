@@ -105,7 +105,7 @@ input[type=checkbox]{accent-color:var(--hot);width:16px;height:16px;margin:0}
 .mk input.nm{flex:1;min-width:160px;background:var(--well,#1a1a1a);color:var(--bright);border:1px solid var(--edge2);border-radius:5px;padding:7px}
 .way{display:flex;align-items:center;gap:8px;width:100%;background:none;border:1px solid var(--edge2);border-radius:7px;padding:6px;min-height:44px}
 .way.on{border-color:var(--hot);background:#2c2a24}
-.way .lab{width:110px;flex:none;text-align:left}
+.way .lab{width:84px;flex:none;text-align:left;overflow-wrap:anywhere;overflow:hidden}
 .warnbox{border:1px solid #c0473f;background:#2a1a1a;border-radius:8px;padding:12px;display:grid;gap:8px}
 .swb{width:34px;height:34px;min-height:0;padding:0;border-radius:50%;border:2px solid var(--panel);box-shadow:0 0 0 1px var(--edge2);flex:none}
 .swb.on{box-shadow:0 0 0 2px #fff}
@@ -139,7 +139,7 @@ input[type=checkbox]{accent-color:var(--hot);width:16px;height:16px;margin:0}
 .line{display:flex;align-items:center;gap:8px;width:100%;background:none;border:1px solid transparent;padding:6px 6px;margin-top:6px;min-height:40px}
 .line:hover{background:#2e2e2e}
 .line.on{border-color:var(--hot);background:#2e2a22}
-.line .lab{width:58px;flex:none;color:var(--dim);font-size:12px;text-align:left;white-space:normal}
+.line .lab{width:72px;flex:none;color:var(--dim);font-size:12px;line-height:1.2;text-align:left;white-space:normal;overflow-wrap:anywhere;overflow:hidden}
 .strip{display:flex;flex:1;height:26px;border-radius:5px;overflow:hidden;min-width:0}
 .strip i{flex:1}
 .imp{display:grid;gap:8px;padding:12px 0}
@@ -941,7 +941,7 @@ function catalog(){
      return{id,name:n,sub,lines:[withColors(id+':day','day',mk(day)),withColors(id+':sunset','sunset',mk(dusk))]};})},
    {id:'fades',name:'Fades',items:FADES.map(([n,sub,c,m])=>({id:'fade:'+slug(n),name:n,sub,lines:[withColors('fade:'+slug(n),'',fams([c],3,m))]}))},
    {id:'cfades',name:'Color fades',items:COLOR_FADES.map(([n,sub,w,c])=>{const id='cfade:'+slug(n);
-     return{id,name:n,sub,lines:[withColors(id+':warm','through '+w[1][0],fams([w],3,'wheel')),withColors(id+':cool','through '+c[1][0],fams([c],3,'wheel'))]};})},
+     return{id,name:n,sub,lines:[withColors(id+':warm',w[1][0],fams([w],3,'wheel')),withColors(id+':cool',c[1][0],fams([c],3,'wheel'))]};})},
    {id:'pairs',name:'Pairs',items:DUOS.map(d=>({id:'pair:'+slug(d[0]),name:d[0],sub:'duotone',lines:[withColors('pair:'+slug(d[0]),'',chunks(duo(d),[5,5]))]}))
      .concat(TRIS.map(t=>({id:'pair:'+slug(t[0]),name:t[0],sub:'tritone',lines:[withColors('pair:'+slug(t[0]),'',chunks(tri(t),[5,4,3]))]})))},
   ];
@@ -2309,9 +2309,9 @@ function fadeWays(){const{a,b,mid,n}=FADE,ways=[];
   if(mid){const h=Math.ceil(n/2);
     // with a middle color each half takes the short way round
     const sh=(X,Y)=>{const P=lchOf(X),Q=lchOf(Y);let d=Q.h-P.h;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return d>=0?1:-1;};
-    ways.push({label:'through '+hueName(lchOf(mid).h),cols:leg(a,mid,sh(a,mid),h).concat(leg(mid,b,sh(mid,b),n-h+1).slice(1))});
+    ways.push({label:hueName(lchOf(mid).h),cols:leg(a,mid,sh(a,mid),h).concat(leg(mid,b,sh(mid,b),n-h+1).slice(1))});
     ways.push({label:'straight',cols:leg(a,mid,0,h).concat(leg(mid,b,0,n-h+1).slice(1))});return ways;}
-  for(const dir of[1,-1]){const cols=leg(a,b,dir,n);ways.push({label:'through '+hueName(lchOf(cols[Math.floor(n/2)]).h),cols});}
+  for(const dir of[1,-1]){const cols=leg(a,b,dir,n);ways.push({label:hueName(lchOf(cols[Math.floor(n/2)]).h),cols});}
   if(ways[0].label===ways[1].label)ways[1].label+=' (long way)';
   ways.push({label:'straight',cols:leg(a,b,0,n)});return ways;}
 function renderMaker(){
@@ -2319,7 +2319,7 @@ function renderMaker(){
   const strip=cols=>`<span class="strip">${cols.map(c=>`<i style="background:${c}"></i>`).join('')}</span>`;
   const nm=FADE.name||'';
   return`<div class="mk">
-    <p style="margin:0">Pick two colors. The fade can walk around the color wheel either way, or go straight across (that way passes through grey).</p>
+    <p style="margin:0">Pick two colors. The fade can walk around the color wheel either way (each named for the color it passes through), or go straight across, which passes through grey.</p>
     <div class="row"><span class="lb" style="width:52px">Start</span><input type="color" id="fA" value="${FADE.a}"><input class="hex" id="fAh" value="${FADE.a}"></div>
     <div class="row"><span class="lb" style="width:52px">End</span><input type="color" id="fB" value="${FADE.b}"><input class="hex" id="fBh" value="${FADE.b}"><button id="fSwap">Swap</button></div>
     <div class="row"><label class="grp"><input type="checkbox" id="fMidOn" ${FADE.mid?'checked':''}> <span>Middle color</span></label>${FADE.mid?`<input type="color" id="fM" value="${FADE.mid}"><input class="hex" id="fMh" value="${FADE.mid}">`:''}</div>
