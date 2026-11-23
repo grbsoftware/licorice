@@ -81,18 +81,18 @@ input[type=checkbox]{accent-color:var(--hot);width:16px;height:16px;margin:0}
 #zoomui button{min-width:38px;justify-content:center;background:rgba(37,37,37,.92)}
 
 /* ---- swatches ---- */
-#strip{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--panel);border-top:1px solid #111;
-  overflow-x:auto;scrollbar-width:none}
+#strip{display:flex;align-items:center;flex-wrap:nowrap;gap:8px;padding:8px 10px;background:var(--panel);border-top:1px solid #111;
+  max-height:124px;overflow-y:auto;scrollbar-width:thin}
 #strip::-webkit-scrollbar{display:none}
-#slots{display:flex;gap:12px;flex:none;align-items:center}
-.slot{display:flex;align-items:center;gap:6px;flex:none}
+#slots{display:flex;flex-wrap:wrap;gap:8px 12px;flex:1 1 auto;min-width:0;align-items:center}
+.slot{display:flex;align-items:center;flex-wrap:wrap;gap:6px;flex:0 1 auto;min-width:0}
 .slot+.slot{padding-left:12px;border-left:1px solid var(--edge2)}
 .palBtn{flex:none;max-width:42vw;overflow:hidden;text-overflow:ellipsis}
 #slots.multi .palBtn{max-width:170px}
 .palBtn.add{color:var(--dim);border-style:dashed}
-.sw{display:flex;gap:6px;flex:none}
-#slots.multi .sw{gap:5px}
-#slots.multi .swb{width:30px;height:30px}
+.sw{display:flex;flex-wrap:wrap;gap:6px;flex:0 1 auto;min-width:0}
+
+
 .fbar{display:flex;flex:1 1 220px;min-width:160px;height:34px;border-radius:8px;overflow:hidden;border:1px solid #000;touch-action:none;cursor:pointer;position:relative}
 .fbar i{flex:1;min-width:0}
 .fbar i.on{box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 4px #000}
@@ -109,7 +109,7 @@ input[type=checkbox]{accent-color:var(--hot);width:16px;height:16px;margin:0}
 .warnbox{border:1px solid #c0473f;background:#2a1a1a;border-radius:8px;padding:12px;display:grid;gap:8px}
 .swb{width:34px;height:34px;min-height:0;padding:0;border-radius:50%;border:2px solid var(--panel);box-shadow:0 0 0 1px var(--edge2);flex:none}
 .swb.on{box-shadow:0 0 0 2px #fff}
-.cur{flex:none;display:flex;align-items:center;gap:6px}
+.cur{flex:none;align-self:center;flex:none;display:flex;align-items:center;gap:6px}
 .cur .chip{width:34px;height:34px;border-radius:8px;border:1px solid var(--edge2);position:relative;overflow:hidden}
 .cur input[type=color]{position:absolute;inset:-8px;width:60px;height:60px;opacity:0;cursor:pointer;border:0;padding:0}
 .hex{font:11px var(--mono);color:var(--dim)}
@@ -2255,7 +2255,7 @@ function renderSwatches(){
   const room=Math.max(160,(window.innerWidth-170)/Math.max(1,n)-150);
   for(let i=0;i<n;i++){const id=slotLine(i);
     if(!id){h+=`<div class="slot"><button class="palBtn add" data-slot="${i}" title="Put another palette on the strip">+ Palette</button></div>`;break;}
-    const L=lineInfo(id),bar=L.colors.length>=14&&L.colors.length*35>room; // short palettes keep round swatches (they scroll if they must)
+    const L=lineInfo(id),bar=false; // every color stays a full-size swatch; the strip wraps onto another row instead (shaky hands, real fingers)
     const ink=i===0?`<button class="swb${opt.color===INK?' on':''}" data-c="${INK}" style="background:${INK}" aria-label="Black ink" title="Black ink"></button>`:'';
     h+=`<div class="slot${bar?' wide':''}"><button class="palBtn" data-slot="${i}" title="Change this palette">${esc(L.name)} ▾</button>`+
       (bar?`${ink}<div class="fbar" role="slider" aria-label="${esc(L.name)}: slide along to pick a color" title="Tap or slide along to pick a color">${L.colors.map(c=>`<i data-fc="${c}" class="${c.toLowerCase()===opt.color.toLowerCase()?'on':''}" style="background:${c}"></i>`).join('')}</div>`
