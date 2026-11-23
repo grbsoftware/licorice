@@ -987,7 +987,7 @@ function afterHistory(){if(sel&&!(sel.k==='ink'?findInk(sel.id):findFill(sel.id)
 function syncUndo(){$('#bUndo').disabled=!undo.length;$('#bRedo').disabled=!redo.length;}
 
 /* ================= settings ================= */
-let opt={lineAs:'ink',markerMix:'cover',bandMix:'ink',fillMode:'flat',bandW:16,bandA:6,bandB:6,wide:'hug',curveW:2.5,reach:0.5,tipMax:140,cstyle:'pebble',pLines:12,pMinW:45,pMinE:26,pStyle:'pebble',rr:30,vary:0.15,tip:'black',nibScreen:true,dotR:5,grow:true,nib:12,mEdge:'none',mEW:2,inside:'gaps',join:true,steady:0.5,lineW:3,edge:'shade',edgeW:2.5,gap:0.5,color:'#141414',showEdges:true};
+let opt={lineAs:'ink',markerMix:'cover',bandMix:'ink',fillMode:'flat',bandW:16,bandA:6,bandB:6,wide:'hug',curveW:2.5,reach:0.5,tipMax:140,cstyle:'pebble',pLines:12,pMinW:45,pMinE:26,pMaxS:1000,pShort:'short',pStyle:'pebble',rr:30,vary:0.15,tip:'black',nibScreen:true,dotR:5,grow:true,nib:12,mEdge:'none',mEW:2,inside:'gaps',join:true,steady:0.5,lineW:3,edge:'shade',edgeW:2.5,gap:0.5,color:'#141414',showEdges:true};
 try{Object.assign(opt,JSON.parse(store.get('licorice-ink-opt')||'{}'));}catch(e){}
 if(!HEX.test(opt.color))opt.color='#ff5d73';
 if(!opt.noLineDefault){opt.mEdge='none';opt.noLineDefault=1;} // markers start with no line around (once; your later choice is kept)
@@ -1878,33 +1878,64 @@ function cellWidth(P){let mn=1e9;const n=P.length;for(let i=0;i<n;i++){const a=P
   for(const p of P)mx=Math.max(mx,Math.abs(V2.cross(e,V2.sub(p,a)))/L);mn=Math.min(mn,mx);}return mn;}
 function shortestEdge(P){let mn=1e9;for(let i=0;i<P.length;i++)mn=Math.min(mn,V2.len(V2.sub(P[(i+1)%P.length],P[i])));return mn;}
 const PATTERNS={
+  // Shattered lines. Edge-to-edge lines first; each new line is the best of many tries (the one that leaves the
+  // roomiest cells), so lines spread out evenly. Then, if allowed, shorter lines that stop at other lines fill in
+  // the rest of the count. Then any cell still bigger than "Largest cell" gets cut again until it fits.
   shatter:{name:'Shattered lines',make(o,rnd){
     let cells=[[[0,0],[W,0],[W,H],[0,H]]];const lines=[];
     const edgePt=(side,t)=>side===0?[t*W,0]:side===1?[W,t*H]:side===2?[t*W,H]:[0,t*H];
-    for(let k=0;k<o.lines;k++){let placed=false;
-      for(let tries=0;tries<500&&!placed;tries++){
-        const s1=(rnd()*4)|0;let s2=(rnd()*3)|0;if(s2>=s1)s2++;
-        const a=edgePt(s1,0.04+rnd()*0.92),b=edgePt(s2,0.04+rnd()*0.92);
-        if(V2.len(V2.sub(b,a))<o.minW*2)continue;
-        const next=[];let bad=false;
-        for(const c of cells){const sp=splitConvex(c,a,b);
-          if(!sp){next.push(c);continue;}
-          for(const q of sp){if(cellWidth(q)<o.minW||shortestEdge(q)<o.minE){bad=true;break;}next.push(q);}
-          if(bad)break;}
-        if(bad)continue;cells=next;lines.push([a,b]);placed=true;}
-      if(!placed)break;}
-    return{lines,cells};}}
+    const area=P=>{let a=0;for(let i=0;i<P.length;i++){const p=P[i],q=P[(i+1)%P.length];a+=p[0]*q[1]-q[0]*p[1];}return Math.abs(a)/2;};
+    const size=P=>Math.sqrt(area(P));
+    const okCell=q=>cellWidth(q)>=o.minW&&shortestEdge(q)>=o.minE;
+    // a full line split across every cell it crosses; null if any piece is too small
+    const tryFull=(a,b)=>{if(V2.len(V2.sub(b,a))<o.minW*2)return null;const next=[];let worst=1e9,hit=0;
+      for(const c of cells){const sp=splitConvex(c,a,b);if(!sp){next.push(c);continue;}hit++;
+        for(const q of sp){if(!okCell(q))return null;worst=Math.min(worst,cellWidth(q));next.push(q);}}
+      return hit?{a,b,next,score:worst}:null;};
+    // the page-edge points of a line through pt at angle t
+    const through=(pt,t)=>{const d=[Math.cos(t),Math.sin(t)],hits=[];
+      const add=(k,v)=>{const x=pt[0]+d[0]*k,y=pt[1]+d[1]*k;if(x>=-0.01&&x<=W+0.01&&y>=-0.01&&y<=H+0.01)hits.push([k,[clamp(x,0,W),clamp(y,0,H)]]);};
+      if(Math.abs(d[0])>1e-9){add((0-pt[0])/d[0]);add((W-pt[0])/d[0]);}if(Math.abs(d[1])>1e-9){add((0-pt[1])/d[1]);add((H-pt[1])/d[1]);}
+      hits.sort((x,y)=>x[0]-y[0]);return hits.length>=2?[hits[0][1],hits[hits.length-1][1]]:null;};
+    const ptIn=c=>{let w=c.map(()=>rnd()),t=w.reduce((x,y)=>x+y,0);return c.reduce((acc,p,i)=>[acc[0]+p[0]*w[i]/t,acc[1]+p[1]*w[i]/t],[0,0]);};
+    const bestFull=(target)=>{let best=null,found=0;
+      for(let tries=0;tries<500&&found<18;tries++){let a,b;
+        if(target){const e=through(ptIn(target),rnd()*Math.PI);if(!e)continue;[a,b]=e;}
+        else{const s1=(rnd()*4)|0;let s2=(rnd()*3)|0;if(s2>=s1)s2++;a=edgePt(s1,0.04+rnd()*0.92);b=edgePt(s2,0.04+rnd()*0.92);}
+        const r=tryFull(a,b);if(r){found++;if(!best||r.score>best.score)best=r;}}
+      return best;};
+    // a shorter line across one cell only, from one of its sides to another (it stops at the lines around it)
+    const bestChord=c=>{let best=null,found=0;const n=c.length;
+      for(let tries=0;tries<160&&found<12;tries++){const i=(rnd()*n)|0;let j=(rnd()*(n-1))|0;if(j>=i)j++;
+        const P=(k,t)=>{const p=c[k],q=c[(k+1)%n];return[p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t];};
+        const a=P(i,0.15+rnd()*0.7),b=P(j,0.15+rnd()*0.7);const sp=splitConvex(c,a,b);if(!sp||sp.length!==2)continue;
+        if(!sp.every(okCell))continue;found++;const sc=Math.min(cellWidth(sp[0]),cellWidth(sp[1]));
+        if(!best||sc>best.score)best={a,b,parts:sp,score:sc};}
+      return best;};
+    const useChord=(c,r)=>{cells=cells.filter(x=>x!==c).concat(r.parts);lines.push([r.a,r.b,1]);};
+    let full=0;
+    while(lines.length<o.lines){const r=bestFull(null);if(!r)break;cells=r.next;lines.push([r.a,r.b]);full++;}
+    if(o.short)while(lines.length<o.lines){let done=false;
+      for(const c of cells.slice().sort((x,y)=>area(y)-area(x)).slice(0,6)){const r=bestChord(c);if(r){useChord(c,r);done=true;break;}}
+      if(!done)break;}
+    let stuck=new Set();
+    if(o.maxS<1000)for(let guard=0;guard<600;guard++){
+      const big=cells.filter(c=>!stuck.has(c)&&size(c)>o.maxS).sort((x,y)=>area(y)-area(x))[0];if(!big)break;
+      if(o.short){const r=bestChord(big);if(r)useChord(big,r);else stuck.add(big);}
+      else{const r=bestFull(big);if(r){cells=r.next;lines.push([r.a,r.b]);full++;}else stuck.add(big);}}
+    const tooBig=o.maxS<1000?cells.filter(c=>size(c)>o.maxS).length:0;
+    return{lines,cells,full,tooBig};}}
 };
 function makePattern(){
-  const rnd=mulberry((Math.random()*1e9)|0),o={lines:opt.pLines,minW:opt.pMinW,minE:opt.pMinE};
+  const rnd=mulberry((Math.random()*1e9)|0),o={lines:opt.pLines,minW:opt.pMinW,minE:opt.pMinE,maxS:opt.pMaxS,short:opt.pShort==='short'};
   const pat=PATTERNS.shatter.make(o,rnd);
   pen=null;sel=null;selPt=-1;begin();doc={v:1,page:[W,H],ink:[],fills:[]};
-  for(const[a,b]of pat.lines){const ext=(p,q)=>{const d=V2.sub(p,q),L=V2.len(d)||1;return V2.add(p,V2.mul(d,3/L));};
+  for(const[a,b,short]of pat.lines){const ext=(p,q)=>{if(short)return p;const d=V2.sub(p,q),L=V2.len(d)||1;return V2.add(p,V2.mul(d,3/L));};
     const A=ext(a,b),B=ext(b,a);doc.ink.push({id:uid('i'),t:'path',w:opt.lineW,closed:false,pts:[{x:A[0],y:A[1],ix:A[0],iy:A[1],ox:A[0],oy:A[1]},{x:B[0],y:B[1],ix:B[0],iy:B[1],ox:B[0],oy:B[1]}]});}
   if(opt.pStyle!=='none')for(const c of pat.cells){const cw=opt.curveW,n=c.length,ds=c.map((a,i)=>onPageEdge(a,c[(i+1)%n])?cw/2:(opt.lineW-cw)/2);
     addStyled(STYLES[opt.pStyle].apply(shiftLines(c,c.map((a,i)=>[a,c[(i+1)%n]]),ds),styleOpts({rnd})));}
   commit();renderOpts();fit();
-  return{lines:pat.lines.length,cells:pat.cells.length};
+  return{lines:pat.lines.length,cells:pat.cells.length,full:pat.full,tooBig:pat.tooBig};
 }
 
 /* ================= load from SVG code (this page's own Save / Copy SVG) ================= */
@@ -2083,7 +2114,10 @@ $('#mShow').onclick=async()=>{try{const b=await pngBlob();const im=$('#shot');im
 $('#mLoad').onclick=()=>{try{const n=importSVG($('#mImp').value.trim());$('#mMsg').textContent='Loaded '+n+' pieces.';$('#menuSheet').hidden=true;toast('Drawing loaded');}catch(e){$('#mMsg').textContent=e.message;}};
 function renderPatBox(){
   const b=$('#patSliders');
-  b.innerHTML=slider('pLines','Lines',2,40,1,opt.pLines)+slider('pLW','Line width',0.5,10,0.5,opt.lineW)+slider('pMinW','Smallest cell',10,200,1,opt.pMinW)+slider('pMinE','Shortest edge',5,150,1,opt.pMinE)+
+  b.innerHTML=slider('pLines','Lines',2,40,1,opt.pLines)+slider('pLW','Line width',0.5,10,0.5,opt.lineW)+slider('pMinW','Smallest cell',10,200,1,opt.pMinW)+slider('pMinE','Shortest edge',5,150,1,opt.pMinE)+slider('pMaxS','Largest cell',50,1000,10,opt.pMaxS)+
+    `<p style="margin:0">Largest cell: cells bigger than about this many pixels across get cut again. 1000 = no limit.</p>`+
+    `<span class="grp"><span class="lb">Lines</span>${seg('pshort',opt.pShort,[['edge','Edge to edge only'],['short','Add shorter lines']])}</span>`+
+    `<p style="margin:0">${opt.pShort==='short'?'When no more edge-to-edge lines fit, shorter lines that stop at other lines fill in the rest.':'Every line runs edge to edge. Crowded pages may fit fewer lines than you ask for.'}</p>`+
     `<span class="grp"><span class="lb">Cell style</span>${seg('pstyle',opt.pStyle,[['none','None'],...Object.entries(STYLES).map(([k,v])=>[k,v.name])])}</span>`+
     // the cell style's own settings, mirrored here: they are the same settings the Style tool uses, so changing one changes both
     (opt.pStyle==='pebble'?`<b style="color:var(--bright);margin-top:4px">Pebble</b><p>Bigger roundness means bigger black areas where lines cross. Vary mixes big and small ones.</p>`+
@@ -2092,15 +2126,19 @@ function renderPatBox(){
       slider('pTipMax','Tips up to',60,180,5,opt.tipMax,v=>v+'°')+
       `<span class="grp"><span class="lb">Wider corners</span>${seg('pwide',opt.wide,[['hug','Hug the joint'],['leave','Round curve']])}</span>`+
       slider('pCW','Curve width',0.5,14,0.5,opt.curveW)+`<p class="warn" id="pWarn"${opt.curveW>opt.lineW?'':' hidden'}>Curve width is wider than Line width, so curves will stick out past the lines as little bumps. Keep Curve width at or below Line width.</p><p>These are shared with the Style tool.</p>`:'');
-  const keys=[['pLW','lineW'],['pLines','pLines'],['pMinW','pMinW'],['pMinE','pMinE'],['pRR','rr'],['pVary','vary'],['pReach','reach'],['pTipMax','tipMax'],['pCW','curveW']];
+  const keys=[['pLW','lineW'],['pLines','pLines'],['pMaxS','pMaxS'],['pMinW','pMinW'],['pMinE','pMinE'],['pRR','rr'],['pVary','vary'],['pReach','reach'],['pTipMax','tipMax'],['pCW','curveW']];
   for(const[id,key]of keys){const el=b.querySelector('#'+id);if(el)el.addEventListener('input',e=>{opt[key]=+e.target.value;b.querySelector('#'+id+'V').value=opt[key];saveOpt();
     const w=b.querySelector('#pWarn');if(w)w.hidden=!(opt.curveW>opt.lineW);});}
   b.querySelectorAll('[data-ptip]').forEach(x=>x.addEventListener('click',()=>{opt.tip=x.dataset.ptip;saveOpt();renderPatBox();}));
   b.querySelectorAll('[data-pwide]').forEach(x=>x.addEventListener('click',()=>{opt.wide=x.dataset.pwide;saveOpt();renderPatBox();}));
+  b.querySelectorAll('[data-pshort]').forEach(x=>x.addEventListener('click',()=>{opt.pShort=x.dataset.pshort;saveOpt();renderPatBox();}));
   b.querySelectorAll('[data-pstyle]').forEach(x=>x.addEventListener('click',()=>{opt.pStyle=x.dataset.pstyle;saveOpt();renderPatBox();}));
 }
 $('#mGen').onclick=()=>{try{const r=makePattern();$('#menuSheet').hidden=true;renderOpts();
-  toast(r.lines<opt.pLines?`Fit ${r.lines} of ${opt.pLines} lines (${r.cells} cells). Lower the limits for more.`:`${r.lines} lines, ${r.cells} cells. Undo brings your old page back.`,3200);}catch(e){$('#mMsg').textContent='Pattern failed: '+e.message;}};
+  const sh=r.lines-r.full;let m=`${r.lines} lines (${r.full} edge to edge${sh?`, ${sh} shorter`:''}), ${r.cells} cells.`;
+  if(r.lines<opt.pLines)m+=` Only ${r.lines} of ${opt.pLines} fit: lower Smallest cell or Shortest edge${opt.pShort==='edge'?', or turn on shorter lines':''}.`;
+  if(r.tooBig)m+=` ${r.tooBig} cell${r.tooBig>1?'s are':' is'} still over Largest cell because cutting would break the smallest-cell limits.`;
+  toast(m+' Undo brings your old page back.',r.lines<opt.pLines||r.tooBig?6500:3200);}catch(e){$('#mMsg').textContent='Pattern failed: '+e.message;}};
 function shapeName(){for(const k in SHAPES)if(SHAPES[k][0]===W&&SHAPES[k][1]===H)return k;return'';}
 function renderShape(){const k=shapeName();document.querySelectorAll('#shapeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.shape===k));
   const g=(a,b)=>b?g(b,a%b):a,r=W/H;let txt=W+' × '+H;
