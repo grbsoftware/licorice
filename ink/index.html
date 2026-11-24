@@ -238,7 +238,7 @@ body.big #zoomui{bottom:6px;right:6px}
       <textarea id="mImp" style="width:100%;min-height:70px;background:var(--well);color:var(--ink);border:1px solid var(--edge2);border-radius:8px;padding:8px;font:12px var(--mono)" placeholder="<svg xmlns=…"></textarea>
       <button id="mLoad">Load it</button>
       <p class="msg" id="mMsg"></p>
-      <p style="margin:0;color:var(--dim)">Licorice Ink &amp; Fill · version 29 · keyboard: ] next color, [ previous color</p>
+      <p style="margin:0;color:var(--dim)">Licorice Ink &amp; Fill · version 30 · keyboard: ] next color, [ previous color</p>
       <p style="border-top:1px solid var(--edge);padding-top:10px;margin-top:4px">More Licorice: <a href="https://grbsoftware.github.io/licorice/" style="color:var(--hot)">Home</a> · <a href="https://grbsoftware.github.io/licorice/palettes/" style="color:var(--hot)">Palettes</a> · <a href="https://grbsoftware.github.io/licorice/app/" style="color:var(--hot)">Coloring app</a></p>
       <img id="shot" alt="Your page" hidden>
     </div></div>
@@ -2270,7 +2270,7 @@ function renderSwatches(){
       (bar?`${ink}<div class="fbar" role="slider" aria-label="${esc(L.name)}: slide along to pick a color" title="Tap or slide along to pick a color">${L.colors.map(c=>`<i data-fc="${c}" class="${c.toLowerCase()===opt.color.toLowerCase()?'on':''}" style="background:${c}"></i>`).join('')}</div>`
           :`<div class="sw" role="group" aria-label="${esc(L.name)} colors">${ink}${L.colors.map(sb).join('')}</div>`)+`</div>`;}
   const el=$('#slots');el.innerHTML=h;el.classList.toggle('multi',n>1);
-  $('#curChip').style.background=opt.color;$('#curHex').textContent=opt.color;$('#picker').value=opt.color;
+  $('#curChip').style.background=opt.color;$('#curHex').textContent=opt.color;if(document.activeElement!==$('#picker'))$('#picker').value=opt.color;
 }
 // fade bars: tap, or slide your finger along, and the color under it is picked
 (()=>{let bar=null;const pickAt=e=>{const r=bar.getBoundingClientRect(),cs=bar.children,i=clamp(Math.floor((e.clientX-r.left)/r.width*cs.length),0,cs.length-1);
@@ -2290,7 +2290,8 @@ function pickColor(c){
 }
 $('#slots').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(b){pickColor(b.dataset.c);return;}
   const p=e.target.closest('[data-slot]');if(p)openPalSheet(+p.dataset.slot);});
-$('#picker').addEventListener('input',e=>pickColor(e.target.value));
+$('#picker').addEventListener('input',e=>{opt.color=e.target.value.toLowerCase();$('#curChip').style.background=opt.color;$('#curHex').textContent=opt.color;});
+$('#picker').addEventListener('change',e=>pickColor(e.target.value));
 
 let palTab=null;
 /* Make your own fade: two colors (and an optional middle), walked around the color wheel either way, or straight across.
