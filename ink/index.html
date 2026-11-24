@@ -238,7 +238,7 @@ body.big #zoomui{bottom:6px;right:6px}
       <textarea id="mImp" style="width:100%;min-height:70px;background:var(--well);color:var(--ink);border:1px solid var(--edge2);border-radius:8px;padding:8px;font:12px var(--mono)" placeholder="<svg xmlns=…"></textarea>
       <button id="mLoad">Load it</button>
       <p class="msg" id="mMsg"></p>
-      <p style="margin:0;color:var(--dim)">Licorice Ink &amp; Fill · version 30 · keyboard: ] next color, [ previous color</p>
+      <p style="margin:0;color:var(--dim)">Licorice Ink &amp; Fill · version 31 · keyboard: ] next color, [ previous color</p>
       <p style="border-top:1px solid var(--edge);padding-top:10px;margin-top:4px">More Licorice: <a href="https://grbsoftware.github.io/licorice/" style="color:var(--hot)">Home</a> · <a href="https://grbsoftware.github.io/licorice/palettes/" style="color:var(--hot)">Palettes</a> · <a href="https://grbsoftware.github.io/licorice/app/" style="color:var(--hot)">Coloring app</a></p>
       <img id="shot" alt="Your page" hidden>
     </div></div>
@@ -2339,8 +2339,12 @@ function renderMaker(){
     <p class="msg" id="fMsg"></p></div>`;}
 function bindMaker(){
   const re=()=>{const st=$('#palBody').scrollTop;renderPalSheet();$('#palBody').scrollTop=st;};
+  // while a color picker is open, only the preview strips change; rebuilding the panel under the picker made Chrome close it
+  const live=()=>{const ways=fadeWays();document.querySelectorAll('#palBody .way').forEach((el,i)=>{const w=ways[i];if(!w)return;
+    el.querySelector('.lab').textContent=w.label;el.querySelector('.strip').innerHTML=w.cols.map(c=>`<i style="background:${c}"></i>`).join('');});};
   const pair=(c,hx,key)=>{const a=$('#'+c),b=$('#'+hx);if(!a)return;
-    a.addEventListener('input',()=>{FADE[key]=a.value.toLowerCase();b.value=FADE[key];clearTimeout(pair.t);pair.t=setTimeout(re,90);});
+    a.addEventListener('input',()=>{FADE[key]=a.value.toLowerCase();b.value=FADE[key];cancelAnimationFrame(pair.r);pair.r=requestAnimationFrame(live);});
+    a.addEventListener('change',()=>{FADE[key]=a.value.toLowerCase();re();});
     b.addEventListener('change',()=>{let v=b.value.trim();if(!v.startsWith('#'))v='#'+v;if(HEX.test(v)){FADE[key]=v.toLowerCase();re();}else{b.value=FADE[key];toast('Type a color like f7c612');}});};
   pair('fA','fAh','a');pair('fB','fBh','b');pair('fM','fMh','mid');
   $('#fSwap').onclick=()=>{[FADE.a,FADE.b]=[FADE.b,FADE.a];re();};
