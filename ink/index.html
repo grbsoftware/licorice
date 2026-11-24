@@ -238,6 +238,7 @@ body.big #zoomui{bottom:6px;right:6px}
       <textarea id="mImp" style="width:100%;min-height:70px;background:var(--well);color:var(--ink);border:1px solid var(--edge2);border-radius:8px;padding:8px;font:12px var(--mono)" placeholder="<svg xmlns=…"></textarea>
       <button id="mLoad">Load it</button>
       <p class="msg" id="mMsg"></p>
+      <p style="margin:0;color:var(--dim)">Licorice Ink &amp; Fill · version 29 · keyboard: ] next color, [ previous color</p>
       <p style="border-top:1px solid var(--edge);padding-top:10px;margin-top:4px">More Licorice: <a href="https://grbsoftware.github.io/licorice/" style="color:var(--hot)">Home</a> · <a href="https://grbsoftware.github.io/licorice/palettes/" style="color:var(--hot)">Palettes</a> · <a href="https://grbsoftware.github.io/licorice/app/" style="color:var(--hot)">Coloring app</a></p>
       <img id="shot" alt="Your page" hidden>
     </div></div>
@@ -1419,8 +1420,15 @@ sv.addEventListener('wheel',e=>{e.preventDefault();
 $('#zIn').onclick=()=>zoomCenter(1.4);$('#zOut').onclick=()=>zoomCenter(1/1.4);$('#zFit').onclick=fit;
 window.addEventListener('resize',()=>{applyView();render();});
 
+// ] next color, [ previous: walks the strip in the order you see it, wrapping around (with a fill's band picked in Edit, it recolors that band as you go)
+function stepColor(d){const cs=[...document.querySelectorAll('#slots [data-c]')].map(b=>b.dataset.c.toLowerCase());if(!cs.length)return;
+  let i=cs.indexOf(opt.color.toLowerCase());i=i<0?0:(i+d+cs.length)%cs.length;pickColor(cs[i]);
+  const on=document.querySelector('#slots .swb.on');if(on)on.scrollIntoView({block:'nearest',inline:'nearest'});}
 let spaceDown=false;
 window.addEventListener('keydown',e=>{
+  const br=e.code==='BracketRight'||e.key===']'?1:e.code==='BracketLeft'||e.key==='['?-1:0;
+  const typing=e.target&&(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT'&&!['range','checkbox','number','color'].includes(e.target.type));
+  if(br&&!typing&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();if(e.target&&e.target.blur&&e.target.tagName==='INPUT')e.target.blur();stepColor(br);return;}
   if(e.target&&(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT'&&e.target.type!=='range'&&e.target.type!=='checkbox'))return;
   const mod=e.ctrlKey||e.metaKey;
   if(mod&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?doRedo():doUndo();return;}
@@ -1433,9 +1441,6 @@ window.addEventListener('keydown',e=>{
   if(e.key==='Enter'||e.key==='Escape'){if(pen){endPen();renderOpts();render();}else if(sel){sel=null;selPt=-1;renderOpts();render();}return;}
   if((e.key==='Delete'||e.key==='Backspace')&&tool==='edit'){e.preventDefault();if(sel&&sel.k==='ink'&&selPt>=0){const b=document.getElementById('eDelPt');if(b)b.click();}else deleteSel();return;}
   // ] next color, [ previous: walks the strip in the order you see it, wrapping around (with a fill's band picked in Edit, it recolors that band as you go)
-  if((e.key===']'||e.key==='[')&&!mod){e.preventDefault();const cs=[...document.querySelectorAll('#slots [data-c]')].map(b=>b.dataset.c.toLowerCase());if(!cs.length)return;
-    let i=cs.indexOf(opt.color.toLowerCase());i=i<0?0:(i+(e.key===']'?1:-1)+cs.length)%cs.length;pickColor(cs[i]);
-    const on=document.querySelector('#slots .swb.on');if(on)on.scrollIntoView({block:'nearest',inline:'nearest'});return;}
   const m={d:'marker',m:'marker',p:'pen',l:'pen',r:'round',s:'style',f:'fill',v:'edit',e:'edit',h:'hand'}[e.key.toLowerCase()];if(m&&!mod)setTool(m);
 });
 window.addEventListener('keyup',e=>{if(e.key===' ')spaceDown=false;});
