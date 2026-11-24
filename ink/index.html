@@ -110,7 +110,9 @@ input[type=checkbox]{accent-color:var(--hot);width:16px;height:16px;margin:0}
 .swb{width:34px;height:34px;min-height:0;padding:0;border-radius:50%;border:2px solid var(--panel);box-shadow:0 0 0 1px var(--edge2);flex:none}
 .swb.on{box-shadow:0 0 0 2px #fff}
 .cur{flex:none;align-self:center;flex:none;display:flex;align-items:center;gap:6px}
-.cur .chip{width:34px;height:34px;border-radius:8px;border:1px solid var(--edge2);position:relative;overflow:hidden}
+.cur .chip{width:34px;height:34px;border-radius:8px;border:1px solid var(--edge2);position:relative;overflow:hidden;cursor:pointer}
+#picker{pointer-events:none}
+.lpsw{width:48px;height:36px;min-height:0;padding:0;border-radius:8px;border:1px solid #000;box-shadow:0 0 0 1px var(--edge2)}
 .cur input[type=color]{position:absolute;inset:-8px;width:60px;height:60px;opacity:0;cursor:pointer;border:0;padding:0}
 .hex{font:11px var(--mono);color:var(--dim)}
 
@@ -238,7 +240,7 @@ body.big #zoomui{bottom:6px;right:6px}
       <textarea id="mImp" style="width:100%;min-height:70px;background:var(--well);color:var(--ink);border:1px solid var(--edge2);border-radius:8px;padding:8px;font:12px var(--mono)" placeholder="<svg xmlns=…"></textarea>
       <button id="mLoad">Load it</button>
       <p class="msg" id="mMsg"></p>
-      <p style="margin:0;color:var(--dim)">Licorice Ink &amp; Fill · version 31 · keyboard: ] next color, [ previous color</p>
+      <p style="margin:0;color:var(--dim)">Licorice Ink &amp; Fill · version 32 · keyboard: ] next color, [ previous color</p>
       <p style="border-top:1px solid var(--edge);padding-top:10px;margin-top:4px">More Licorice: <a href="https://grbsoftware.github.io/licorice/" style="color:var(--hot)">Home</a> · <a href="https://grbsoftware.github.io/licorice/palettes/" style="color:var(--hot)">Palettes</a> · <a href="https://grbsoftware.github.io/licorice/app/" style="color:var(--hot)">Coloring app</a></p>
       <img id="shot" alt="Your page" hidden>
     </div></div>
@@ -957,6 +959,7 @@ return{RC,clamp,wrap,mulberry32,lch,guard,vivid,cuspL,shifted,ramp,neutralRamp,g
 
 </script>
 
+<script src="../shared/picker.js"></script>
 <script>
 /* Spectral.js 3.0.0 (pigment mixing with the Kubelka-Munk model), https://github.com/rvanwijnen/spectral.js
 MIT License
@@ -2292,6 +2295,10 @@ $('#slots').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if
   const p=e.target.closest('[data-slot]');if(p)openPalSheet(+p.dataset.slot);});
 $('#picker').addEventListener('input',e=>{opt.color=e.target.value.toLowerCase();$('#curChip').style.background=opt.color;$('#curHex').textContent=opt.color;});
 $('#picker').addEventListener('change',e=>pickColor(e.target.value));
+$('#curChip').addEventListener('click',e=>{e.preventDefault();if(!window.LicoricePicker)return;
+  LicoricePicker.open({value:opt.color,title:'Color',anchor:$('#curChip'),
+    onInput:h=>{opt.color=h;$('#curChip').style.background=h;$('#curHex').textContent=h;},
+    onChange:h=>pickColor(h)});});
 
 let palTab=null;
 /* Make your own fade: two colors (and an optional middle), walked around the color wheel either way, or straight across.
@@ -2330,9 +2337,9 @@ function renderMaker(){
   const nm=FADE.name||'';
   return`<div class="mk">
     <p style="margin:0">Pick two colors. The fade can walk around the color wheel either way (each named for the color it passes through), or go straight across, which passes through grey.</p>
-    <div class="row"><span class="lb" style="width:52px">Start</span><input type="color" id="fA" value="${FADE.a}"><input class="hex" id="fAh" value="${FADE.a}"></div>
-    <div class="row"><span class="lb" style="width:52px">End</span><input type="color" id="fB" value="${FADE.b}"><input class="hex" id="fBh" value="${FADE.b}"><button id="fSwap">Swap</button></div>
-    <div class="row"><label class="grp"><input type="checkbox" id="fMidOn" ${FADE.mid?'checked':''}> <span>Middle color</span></label>${FADE.mid?`<input type="color" id="fM" value="${FADE.mid}"><input class="hex" id="fMh" value="${FADE.mid}">`:''}</div>
+    <div class="row"><span class="lb" style="width:52px">Start</span><button class="lpsw" id="fA" style="background:${FADE.a}" aria-label="Start color"></button><input class="hex" id="fAh" value="${FADE.a}"></div>
+    <div class="row"><span class="lb" style="width:52px">End</span><button class="lpsw" id="fB" style="background:${FADE.b}" aria-label="End color"></button><input class="hex" id="fBh" value="${FADE.b}"><button id="fSwap">Swap</button></div>
+    <div class="row"><label class="grp"><input type="checkbox" id="fMidOn" ${FADE.mid?'checked':''}> <span>Middle color</span></label>${FADE.mid?`<button class="lpsw" id="fM" style="background:${FADE.mid}" aria-label="Middle color"></button><input class="hex" id="fMh" value="${FADE.mid}">`:''}</div>
     <div class="row"><span class="lb">Colors</span>${seg('fn',String(FADE.n),[['9','9'],['17','17'],['33','33']])}</div>
     ${ways.map((w,i)=>`<button class="way${i===FADE.way?' on':''}" data-way="${i}"><span class="lab">${w.label}</span>${strip(w.cols)}</button>`).join('')}
     <div class="row"><input class="nm" id="fName" placeholder="Name it (optional)" value="${nm.replace(/"/g,'&quot;')}"><button id="fSave">Save</button><button id="fUse" class="hot">Save and use</button></div>
@@ -2342,9 +2349,12 @@ function bindMaker(){
   // while a color picker is open, only the preview strips change; rebuilding the panel under the picker made Chrome close it
   const live=()=>{const ways=fadeWays();document.querySelectorAll('#palBody .way').forEach((el,i)=>{const w=ways[i];if(!w)return;
     el.querySelector('.lab').textContent=w.label;el.querySelector('.strip').innerHTML=w.cols.map(c=>`<i style="background:${c}"></i>`).join('');});};
+  const names={a:'Start color',b:'End color',mid:'Middle color'};
   const pair=(c,hx,key)=>{const a=$('#'+c),b=$('#'+hx);if(!a)return;
-    a.addEventListener('input',()=>{FADE[key]=a.value.toLowerCase();b.value=FADE[key];cancelAnimationFrame(pair.r);pair.r=requestAnimationFrame(live);});
-    a.addEventListener('change',()=>{FADE[key]=a.value.toLowerCase();re();});
+    a.addEventListener('click',()=>{if(!window.LicoricePicker)return;
+      LicoricePicker.open({value:FADE[key],title:names[key],anchor:a,
+        onInput:h=>{FADE[key]=h;b.value=h;a.style.background=h;cancelAnimationFrame(pair.r);pair.r=requestAnimationFrame(live);},
+        onChange:h=>{FADE[key]=h;b.value=h;a.style.background=h;live();}});});
     b.addEventListener('change',()=>{let v=b.value.trim();if(!v.startsWith('#'))v='#'+v;if(HEX.test(v)){FADE[key]=v.toLowerCase();re();}else{b.value=FADE[key];toast('Type a color like f7c612');}});};
   pair('fA','fAh','a');pair('fB','fBh','b');pair('fM','fMh','mid');
   $('#fSwap').onclick=()=>{[FADE.a,FADE.b]=[FADE.b,FADE.a];re();};
