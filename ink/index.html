@@ -18,7 +18,7 @@
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
 <link rel="icon" type="image/png" href="../img/favicon.png">
 <link rel="canonical" href="https://grbsoftware.github.io/licorice/ink/">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="theme-color" content="#1c1c1c">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Ink & Fill"><meta name="mobile-web-app-capable" content="yes"><meta name="theme-color" content="#1c1c1c">
 <style>
 /* Licorice Ink & Fill: a small vector coloring editor. Dark Licorice-app look.
    Rows: tool options, the page, the swatch strip, the tool rail. */
@@ -31,7 +31,10 @@
   color-scheme:dark; box-sizing:border-box;
 }
 *,*::before,*::after{box-sizing:inherit}
-html,body{height:100%;margin:0}
+html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
+/* iPhone (v37): the page itself never scrolls; it is pinned to the screen and sized to what the phone actually shows */
+body{position:fixed;inset:0;width:100%}
+.sbody,#opts,#strip,.lpx-panel{overscroll-behavior:contain}
 body{background:var(--bg);color:var(--ink);font:13px/1.4 var(--ui);overflow:hidden;
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
@@ -49,6 +52,7 @@ input[type=checkbox]{accent-color:var(--hot);width:16px;height:16px;margin:0}
 #app{display:grid;height:100dvh;height:100vh;grid-template-rows:auto minmax(0,1fr) auto auto;
   padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
 @supports(height:100dvh){#app{height:100dvh}}
+#app{height:var(--appH,100dvh)}
 
 /* ---- tool options ---- */
 #opts{display:flex;align-items:center;gap:10px;padding:6px 10px;background:var(--panel);border-bottom:1px solid #111;
@@ -298,7 +302,7 @@ body.optsOpen #opts .grp,body.optsOpen #opts .seg{max-width:100%;flex-wrap:wrap}
       <textarea id="mImp" style="width:100%;min-height:70px;background:var(--well);color:var(--ink);border:1px solid var(--edge2);border-radius:8px;padding:8px;font:12px var(--mono)" placeholder="<svg xmlns=…"></textarea>
       <button id="mLoad">Load it</button>
       <p class="msg" id="mMsg"></p>
-      <p style="margin:0;color:var(--dim)">Licorice Ink &amp; Fill · version 36 · keyboard: ] next color, [ previous color</p>
+      <p style="margin:0;color:var(--dim)">Licorice Ink &amp; Fill · version 37 · keyboard: ] next color, [ previous color</p>
       <p style="border-top:1px solid var(--edge);padding-top:10px;margin-top:4px">More Licorice: <a href="https://grbsoftware.github.io/licorice/" style="color:var(--hot)">Home</a> · <a href="https://grbsoftware.github.io/licorice/palettes/" style="color:var(--hot)">Palettes</a> · <a href="https://grbsoftware.github.io/licorice/app/" style="color:var(--hot)">Coloring app</a></p>
       <img id="shot" alt="Your page" hidden>
     </div></div>
@@ -1297,11 +1301,13 @@ return{handle};
    worker does the rest. While the tab stays open, the last picture, settings and touch-ups wait for you. */
 const LicoricePicture=(()=>{
 'use strict';
-const VERSION='0.3';
+const VERSION='0.4';
 const css=`
 .lpx-root{position:fixed;inset:0;z-index:40;background:#161616;display:flex!important;flex-direction:column;color:#d8d8d8;font:13px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);align-items:stretch!important;justify-content:stretch!important}
 .lpx-root[hidden]{display:none!important}
+.lpx-root{bottom:auto;height:var(--appH,100dvh);overscroll-behavior:none} /* follows the screen the phone actually shows (iPhone toolbars come and go) */
+.lpx-panel{overscroll-behavior:contain}
 .lpx-root button{font:inherit;color:inherit;background:#333;border:1px solid #4a4a4a;border-radius:8px;padding:0 12px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
 .lpx-root button:disabled{opacity:.4;cursor:default}
 .lpx-root button.on{background:#3d5a80;border-color:#5d82ac;color:#fff}
@@ -3226,12 +3232,30 @@ $('#mNew').onclick=()=>{const b=$('#mNew');if(!b.dataset.armed){b.dataset.armed=
 const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement;
 function syncFull(){const on=!!fsEl()||document.body.classList.contains('big');$('#bFullT').textContent=on?'Exit':'Full';$('#bFull').classList.toggle('on',on);
   requestAnimationFrame(()=>{applyView();render();});}
+/* iPhone: keep the page pinned. Safari's toolbars change the visible height, and a page that drifts can't be
+   dragged back because every swipe lands on the drawing. So: size to the visible screen, snap any drift back,
+   and only let a swipe move things that are meant to scroll (menus, option panels, the color strip). */
+(()=>{const vv=window.visualViewport,root=document.documentElement;
+  const fitH=()=>{const h=Math.round(vv?vv.height:window.innerHeight);if(h>0)root.style.setProperty('--appH',h+'px');if(window.scrollX||window.scrollY)window.scrollTo(0,0);};
+  fitH();window.addEventListener('resize',fitH);window.addEventListener('orientationchange',()=>setTimeout(fitH,250));
+  if(vv){vv.addEventListener('resize',fitH);vv.addEventListener('scroll',()=>{if(window.scrollX||window.scrollY)window.scrollTo(0,0);});}
+  window.addEventListener('scroll',()=>{if(window.scrollX||window.scrollY)window.scrollTo(0,0);},{passive:true});
+  const canScroll=el=>{for(;el&&el!==document.body&&el!==document.documentElement;el=el.parentElement){const cs=getComputedStyle(el);
+      if(/(auto|scroll)/.test(cs.overflowY)&&el.scrollHeight>el.clientHeight+1)return true;if(/(auto|scroll)/.test(cs.overflowX)&&el.scrollWidth>el.clientWidth+1)return true;}return false;};
+  let allow=true;
+  document.addEventListener('touchstart',e=>{const t=e.target;allow=!!(t&&t.closest&&(t.closest('input,textarea,select')||canScroll(t)));},{passive:true,capture:true});
+  document.addEventListener('touchmove',e=>{if(!allow&&e.cancelable)e.preventDefault();},{passive:false,capture:true});
+  for(const g of['gesturestart','gesturechange'])document.addEventListener(g,e=>e.preventDefault(),{passive:false}); // no whole-page pinch zoom; the drawing has its own
+})();
+const isIPhone=/iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1&&!document.documentElement.requestFullscreen);
 $('#bFull').onclick=async()=>{
   if(fsEl()){try{await(document.exitFullscreen||document.webkitExitFullscreen).call(document);}catch(e){}return;}
   if(document.body.classList.contains('big')){document.body.classList.remove('big');syncFull();return;}
   const el=document.documentElement,req=el.requestFullscreen||el.webkitRequestFullscreen;
   let ok=false;if(req){try{await req.call(el,{navigationUI:'hide'});ok=true;}catch(e){}}
-  if(!ok){document.body.classList.add('big');toast('Full screen is blocked here, so the bars are tucked away instead',2600);}
+  if(!ok){document.body.classList.add('big');
+    if(isIPhone&&!navigator.standalone)toast(window.top!==window?'iPhone doesn’t allow full screen here. For real full screen, open this page in Safari, tap Share, then Add to Home Screen, and open Ink & Fill from your Home Screen.':'iPhone doesn’t allow full screen in Safari. For real full screen: tap Share, then Add to Home Screen, and open Ink & Fill from your Home Screen. Bars are tucked away for now.',9000);
+    else toast('Full screen is blocked here, so the bars are tucked away instead',2600);}
   syncFull();
 };
 document.addEventListener('fullscreenchange',syncFull);document.addEventListener('webkitfullscreenchange',syncFull);
