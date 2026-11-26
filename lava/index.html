@@ -1,0 +1,1164 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Licorice · lava lamp for your palette</title>
+<meta name="theme-color" content="#9447cf">
+<meta name="description" content="Licorice lava lamp: your palette as warm wax. The coolest colors sink, the hottest rise; save a picture or a coloring page.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Licorice">
+<meta property="og:url" content="https://grbsoftware.github.io/licorice/lava/">
+<meta property="og:title" content="Licorice lava lamp">
+<meta property="og:description" content="Play with a palette's colors in a lava lamp, then save the moment as a picture or a page to color.">
+<meta property="og:image" content="https://grbsoftware.github.io/licorice/img/social.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Licorice logo next to a colorful page colored in with the app">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="icon" type="image/png" href="../img/favicon.png">
+<link rel="canonical" href="https://grbsoftware.github.io/licorice/lava/">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Licorice lava lamp", "url": "https://grbsoftware.github.io/licorice/lava/", "description": "A lava lamp toy in the colors of a Licorice palette: the biggest color family is the cool wax, the accent the hottest. Save a moment as a picture or as a coloring page.", "applicationCategory": "DesignApplication", "operatingSystem": "Any (runs in a web browser)", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}}</script>
+<style>
+/* the palette page's interface colors: the UI is always dark */
+:root{--bar:48px;color-scheme:dark;--bg:#131313;--ink:#d8d8d8;--bright:#fff;--mute:#8a8a8a;--line:#262626;--panel:#252525;--rule:#3a3a3a;--sel:#5d82ac;--btn:#2b2b2b;--edge:#4a4a4a;--hover:#333}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:2px solid var(--sel);outline-offset:1px}
+.bar{height:var(--bar);display:flex;align-items:center;gap:8px;padding:0 12px 0 4px;background:var(--panel);border-bottom:1px solid var(--rule)}
+.bar h1{font-size:16px;font-weight:600;color:var(--bright);margin:0;white-space:nowrap}
+.bar .home{min-height:44px;display:flex;align-items:center;padding:0 10px;color:var(--sel);font-weight:600;text-decoration:none;border-radius:6px;white-space:nowrap}
+.bar .home:hover{background:var(--hover)}
+.bar .why{margin-left:auto;font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:520px){.bar .why{display:none}}
+.app{display:grid;grid-template-columns:minmax(0,1fr) clamp(300px,24vw,380px);height:calc(100vh - var(--bar));height:calc(100dvh - var(--bar))}
+.stage{min-width:0;min-height:0;padding:12px;display:flex}
+#lamp{display:block;width:100%;height:100%;border-radius:4px;background:#000}
+.side{min-height:0;overflow-y:auto;padding:12px 14px 24px;background:var(--panel);border-left:1px solid var(--rule)}
+.side h2{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:16px 0 6px}
+.side h2:first-child{margin-top:0}
+.nm{color:var(--bright);font-weight:600;margin-bottom:6px}
+.strip{display:flex;height:28px;border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+.strip span{flex:1}
+.ends{display:flex;justify-content:space-between;font-size:12px;color:var(--mute);margin-top:2px}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+button{min-height:44px;padding:0 12px;font:inherit;font-size:14px;color:var(--ink);background:var(--btn);border:1px solid var(--edge);border-radius:6px;cursor:pointer}
+button:hover{background:var(--hover)}
+button.pri{background:var(--sel);border-color:var(--sel);color:#fff}
+.row{display:grid;grid-template-columns:92px 1fr 34px;align-items:center;gap:8px;min-height:44px}
+.row label{color:var(--mute);font-size:14px}
+.row input{width:100%;min-height:44px;margin:0}
+.row output{text-align:right;font-variant-numeric:tabular-nums;font-size:13px}
+.note{font-size:13px;color:var(--mute);margin:8px 0 0}
+@media (max-width:760px){
+  .app{grid-template-columns:1fr;height:auto}
+  .stage{height:72vh;height:72dvh;padding:8px}
+  .side{border-left:0;border-top:1px solid var(--rule);overflow:visible}
+}
+</style></head>
+<body>
+<header class="bar"><a class="home" id="back" href="../palettes/">‹ Palettes</a><h1>Lava lamp</h1><span class="why">Your palette as warm wax: the coolest colors sink, the hottest rise</span></header>
+<div class="app">
+  <div class="stage"><canvas id="lamp" aria-label="A lava lamp in your palette's colors"></canvas></div>
+  <div class="side">
+    <h2>Colors</h2>
+    <div class="nm" id="palName"></div>
+    <div class="strip" id="strip"></div>
+    <div class="ends"><span>cool</span><span>hot</span></div>
+    <div class="btns" style="margin-top:8px"><button id="blend">Smooth</button><button id="flip" title="Swap which colors are hot and which are cool">Flip hot and cool</button></div>
+    <h2>Lamp</h2>
+    <div class="btns"><button id="play">Pause</button><button id="newSeed">New lamp</button></div>
+    <div class="row"><label for="speed">Speed</label><input type="range" id="speed" min="0.2" max="3" step="0.1" value="1"><output id="speedO"></output></div>
+    <div class="row"><label for="heat">Heat</label><input type="range" id="heat" min="0" max="2" step="0.1" value="1"><output id="heatO"></output></div>
+    <div class="row"><label for="size">Blob size</label><input type="range" id="size" min="60" max="300" step="5" value="140"><output id="sizeO"></output></div>
+    <div class="row"><label for="swirl">Swirl</label><input type="range" id="swirl" min="0" max="40" step="1" value="12"><output id="swirlO"></output></div>
+    <div class="row"><label for="wobble">Wobble</label><input type="range" id="wobble" min="0" max="0.5" step="0.05" value="0.2"><output id="wobbleO"></output></div>
+    <div class="row"><label for="spread" title="How much of the palette the cool wax shows: more gives the cool colors more room">Cool colors</label><input type="range" id="spread" min="0" max="1" step="0.05" value="0.5"><output id="spreadO"></output></div>
+    <div class="row"><label for="pen">Lines</label><input type="range" id="pen" min="0" max="8" step="0.5" value="3"><output id="penO"></output></div>
+    <h2>Keep this moment</h2>
+    <div class="btns"><button id="savePng" class="pri">Save picture</button><button id="saveSvg" title="Just the lines of this moment, to color in">Save as a coloring page</button></div>
+    <p class="note" id="info"></p>
+  </div>
+</div>
+<script>/* vendor/radiance-color.js (copied in by build_lava.py; edit the source file) */
+/* vendored: shared/radiance-color v1.0.0 — do not edit here; change it in Radiance and re-vendor */
+// radiance-color -- Radiance's colour engine.
+//
+// sRGB <-> OKLab / OKLCH, the gamut hull, bridge midpoints, ink and contrast.
+// Radiance (github.com/grbsoftware/Radiance) owns this file and loads it as
+// is; other projects carry a pinned copy. Change it HERE, never in a copy.
+//
+// Everything is pure: hex strings and plain numbers in, the same out, no DOM
+// and no state. Load it with a <script> tag, paste it into a script, or
+// require() it -- it defines one name, RadianceColor.
+const RadianceColor = (() => {
+    'use strict';
+
+    // HSL to Hex
+    function hslToHex(h, s, l) {
+        s /= 100;
+        l /= 100;
+        const a = s * Math.min(l, 1 - l);
+        const f = n => {
+            const k = (n + h / 30) % 12;
+            const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+            return Math.round(255 * color).toString(16).padStart(2, '0');
+        };
+        return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
+    }
+
+    // Parse hex to RGB
+    function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
+    }
+
+    // RGB to hex
+    function rgbToHex(r, g, b) {
+        return '#' + [r, g, b].map(x => {
+            const hex = Math.round(x).toString(16);
+            return hex.length === 1 ? '0' + hex : hex;
+        }).join('').toUpperCase();
+    }
+
+    // --- OKLab -------------------------------------------------------
+    // A bridge is only a bridge if it LOOKS halfway between its anchors,
+    // and HSL cannot promise that. HSL's "L" is not perceived lightness:
+    // averaging green (#00FF00) and blue (#0000FF) in HSL gives cyan
+    // (#00FFFF), which is LIGHTER than both colors it sits between. It
+    // does not bridge, it spikes. Measured in perceptual lightness the
+    // anchors are 0.866 and 0.452, so the midpoint should read 0.659 --
+    // HSL puts it at 0.905, off by 0.246.
+    //
+    // OKLab is built so that equal numeric steps look like equal steps.
+    // The same pair midpoints to #00AABF at 0.675, which is where the eye
+    // expects it. Same idea for the anchors themselves: evenly spaced HSL
+    // hues range over 0.41 in perceived lightness (red 0.628, green 0.866,
+    // blue 0.452), which is why a "smooth" ramp never looked smooth.
+    //
+    // hslToHex stays, for the initial evenly-spaced anchors. HSL is a fine
+    // thing to SPECIFY a starting color in. It is just not a thing to
+    // average in, and nothing averages in it any more.
+
+    function srgbToLinear(c) {
+        c /= 255;
+        return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    }
+
+    function linearToSrgb(c) {
+        const v = c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+        return Math.max(0, Math.min(255, v * 255));
+    }
+
+    function hexToOklab(hex) {
+        const rgb = hexToRgb(hex);
+        const r = srgbToLinear(rgb.r), g = srgbToLinear(rgb.g), b = srgbToLinear(rgb.b);
+
+        const l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b;
+        const m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b;
+        const s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b;
+
+        const l_ = Math.cbrt(l), m_ = Math.cbrt(m), s_ = Math.cbrt(s);
+
+        return {
+            L: 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
+            a: 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
+            b: 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+        };
+    }
+
+    function oklabToLinear(lab) {
+        const l_ = lab.L + 0.3963377774 * lab.a + 0.2158037573 * lab.b;
+        const m_ = lab.L - 0.1055613458 * lab.a - 0.0638541728 * lab.b;
+        const s_ = lab.L - 0.0894841775 * lab.a - 1.2914855480 * lab.b;
+
+        const l = l_ * l_ * l_, m = m_ * m_ * m_, s = s_ * s_ * s_;
+
+        return [
+            +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+            -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+            -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+        ];
+    }
+
+    // The tolerance is not slop, it is the accuracy of the transform. The
+    // OKLab matrices are fitted approximations, so a colour that sits
+    // exactly ON the sRGB hull round-trips to a channel a few ten-thousandths
+    // the wrong side of zero.
+    //
+    // At 1e-4 that broke an assumption every bisection here depends on --
+    // that the ray out from neutral is in gamut up to one boundary and out
+    // after it. Measured along pure blue's ray (L 0.452, H 264.05): in gamut
+    // at 85% of its chroma, OUT at 90%, 95% and 99% where linear red reads
+    // -0.00063, and in again at 100% where it is exactly 0. A hole in the
+    // middle, and a bisection walks straight into it -- maxChroma returned
+    // 0.2674 for a colour whose chroma is 0.3132, a 15% underestimate, and
+    // oklabToHex used the same pattern to desaturate bridges further than
+    // the gamut actually required.
+    //
+    // 1e-3 clears the transform's own error. In linear light that is well
+    // under a quarter of an 8-bit step, and the clamp at the end of
+    // oklabToHex catches whatever rounds past the edge.
+    const GAMUT_EPS = 1e-3;
+
+    function inGamut(lab) {
+        return oklabToLinear(lab).every(c => c >= -GAMUT_EPS && c <= 1 + GAMUT_EPS);
+    }
+
+    // OKLab is bigger than sRGB, so a midpoint can land somewhere the screen
+    // cannot show. SOMETHING has to give, and the choice of what decides
+    // whether the bridge still reads as a bridge.
+    //
+    // Clamping each channel at the end -- the obvious way, and what this did
+    // -- gives away lightness and hue, the two properties the whole OKLab
+    // change was made to protect. Measured over every bridge the presets
+    // produce, 23 land outside sRGB and clamping moved them up to 3.6 deg in
+    // hue and 0.014 in L. The green -> blue midpoint from the notes above
+    // came out at L 0.676 against a target of 0.659; that residual was
+    // blamed on "gamut clipping" and this is the clipping it meant.
+    //
+    // Reducing CHROMA instead gives away saturation, which is the one thing
+    // a bridge does not promise. Same 23 colors: worst hue shift 0.9 deg,
+    // worst L error 0.0009 -- fifteen times closer. Green -> blue now lands
+    // at 0.659 exactly, so the residual is gone rather than explained.
+    function oklabToHex(lab) {
+        let out = lab;
+        if (!inGamut(lab)) {
+            let lo = 0, hi = 1;
+            for (let i = 0; i < 24; i++) {
+                const mid = (lo + hi) / 2;
+                if (inGamut({ L: lab.L, a: lab.a * mid, b: lab.b * mid })) lo = mid;
+                else hi = mid;
+            }
+            out = { L: lab.L, a: lab.a * lo, b: lab.b * lo };
+        }
+        // Still clamp: chroma reduction cannot rescue an L outside [0,1],
+        // and rounding leaves channels a hair over.
+        return rgbToHex(...oklabToLinear(out).map(c => linearToSrgb(Math.max(0, Math.min(1, c)))));
+    }
+
+    // --- Bridge policy ----------------------------------------------
+    // Both midpoints below are in OKLab and both are perceptually honest.
+    // They differ in what they treat as the thing being halved.
+    //
+    // BLEND averages a and b as coordinates: the true midpoint of the two
+    // colors as POINTS. a and b are signed, so as the anchors' hues diverge
+    // the two vectors point apart and partly cancel -- gold and navy are
+    // both strongly colored and their blend is #7E7D70, a drab olive grey.
+    // Nothing is out of gamut there; the saturation was destroyed by the
+    // arithmetic. Across the shipped presets, 12 bridges lose more than half
+    // their anchors' chroma this way.
+    //
+    // WHEEL averages lightness and chroma as scalars and walks hue around
+    // the shorter arc: the midpoint of the two HUES. Chroma at the bridge is
+    // the mean of the two chromas by construction, so it cannot collapse and
+    // cannot exceed the colors it sits between. Gold -> navy becomes #009083.
+    //
+    // Neither is a better version of the other, which is the test a setting
+    // has to pass to deserve existing. Blend answers "what color is halfway
+    // between these two", wheel answers "what color is halfway around from
+    // one to the other". Blend stays the default because it is what every
+    // saved palette was built with.
+    //
+    // NOT OFFERED: pushing chroma out to the gamut hull. It was measured and
+    // it is a trap -- the headroom is largest exactly where hue means least.
+    // Two pale neutrals whose midpoint chroma is 0.002 have 89x of it, and
+    // spending it turns a soft grey into #C3FF3B. At C near zero the hue is
+    // arbitrary, so amplifying it invents a color rather than finding one.
+
+    function midpointColor(hex1, hex2, mode = 'blend') {
+        const c1 = hexToOklab(hex1);
+        const c2 = hexToOklab(hex2);
+        const L = (c1.L + c2.L) / 2;
+
+        if (mode === 'blend') {
+            return oklabToHex({ L, a: (c1.a + c2.a) / 2, b: (c1.b + c2.b) / 2 });
+        }
+
+        const k1 = Math.hypot(c1.a, c1.b), k2 = Math.hypot(c2.a, c2.b);
+        let h1 = Math.atan2(c1.b, c1.a), h2 = Math.atan2(c2.b, c2.a);
+        // A grey has no hue -- CSS Color 4 calls it powerless. atan2(0,0) is
+        // 0, which is red, so averaging against it would drag every bridge
+        // out of a neutral anchor toward pink. Borrow the other end's hue.
+        if (k1 < 1e-6) h1 = h2;
+        if (k2 < 1e-6) h2 = h1;
+        const d = ((h2 - h1 + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+        const h = h1 + d / 2, c = (k1 + k2) / 2;
+        return oklabToHex({ L, a: c * Math.cos(h), b: c * Math.sin(h) });
+    }
+
+    // --- Ink on a bar -------------------------------------------------
+    // This used to weight the GAMMA-ENCODED channels 0.299/0.587/0.114 and
+    // switch at 0.5. Two things wrong with that, and they compound: the NTSC
+    // weights are for analogue luma, not for contrast, and the channels have
+    // to be linearised before any weighting means anything.
+    //
+    // The switch point is not a matter of taste either. White beats black
+    // exactly while 1.05/(L+0.05) > (L+0.05)/0.05, so the crossover is
+    // sqrt(0.0525) - 0.05 = 0.1791 -- nowhere near the midpoint, because
+    // contrast is a ratio and black has the shorter run to the floor.
+    //
+    // Measured over the 114 colors in the preset library, the old test put
+    // the wrong ink on 14 of them. The worst was #FF00FF, which got white at
+    // 3.14:1 where black scores 6.70:1. Worst case anywhere goes 3.14 -> 4.72,
+    // so every hex code on screen now clears AA at normal size.
+    const INK_CROSSOVER = Math.sqrt(0.0525) - 0.05;
+
+    function relativeLuminance(hex) {
+        const rgb = hexToRgb(hex);
+        return 0.2126 * srgbToLinear(rgb.r)
+             + 0.7152 * srgbToLinear(rgb.g)
+             + 0.0722 * srgbToLinear(rgb.b);
+    }
+
+    function inkOn(hex) {
+        return relativeLuminance(hex) > INK_CROSSOVER ? '#000' : '#fff';
+    }
+
+
+    const DEG = 180 / Math.PI;
+
+    function hexToOklch(hex) {
+        const { L, a, b } = hexToOklab(hex);
+        const C = Math.hypot(a, b);
+        // A neutral has no hue -- CSS Color 4 calls it powerless. Reported
+        // as null rather than as atan2(0, 0), which is red and would put a
+        // grey into the harmony maths as though it pointed somewhere.
+        const H = C < 1e-6 ? null : ((Math.atan2(b, a) * DEG) % 360 + 360) % 360;
+        return { L, C, H };
+    }
+
+    function oklchToHex({ L, C, H }) {
+        const h = (H === null ? 0 : H) / DEG;
+        return oklabToHex({ L, a: C * Math.cos(h), b: C * Math.sin(h) });
+    }
+
+    // The most chroma sRGB can actually show at this lightness and hue.
+    // The hull is nothing like a circle -- yellow reaches far further out
+    // than blue -- so "hold chroma constant across these hues" is only a
+    // request that can be granted up to the SMALLEST hull among them.
+    function maxChroma(L, H) {
+        if (H === null) return 0;
+        const h = H / DEG, cos = Math.cos(h), sin = Math.sin(h);
+        let lo = 0, hi = 0.4;
+        for (let i = 0; i < 24; i++) {
+            const mid = (lo + hi) / 2;
+            if (inGamut({ L, a: mid * cos, b: mid * sin })) lo = mid; else hi = mid;
+        }
+        return lo;
+    }
+
+    function contrast(hex1, hex2) {
+        const a = relativeLuminance(hex1), b = relativeLuminance(hex2);
+        return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    }
+
+    // Perceptual distance, so "widest gap" means the gap that LOOKS widest.
+    // Hue distance would call red->green and green->blue equal at 120
+    // degrees each when the eye does not read them that way at all.
+    function oklabDistance(hex1, hex2) {
+        const c1 = hexToOklab(hex1);
+        const c2 = hexToOklab(hex2);
+        return Math.hypot(c1.L - c2.L, c1.a - c2.a, c1.b - c2.b);
+    }
+
+    // Signed shortest arc, so a palette walking one way round the wheel
+    // reads as consistent rather than as alternating +350/-10.
+    function hueDelta(from, to) {
+        return ((to - from + 180) % 360 + 360) % 360 - 180;
+    }
+
+    return Object.freeze({
+        hslToHex, hexToRgb, rgbToHex, srgbToLinear, linearToSrgb,
+        hexToOklab, oklabToLinear, GAMUT_EPS, inGamut, oklabToHex,
+        midpointColor, INK_CROSSOVER, relativeLuminance, inkOn, DEG,
+        hexToOklch, oklchToHex, maxChroma, contrast, oklabDistance,
+        hueDelta,
+    });
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = RadianceColor;
+/* end vendored: shared/radiance-color */
+
+</script>
+<script>/* gen/palette-sets.js (copied in by build_lava.py; edit the source file) */
+/* Licorice's palette sets: Classic, Places (biomes: land / flora / fauna), Skies (day / sunset), Fades, Pairs
+   (duotones / tritones), and the five seeded methods behind New mix. Built on Radiance's engine
+   (vendor/radiance-color.js, global RadianceColor); the recipes and the named colours are Licorice's own.
+   One namespace (PSETS) because the app has its own globals (mulberry32, clamp, ...).
+   PSETS.catalog() -> [{id, name, items:[{id, name, sub, lines:[{id, label, colors:[[hex, why], ...]}]}]}] */
+const PSETS=(()=>{
+const RC=RadianceColor;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const wrap=h=>((h%360)+360)%360;
+function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+/* ---- colour helpers on the vendored engine ---- */
+function lch(L,C,H){H=wrap(H);return RC.oklchToHex({L,C:Math.min(C,RC.maxChroma(L,H)),H});}
+// dark yellow-greens read as olive: slide them to ochre/brown or to green (same guard as mix@2)
+function guard(L,H){H=wrap(H);if(H>85&&H<140&&L<.8){const k=Math.min(1,(.8-L)/.3);H=H<112?H+(65-H)*k:H+(150-H)*k;}return H;}
+function vivid(L,H,k=.85,cap=.25){H=guard(L,H);return lch(L,Math.min(cap,RC.maxChroma(L,H)*k),H);}
+const cuspCache={};
+// the lightness where a hue reaches its strongest colour: yellow peaks light, blue and violet peak dark
+function cuspL(H){const h=Math.round(wrap(H));if(cuspCache[h]!=null)return cuspCache[h];
+  let best=.6,bc=0;for(let L=.3;L<=.97;L+=.01){const c=RC.maxChroma(L,h);if(c>bc){bc=c;best=L;}}return cuspCache[h]=best;}
+// hue shift along a ramp: lighter leans to yellow, darker leans to blue (sunlight and shade)
+function shifted(H,L,amt=16){const t=clamp((L-.6)/.33,-1,1),target=t>0?95:268;
+  const d=RC.hueDelta(H,target);return wrap(H+clamp(d,-amt,amt)*Math.abs(t));}
+function ramp(H,L0,L1,n,k=.8,why=''){const o=[];for(let i=0;i<n;i++){const L=L0+(L1-L0)*(n>1?i/(n-1):.5);
+  const Hs=shifted(H,L);o.push([vivid(L,Hs,k),why]);}return o;}
+function neutralRamp(H,L0,L1,n,C=.018,why=''){const o=[];for(let i=0;i<n;i++){const L=L0+(L1-L0)*(n>1?i/(n-1):.5);o.push([lch(L,C,H),why]);}return o;}
+const grey=hex=>{const L=RC.hexToOklab(hex).L;return RC.oklchToHex({L,C:0,H:0});};
+function closest(p){let m=9;for(let i=0;i<p.length;i++)for(let j=i+1;j<p.length;j++)m=Math.min(m,RC.oklabDistance(p[i],p[j]));return m;}
+// one line, ordered round the wheel starting after the widest hue gap; light before dark inside a family; greys last
+function lineOrder(items){
+  const ch=[],ne=[];items.forEach(it=>{const o=RC.hexToOklch(it[0]);(o.C<.035?ne:ch).push({it,o});});
+  ch.sort((a,b)=>a.o.H-b.o.H);let start=0,gap=-1;
+  for(let i=0;i<ch.length;i++){const g=wrap(ch[(i+1)%ch.length].o.H-ch[i].o.H)||360;if(g>gap){gap=g;start=(i+1)%ch.length;}}
+  const rot=ch.slice(start).concat(ch.slice(0,start));
+  // group into 30-degree families along the rotated order, light to dark inside each
+  const fam=[];rot.forEach(x=>{const f=fam[fam.length-1];if(f&&RC.hueDelta(f[0].o.H,x.o.H)<30)f.push(x);else fam.push([x]);});
+  return fam.flatMap(f=>f.sort((a,b)=>b.o.L-a.o.L)).concat(ne.sort((a,b)=>b.o.L-a.o.L)).map(x=>x.it);
+}
+
+/* ---- 1. today's presets (from double-blob-v29.html CURATED) ---- */
+const PRESETS=[
+ ['Markers',['#e0262f','#f06aa6','#c2185b','#f58a1f','#f7c613','#9ccc3c','#3f9142','#1f5e3a','#1aa6a0','#53b8ee','#2f6fd6','#1f2a7a','#7b4bc4','#b9a3e8','#8a5a35','#f4c7a1']],
+ ['Sunset',['#2b1b3f','#4b2a5e','#7a2e6e','#b23a6f','#e0506b','#f2786a','#f79d65','#fbc36b','#ffe29a','#fff3d6','#8e5c9e','#c97fb0','#e8a9c5','#3d5a80','#98c1d9','#5a3d7a']],
+ ['Ocean',['#03224c','#063970','#0b5394','#1c7fb6','#34a0c9','#6cc3d5','#a8e0e0','#e0f5f1','#0e6b62','#148f77','#40b59a','#8fd4b7','#f2e8cf','#e0b872','#c9824b','#7a4a2a']],
+ ['Candy',['#ffadad','#ffd6a5','#fdffb6','#caffbf','#9bf6ff','#a0c4ff','#bdb2ff','#ffc6ff','#ff8fab','#fb6f92','#ffb3c6','#cdb4db','#a2d2ff','#bde0fe','#f1faee','#8d99ae']],
+ ['Earth',['#3d2b1f','#6b4226','#8c5a3c','#b07d52','#d4a373','#e9c46a','#f4e3c1','#606c38','#283618','#8a9a5b','#bc6c25','#dda15e','#9c6644','#a3b18a','#588157','#7f5539']],
+ ['Neon',['#ff006e','#fb5607','#ffbe0b','#8338ec','#3a86ff','#00f5d4','#00bbf9','#f15bb5','#fee440','#9b5de5','#06d6a0','#ef476f','#ffd166','#118ab2','#7bff00','#ff4d00']],
+ ['Jewel',['#0b3954','#087e8b','#bfd7ea','#ff5a5f','#c81d25','#6a0572','#ab83a1','#1b998b','#2d3047','#fffd82','#ff9b71','#e84855','#3c1642','#086375','#1dd3b0','#affc41']]
+];
+
+/* ---- 2. biomes, built like the Ocean preset: one big family, one supporting family, one small accent.
+   Each family is a run of NAMED control colours (dark to light, named after things in that place, the Werner 1814
+   idea); one bridge between each pair fills it out (Radiance wheel midpoint). 4+3+2 controls = 7+5+3 = 15 colours. */
+const BIOMES=[
+ ['Rain forest','Pacific Northwest: firs, moss, cedar bark, fog',
+  [['fir shadow','#0e2a26'],['Douglas fir','#1f5048'],['cedar bough','#3b7d5e'],['sword fern','#8fbf72']],
+  [['wet soil','#2e2119'],['cedar bark','#6b3f2a'],['nurse log','#b48a64']],
+  [['rain cloud','#7f939b'],['fog','#e2e9e8']]],
+ ['Jungle','tropical: deep greens, bark, one bright bird',
+  [['canopy shade','#0f2e1a'],['leaf','#1f6b3a'],['fern','#4caf50'],['new shoot','#b8e07a']],
+  [['root','#3a2418'],['bark','#7a4a2c'],['dry leaf','#c49a6c']],
+  [['macaw','#d7263d'],['toucan beak','#f6a623']]],
+ ['Coral reef','water over sand, coral in between',
+  [['deep reef','#0f3460'],['reef water','#1b6fb3'],['lagoon','#2fb7c9'],['shallows','#bdeee8']],
+  [['red coral','#b8354a'],['pink coral','#ff8c94'],['polyp','#ffd6cc']],
+  [['wet sand','#c9a575'],['white sand','#fbf0d9']]],
+ ['Desert','sun-baked rock, big sky, a little cactus',
+  [['canyon shadow','#4f2618'],['mesa','#a5482b'],['terracotta','#d9774b'],['dune','#f0c88e']],
+  [['dusk','#4d4a7a'],['noon sky','#7fb3d5'],['haze','#dcecf3']],
+  [['cactus','#2f5e45'],['sagebrush','#9db3a0']]],
+ ['Tundra','stone and snow, ice-blue, small red berries',
+  [['peat','#3b2e26'],['rock','#6e6a63'],['lichen','#bdb592'],['snow','#f3f6f8']],
+  [['glacial lake','#2f5d7c'],['melt water','#5aa9c9'],['ice','#c7e4f0']],
+  [['bearberry','#a0233a'],['cloudberry','#f08a24']]],
+ ['Savanna','gold grass, red earth, flat-top trees',
+  [['grass root','#7a5420'],['tall grass','#c9962f'],['dry grass','#e2c06b'],['straw','#f5e6b5']],
+  [['red earth shade','#5a2618'],['red earth','#b4532a'],['dust','#e08f5c']],
+  [['acacia','#3f6b3a'],['acacia leaf','#8bab6a']]],
+ ['Deep sea','dark water, things that glow',
+  [['midnight','#05081c'],['abyss','#14215a'],['twilight water','#2d4fa0'],['last light','#6f9ad8']],
+  [['glow shadow','#0e6f78'],['glow','#2de2e6'],['glow edge','#b9fbf5']],
+  [['jelly','#a0306a'],['comb jelly','#ff6fb5']]],
+ ['Autumn woods','turning leaves, bark, a few evergreens',
+  [['maple shadow','#6e1a14'],['maple','#c62d1f'],['pumpkin','#e8731b'],['birch','#f2b134']],
+  [['wet bark','#3b2a20'],['oak leaf','#7a4a24'],['mushroom','#c9a27e']],
+  [['pine','#1f4d3a'],['pine light','#6d9a7c']]],
+ ['Alpine meadow','sky and lake, meadow, alpenrose',
+  [['lake depth','#14365a'],['gentian sky','#2f6fae'],['high sky','#7fb5e3'],['glacier','#dff2fb']],
+  [['spruce','#24543a'],['meadow','#4f8f45'],['spring grass','#a5d07a']],
+  [['alpenrose','#c2306a'],['alpenrose light','#f39ab8']]],
+ ['Wetland','still water, reeds, a lotus',
+  [['pond bottom','#23343a'],['pond','#4f7f8f'],['heron','#8eb3b8'],['morning mist','#e7ece4']],
+  [['cattail','#5a4326'],['reed','#a8894e'],['reed tip','#e0cf96']],
+  [['lotus','#c2457a'],['lotus light','#f6bfd0']]],
+ ['Polar night','night and ice, green aurora, a violet edge',
+  [['night','#0b1636'],['polar blue','#2a3f7a'],['glacier','#6fb6d9'],['snow','#f6f9fb']],
+  [['aurora deep','#0e6b55'],['aurora','#3ddc97'],['aurora light','#b7f5d8']],
+  [['aurora violet','#6a3fd0'],['aurora pink','#d84fd1']]],
+ ['Volcano','ash and basalt, fire, first regrowth',
+  [['obsidian','#121016'],['basalt','#3a3638'],['ash','#8d8a88'],['steam','#e6e9ec']],
+  [['magma','#7a0010'],['lava','#e0300b'],['ember','#ffb000']],
+  [['new fern','#2e6a2e'],['fern light','#8cc56a']]],
+];
+function family(ctrl){const o=[];ctrl.forEach(([n,h],i)=>{o.push([h,n]);
+  if(i<ctrl.length-1)o.push([RC.midpointColor(h,ctrl[i+1][1],'wheel'),'between '+n+' and '+ctrl[i+1][0]]);});return o;}
+/* ---- 2c. fades: bridges all the way. Three named controls, dark to light; wheel bridges keep colour when the
+   fade walks across hues, blend bridges take the true middle for soft fades. */
+const FADES=[
+ ['Dawn','night into first light',[['night','#1b2350'],['dawn rose','#d77a8e'],['first light','#fbe7b4']],'wheel'],
+ ['Dusk','the sun just gone',[['deep dusk','#2a1840'],['afterglow','#b4365e'],['last orange','#f39a4a']],'wheel'],
+ ['Golden hour','long warm light',[['long shadow','#4a2a1a'],['amber','#d98a2a'],['warm light','#fff0c8']],'blend'],
+ ['Deep to shore','from open water up the beach',[['abyss','#061a3a'],['sea','#1f7aa8'],['wet sand','#f2e6c4']],'wheel'],
+ ['Northern lights','green curtains into violet',[['arctic night','#0a1430'],['aurora green','#3ad69a'],['aurora haze','#e2c8ff']],'wheel'],
+ ['Lagoon','deep channel to white sand',[['channel','#0b3a44'],['turquoise','#2cc0c0'],['white sand','#f6f4e6']],'blend'],
+ ['Ember','charcoal to flame',[['charcoal','#1a0e0a'],['ember','#c0281a'],['flame tip','#ffd24a']],'wheel'],
+ ['Moonlight','blue night, silver moon',[['midnight','#0e1424'],['moonlit blue','#6a7ea8'],['moon','#eef0f4']],'blend'],
+ ['Ink wash','brush ink thinned on paper',[['ink','#15171d'],['wash','#7c8494'],['paper','#f4f1ea']],'blend'],
+ ['Plum & peach','dark fruit to soft skin',[['plum','#3a1a3a'],['mauve','#a46a8a'],['peach','#ffd2b0']],'blend'],
+ ['Lavender field','rows of lavender into haze',[['row shadow','#2a2050'],['lavender','#8a6ad0'],['lavender haze','#ece2fa']],'blend'],
+ ['Rose','deep petal to blush',[['dark rose','#4a0e22'],['rose','#d24a6a'],['blush','#fde0e6']],'blend'],
+ ['Glacier','crevasse to snow',[['crevasse','#0e2e4a'],['glacier blue','#4aa6d0'],['snow','#f4fbff']],'blend'],
+ ['Fern','shade to a new frond',[['fern shade','#0f2a1e'],['fern','#3f9a5a'],['new frond','#d8f0b0']],'blend'],
+ ['Desert heat','canyon to shimmering haze',[['canyon','#3a1a12'],['terracotta','#d0643a'],['heat haze','#fbe4c8']],'blend'],
+ ['Cherry blossom','dark bark, pink petals',[['wet bark','#2e1e22'],['blossom','#e89ab4'],['petal','#fff4f6']],'blend'],
+ ['Copper','green patina to bright copper',[['patina','#2a6a5a'],['copper','#b8642a'],['polished','#f2c09a']],'blend'],
+];
+// bridges all the way: keep the named controls, put a bridge between every pair, repeat (3 controls, 3 rounds -> 17)
+function bridgesAll(ctrl,rounds,mode='blend'){let p=ctrl.map(([n,h])=>[h,n]);
+  for(let k=0;k<rounds;k++){const q=[p[0]];for(let i=1;i<p.length;i++){q.push([RC.midpointColor(p[i-1][0],p[i][0],mode),'bridge']);q.push(p[i]);}p=q;}
+  return p;}
+function biome([n,sub,A,B,C]){return family(A).concat(family(B),family(C));}
+
+/* flora and fauna: two more lines under a biome, same build (big family, supporting family, small accent) */
+const BIOTA={
+ 'Rain forest':{
+  flora:[[['sword fern','#1d3f2c'],['salal','#2f5e3a'],['vine maple','#6f9a3e'],['licorice fern','#a6c96a']],
+         [['huckleberry','#4a1730'],['red huckleberry','#b0283f'],['salmonberry','#f08a5d']],
+         [['skunk cabbage','#e8c22e'],['trillium','#f6f0ea']]],
+  fauna:[[['raven','#16161c'],['black bear','#3a2c26'],['elk','#8a6440'],['elk rump','#d9bf95']],
+         [['Steller\'s jay','#1b2f6b'],['jay wing','#2f5fb0'],['jay light','#8fb4e4']],
+         [['sockeye salmon','#c3272b'],['banana slug','#e9c53a']]]},
+ 'Coral reef':{
+  flora:[[['deep seagrass','#1f4d36'],['seagrass','#2e7d4a'],['sea lettuce','#5fae6a'],['seagrass tip','#b6e3a6']],
+         [['red algae','#6b1a2e'],['coralline','#b8354a'],['coralline light','#f08b8b']],
+         [['sea fan','#7b2d8e'],['sea fan light','#c99be0']]],
+  fauna:[[['parrotfish deep','#0e2f6b'],['blue tang','#1d5fd0'],['damselfish','#3fb5e8'],['fin glow','#bfe8f8']],
+         [['clownfish edge','#a8340f'],['clownfish','#f26b1d'],['clownfish light','#ffd2a6']],
+         [['yellow tang','#e8b800'],['sea slug','#7b2d8e']]]},
+ 'Desert':{
+  flora:[[['cactus shadow','#22412f'],['saguaro','#3f6e4a'],['sage','#7fa37a'],['sage dust','#cfdcc2']],
+         [['prickly pear fruit','#8a1f4f'],['cactus bloom','#e05a8b'],['bloom light','#f6b3cb']],
+         [['desert marigold','#f2c12e'],['cholla straw','#e8d9a8']]],
+  fauna:[[['coyote shadow','#3a2a1e'],['jackrabbit','#7a5a3a'],['coyote','#b89064'],['pale belly','#ead7b5']],
+         [['gila black','#1f1a1a'],['gila monster','#e2683c'],['gila light','#f2a679']],
+         [['vermilion flycatcher','#d42a1f'],['mountain bluebird','#4a7fc5']]]},
+ 'Jungle':{
+  flora:[[['forest-floor fern','#163a22'],['philodendron','#2a6b35'],['banana leaf','#5aa84a'],['bamboo','#c4e08a']],
+         [['heliconia shade','#7a1222'],['heliconia','#d9302a'],['heliconia tip','#f6a03a']],
+         [['orchid','#b04fb8'],['frangipani','#f8ecd2']]],
+  fauna:[[['jaguar spot','#1f1712'],['jaguar shade','#7a4a1e'],['jaguar','#d29a3e'],['jaguar belly','#f1dfb4']],
+         [['morpho shade','#0d2f7a'],['morpho','#1e74e0'],['morpho shine','#8fd0ff']],
+         [['poison frog','#e8402a'],['tree frog','#5ccf3a']]]},
+ 'Tundra':{
+  flora:[[['crowberry leaf','#22372a'],['dwarf willow','#4f6b45'],['reindeer moss','#b3b596'],['cotton grass','#f1efe6']],
+         [['fireweed shade','#6a1f52'],['fireweed','#c2459a'],['fireweed light','#eaa6d4']],
+         [['arctic poppy','#f2d03a'],['bilberry','#3b3f8a']]],
+  fauna:[[['musk ox','#2b221d'],['caribou','#6e5a48'],['caribou light','#b8a48c'],['snowy owl','#f4f3ee']],
+         [['arctic fox blue','#4a5560'],['fox grey','#8e98a0'],['fox winter coat','#e6eaee']],
+         [['ptarmigan comb','#c4302b'],['snow bunting','#c98a3a']]]},
+ 'Savanna':{
+  flora:[[['acacia shade','#24402a'],['acacia','#4f7a3a'],['acacia leaf','#8fae5a'],['new grass','#d4e2a0']],
+         [['baobab','#5e4636'],['baobab bark','#9a7a62'],['baobab pod','#d9c4a2']],
+         [['aloe flower','#e2462a'],['flame lily','#f2a22a']]],
+  fauna:[[['lion mane','#4a2c14'],['lion','#b07a3a'],['lion light','#dcb26c'],['lion belly','#f2e2bc']],
+         [['zebra','#1a1a1c'],['wildebeest','#5c5a58'],['zebra white','#f2f0ea']],
+         [['lilac-breasted roller','#7d5ab8'],['roller blue','#2fa0d8']]]},
+ 'Deep sea':{labels:{flora:'sea floor (no plants this deep)'},
+  flora:[[['vent chimney','#1c1a1e'],['vent rock','#4a3f3a'],['bacterial mat','#c9b07a'],['mat light','#f0e6c8']],
+         [['bamboo coral','#6b2a1a'],['deep coral','#c45a2e'],['coral light','#f2a07a']],
+         [['tube worm plume','#d2283c'],['glass sponge','#d6e6ea']]],
+  fauna:[[['anglerfish','#1a1414'],['viperfish','#2e3440'],['lanternfish','#6b7d96'],['lantern glow','#c6e2f2']],
+         [['vampire squid','#3a0a1a'],['vampire squid red','#9a1a2e'],['squid light','#e2687a']],
+         [['photophore','#3ef0ff'],['dumbo octopus','#f2a2b8']]]},
+ 'Autumn woods':{
+  flora:[[['oak shade','#3a2412'],['oak','#8a5a24'],['beech','#c9862e'],['ginkgo','#f2d24a']],
+         [['sumac shade','#5a0e1a'],['sumac','#b3222a'],['sumac light','#e86a4a']],
+         [['fly agaric','#d42a1f'],['moss','#4f8a4a']]],
+  fauna:[[['moose','#2a1e18'],['deer','#7a5232'],['deer light','#b88a5c'],['deer tail','#f0e4d0']],
+         [['red fox shade','#6a2a10'],['red fox','#c8581e'],['fox light','#eaa266']],
+         [['cardinal','#c8102e'],['blue jay','#3a6ec8']]]},
+ 'Alpine meadow':{
+  flora:[[['dwarf pine','#1f3f2c'],['alpine grass','#4f8a45'],['lady\'s mantle','#93c06a'],['dew','#e2f0d2']],
+         [['gentian deep','#1a2a7a'],['gentian','#2f52c8'],['harebell','#9fb2ee']],
+         [['alpine poppy','#f4c42a'],['edelweiss','#f2f0e6']]],
+  fauna:[[['ibex horn','#2a2420'],['ibex','#6e5a46'],['chamois','#b08e64'],['mountain hare','#ece6dc']],
+         [['marmot shade','#4a3426'],['marmot','#9a7450'],['marmot light','#d6b68c']],
+         [['apollo butterfly spot','#c8202e'],['chough beak','#f2c22a']]]},
+ 'Wetland':{
+  flora:[[['sedge shade','#1f3a2a'],['sedge','#3f7a4a'],['lily pad','#6fae5a'],['duckweed','#c2e07a']],
+         [['iris deep','#2e1f6b'],['wild iris','#6a4cb3'],['iris light','#b9a8ea']],
+         [['marsh marigold','#f5c22b'],['water lily','#f6d6e2']]],
+  fauna:[[['heron shadow','#2a3038'],['great blue heron','#5f7088'],['heron grey','#9fb0c0'],['egret','#f4f4ee']],
+         [['mallard head','#0f4a3a'],['mallard green','#1f7a5a'],['mallard light','#6fc29a']],
+         [['red-winged blackbird','#d4281e'],['wing stripe','#f2c43a']]]},
+ 'Polar night':{labels:{flora:'flora: lichen and snow algae'},
+  flora:[[['crust lichen','#2e2a26'],['rock lichen','#6a6050'],['map lichen','#b6c06a'],['frost','#eef2f0']],
+         [['snow algae deep','#7a1a2e'],['snow algae','#d65a6a'],['watermelon snow','#f4b6be']],
+         [['golden lichen','#c09a3a'],['moss campion','#d45aa8']]],
+  fauna:[[['orca','#0e0f14'],['seal','#4a5058'],['harp seal','#9aa2aa'],['polar bear','#f2efe4']],
+         [['narwhal','#3a4a5a'],['beluga shadow','#8aa6b8'],['beluga','#e6f0f4']],
+         [['puffin beak','#f26b1d'],['king eider','#5aa86a']]]},
+ 'Volcano':{
+  flora:[[['regrowth shade','#1f3a22'],['new fern','#2e6a2e'],['ohia leaf','#6aa04a'],['fern curl','#c2e08a']],
+         [['lichen shade','#3f4a44'],['silversword','#8fa39a'],['silversword light','#dbe4df']],
+         [['sulphur lichen','#e8d84a'],['ohia lehua','#d4202e']]],
+  fauna:[[['lava lizard','#2a2422'],['nene goose','#5a5048'],['nene','#a8957e'],['nene cheek','#ece0c4']],
+         [['booby feet shade','#1f5f7a'],['blue-footed booby','#3aa0c8'],['booby feet light','#a6e0ee']],
+         [['amakihi','#b8c43a'],['lava lizard throat','#e2563a']]]},
+};
+/* ---- 2b. skies: weather, each as a day line and a sunset line, same build as the biomes ---- */
+const SKIES=[
+ ['Thunderstorm','dark anvil clouds, rain curtains, lightning',
+  [[['anvil base','#1c2230'],['storm cloud','#3a4558'],['shelf cloud','#6f7d92'],['cloud top','#c9d2dd']],
+   [['rain shaft','#2d3f4f'],['rain curtain','#5d7487'],['spray','#a9bccb']],
+   [['lightning violet','#a98cf0'],['lightning','#f4f1ff']]],
+  [[['storm underside','#2a1f3a'],['bruised cloud','#5a3a62'],['mammatus','#a86a86'],['lit edge','#f0b8a0']],
+   [['ember sky','#8a2a1a'],['sunset orange','#e8642a'],['gold break','#f6b84a']],
+   [['storm teal','#2f5f6a'],['lightning','#f6f2ff']]]],
+ ['Eerie storm light','the green-yellow cast before a big storm arrives',
+  [[['green-black cloud','#1d2a26'],['storm green','#3f5a4a'],['eerie teal','#6f9a8a'],['sickly light','#c9dcae']],
+   [['ochre gloom','#6a5426'],['yellow cast','#c8a440'],['eerie yellow','#efe08a']],
+   [['funnel grey','#7a7e78'],['hail','#eef2ec']]],
+  [[['dark wall','#2a2420'],['copper cloud','#7a4a2a'],['orange cast','#d0803a'],['amber glow','#f2c27a']],
+   [['green tinge','#3e5a48'],['teal break','#6a9a8a'],['pale teal','#c4ded2']],
+   [['pink flash','#f08ab0'],['lightning','#fbf6ff']]]],
+ ['Snow','flat white sky, blue shadows',
+  [[['snow cloud','#5a6470'],['flat grey sky','#8e98a2'],['snowfall','#c9d0d8'],['fresh snow','#f6f8fb']],
+   [['snow shadow','#3a5a8a'],['blue shadow','#7a9ad0'],['shadow light','#c6d6f2']],
+   [['bare branch','#2e2624'],['winter berry','#b8283a']]],
+  [[['dusk snow cloud','#3e3a5a'],['lavender sky','#8a7ab0'],['pink snow','#e2b8cc'],['alpenglow','#fbe6e6']],
+   [['cold shadow','#2f4a7a'],['blue hour','#5f7ac0'],['ice blue','#b6c8ee']],
+   [['last sun','#f2a05a'],['warm window','#f6d27a']]]],
+ ['Rain','grey sky, wet streets',
+  [[['rain cloud','#2f3a44'],['wet sky','#5a6a78'],['rain grey','#94a2ae'],['bright overcast','#d6dde2']],
+   [['wet street','#22303a'],['puddle','#3e6a7a'],['reflection','#8ab8c6']],
+   [['umbrella','#d8342a'],['raincoat','#f2c23a']]],
+  [[['rain dusk','#2e2a40'],['wet violet','#5e4a72'],['rose cloud','#b07a96'],['peach haze','#f0c2a8']],
+   [['dark street','#2a2a36'],['puddle glow','#a85a3a'],['puddle shine','#f2a05a']],
+   [['rain teal','#3f7a86'],['streetlight','#ffd68a']]]],
+ // mist is one continuous fade, so it is built the other way: three controls, then bridges of bridges (Gary)
+ ['Mist','one soft fade: a dark tree, the mist, the sun behind it',
+  [['dark tree','#2f3d3a'],['mist','#a7b4b0'],['sun in mist','#f6ecd0']],
+  [['dusk hill','#3a3550'],['rose mist','#c09aa8'],['sun glow','#fbe2c0']],'bridges'],
+ ['Drizzle','light rain, rinsed greens',
+  [[['drizzle cloud','#4e5660'],['drizzle grey','#7c8690'],['soft grey','#adb6bd'],['pale sky','#dde2e5']],
+   [['wet leaf','#2f4a3a'],['wet grass','#4f7a5a'],['rinsed green','#93b89a']],
+   [['wet brick','#9a4a3a'],['yellow raincoat','#f2d04a']]],
+  [[['drizzle dusk','#4a4256'],['mauve drizzle','#857590'],['soft pink','#c8aab4'],['pale peach','#f0d8cc']],
+   [['wet slate','#3a4250'],['blue drizzle','#6a7a96'],['silver','#aab6c8']],
+   [['low sun','#f0a060'],['window light','#f8dc90']]]],
+ ['Forest mist','Pacific Northwest: lush greens fading into mist',
+  [[['near fir','#173a2c'],['wet fir','#2f5e48'],['firs in mist','#6f8f80'],['fir ghosts','#b4c6bd']],
+   [['moss','#3f7a3a'],['lush moss','#6fa84a'],['wet fern','#b2d48a']],
+   [['mist','#dfe6e3'],['wet cedar','#7a4a32']]],
+  [[['dusk fir','#1f2e2a'],['fir in gold mist','#4a5a40'],['gold mist','#b8a878'],['lit mist','#f2e2b8']],
+   [['moss in shade','#2f5030'],['moss','#5f8a3a'],['backlit fern','#c2d86a']],
+   [['sunbeam','#f8d27a'],['rose mist','#e2b8b0']]]],
+];
+
+/* ---- 3. duotones / tritones: families, one led dark, one led light ---- */
+// hue numbers are OKLCH degrees
+const DUOS=[
+ ['Navy & Marigold',265,75,'blue with gold/orange: the best-liked pair in the 2025 pairing study'],
+ ['Teal & Coral',195,35,'a warm colour with cyan: popular in O\'Donovan\'s 2011 palette data'],
+ ['Indigo & Apricot',282,62,'cool dark with warm light, the way light falls outdoors'],
+ ['Plum & Butter',325,100,'natural order: yellow lives light, violet lives dark'],
+ ['Rust & Sky',42,236,'roles swapped: the warm family carries the darks'],
+ ['Pine & Peach',158,52,'green and orange-pink, opposite temperatures'],
+ ['Forest & Rose',150,5,'near-complements, kept apart by lightness'],
+ ['Ink & Tomato',null,30,'print duotone: black ink plus one colour'],
+];
+const TRIS=[
+ ['Navy, Gold & Coral',265,85,30],
+ ['Teal, Sand & Tomato',200,80,28],
+ ['Plum, Peach & Mint',320,58,165],
+ ['Forest, Butter & Berry',150,100,355],
+ ['Indigo, Apricot & Turquoise',282,62,200],
+ ['Ink, Paper & Vermilion',null,80,32],
+];
+function duo([name,a,b,why]){
+  const A=a==null?neutralRamp(60,.2,.62,5,.012,'family 1 (dark-led): neutral ink'):ramp(a,.27,.72,5,.85,'family 1, led dark');
+  const B=ramp(b,.58,.95,5,.85,'family 2, led light');
+  return A.concat(B);
+}
+function tri([name,a,b,c]){
+  const A=a==null?neutralRamp(60,.2,.6,5,.012,'family 1: neutral ink'):ramp(a,.27,.7,5,.85,'family 1, led dark');
+  const B=ramp(b,.6,.95,4,.8,'family 2, led light');
+  const C=ramp(c,.5,.78,3,.9,'family 3: the accent, small amounts');
+  return A.concat(B,C);
+}
+
+/* ---- 4. methods (seeded) ---- */
+const METHODS=[
+ {id:'wheel',name:'Wheel rules',src:'Adobe Color / Itten: hues placed by angle (analogous, split complement, triad, complement), each at a few lightnesses. O\'Donovan 2011: these templates alone don\'t predict which palettes people like. Shown as the baseline.',
+  make(r){const H=r()*360,rules=[['analogous',[0,30,60]],['split complement',[0,150,210]],['triad',[0,120,240]],['complement',[0,180]]],[rn,off]=rules[Math.floor(r()*rules.length)];
+   const out=[];off.forEach(d=>{const n=off.length==2?5:4;for(let i=0;i<n;i++){const L=.42+.46*i/(n-1);out.push([vivid(L,H+d,.75),rn+' '+(d?'+'+d+'°':'base')]);}});return{items:out,tag:rn};}},
+ {id:'natural',name:'Natural order',src:'Judd / Munsell: each hue sits at its own natural lightness, where it is strongest (yellow light, orange mid, blue and violet dark). Pairs that follow this order look right; reversed (dark yellow, pale navy) looks muddy.',
+  make(r){const H=r()*360,n=4+Math.floor(r()*2),step=25+r()*20,out=[];
+   for(let i=0;i<n;i++){const h=H+i*step,L=clamp(cuspL(h)+(r()-.5)*.08,.3,.93);out.push([vivid(L,h,.9),'hue at its natural lightness']);
+     out.push([vivid(clamp(L+.17,.4,.96),shifted(h,L+.17),.6),'its tint (towards sunlight)']);}
+   const h0=H+step*(n-1)/2;out.push([vivid(.3,shifted(h0,.3),.7),'one deep shade for edges']);return{items:out,tag:n+' hues, '+Math.round(step)+'° apart'};}},
+ {id:'line',name:'Bridges all the way',src:'"Lines in colour space" (arXiv 1709.02252: straight-line palettes were preferred) built Radiance\'s way: two control colours, a dark cool one and a light warm one, and every colour between is a bridge, then bridges of bridges.',
+  make(r){const Hd=200+r()*110,Hl=Hd+180+(r()-.5)*90;const a=vivid(.28,Hd,.9),b=vivid(.92,Hl,.9);
+   let p=[a,b];for(let k=0;k<3;k++){const q=[p[0]];for(let i=1;i<p.length;i++){q.push(RC.midpointColor(p[i-1],p[i],'wheel'));q.push(p[i]);}p=q;}
+   return{items:p.map((h,i)=>[h,i==0||i==p.length-1?'control colour':'bridge (wheel)']),tag:'9 from 2 controls',ordered:true};}},
+ {id:'pigment',name:'Limited pigments',src:'Painters\' limited palettes (Zorn: ochre, vermilion, black, white; split primary; earth). Every swatch is a mix of a few real pigments, so everything shares the same ingredients. Mixed here in OKLab as an approximation of paint.',
+  sets:[['Zorn',{ochre:'#c8963e',vermilion:'#e34234','ivory black':'#28241f',white:'#f5f2ea'}],
+        ['Earth + blue',{'burnt sienna':'#8a3e1e','yellow ochre':'#cf9a3a',ultramarine:'#2a3a9a',white:'#f6f3ec'}],
+        ['Split primary',{lemon:'#f4e04d','cad yellow':'#f6b12a','cad red':'#e0352b',alizarin:'#a3203f',ultramarine:'#2a3a9a',phthalo:'#0f5b78',white:'#f7f5ef'}]],
+  make(r,i){const [nm,pg]=this.sets[i%3],names=Object.keys(pg).filter(k=>k!='white'),W=pg.white,out=[];
+   const mix=(x,y,t)=>{const A=RC.hexToOklab(x),B=RC.hexToOklab(y);return RC.oklabToHex({L:A.L+(B.L-A.L)*t,a:A.a+(B.a-A.a)*t,b:A.b+(B.b-A.b)*t});};
+   names.forEach(n=>out.push([pg[n],n]));
+   for(let a=0;a<names.length;a++)for(let b=a+1;b<names.length;b++){const t=.35+r()*.3;out.push([mix(pg[names[a]],pg[names[b]],t),names[a]+' + '+names[b]]);}
+   names.forEach(n=>out.push([mix(pg[n],W,.55),n+' + white']));
+   let o=out;while(o.length>14){o.splice(Math.floor(r()*(o.length-names.length))+names.length,1);} // keep the pure pigments
+   return{items:o,tag:nm};}},
+ {id:'notan',name:'Quiet, middle, loud',src:'Munsell\'s area rule (large areas quiet, small areas strong) and the colourists\' 60-30-10: one quiet family for big fields across the whole value range, one middle family, one loud accent used sparingly.',
+  make(r){const H=r()*360,H2=H+(r()<.5?1:-1)*(30+r()*30),H3=H+150+r()*60,out=[];
+   for(let i=0;i<6;i++){const L=.3+.62*i/5;out.push([lch(L,.035+.02*r(),guard(L,shifted(H,L))),'quiet: big fields']);}
+   for(let i=0;i<4;i++){const L=.45+.4*i/3;out.push([vivid(L,shifted(H2,L),.55),'middle: medium areas']);}
+   const L3=cuspL(H3);out.push([vivid(L3,H3,.95),'loud: small touches']);out.push([vivid(clamp(L3-.15,.35,.8),H3,.95),'loud, darker']);
+   return{items:out,tag:'60 / 30 / 10',ordered:true};}},
+];
+
+
+/* ---- suggestions for the next control colour (the maker's five rules) ---- */
+const warm=H=>H<110||H>330;
+const SUGGEST=[
+ ['Next in natural order','turns the wheel 35° onward and puts that hue at its natural lightness',a=>{const o=RC.hexToOklch(a.at(-1)),p=a.length>1?RC.hexToOklch(a.at(-2)):null;
+   const dir=p&&o.H!=null&&p.H!=null?Math.sign(RC.hueDelta(p.H,o.H))||1:1,H=(o.H??60)+35*dir;return vivid(cuspL(H),H,.88);}],
+ ['Light–dark see-saw','stays close in hue (20° on) but flips the value: light after dark, dark after light',a=>{const o=RC.hexToOklch(a.at(-1)),H=(o.H??60)+20,L=o.L>.6?.32:.88;return vivid(L,shifted(H,L),.85);}],
+ ['Warm ↔ cool','crosses to the other temperature, at a contrasting value',a=>{const o=RC.hexToOklch(a.at(-1)),H=o.H??60,T=warm(H)?235:62,L=clamp(o.L>.6?o.L-.3:o.L+.3,.3,.92);return vivid(L,shifted(T,L),.85);}],
+ ['Continue the line','extends the straight line through the last two controls (needs two)',a=>{if(a.length<2)return null;const x=RC.hexToOklab(a.at(-2)),y=RC.hexToOklab(a.at(-1));
+   const L=clamp(2*y.L-x.L,.22,.95);return RC.oklabToHex({L,a:2*y.a-x.a,b:2*y.b-x.b});}],
+ ['Accent','the colour opposite your controls, at full strength: for the one field that breaks the rule',a=>{let sa=0,sb=0;a.forEach(h=>{const o=RC.hexToOklab(h);sa+=o.a;sb+=o.b;});
+   const H=wrap(Math.atan2(sb,sa)*180/Math.PI+180);return vivid(cuspL(H),H,.95);}],
+];
+
+/* ---- recipes: every palette is FAMILIES of named controls plus rounds of bridges. The list and the maker both
+   build colours from a recipe with build(), so a palette opened in the maker is exactly the one in the list.
+   recipe = {families:[{controls:[[name,hex]...], rounds:0-3, mode:'wheel'|'blend'}]} */
+function expand(f){let p=f.controls.map(([n,h])=>[h,n]);
+  for(let k=0;k<(f.rounds||0);k++){const q=[p[0]];for(let i=1;i<p.length;i++){const A=p[i-1],B=p[i];
+    q.push([RC.midpointColor(A[0],B[0],f.mode||'wheel'),k==0&&A[1]&&B[1]?'between '+A[1]+' and '+B[1]:'bridge']);q.push(B);}p=q;}
+  return p;}
+const build=r=>r.families.flatMap(expand);
+const fams=(list,rounds,mode)=>({families:list.map(c=>({controls:c,rounds,mode}))});
+const chunks=(items,sizes)=>{let k=0;return{families:sizes.map(n=>({controls:items.slice(k,k+=n).map(([h,w])=>[w,h]),rounds:0,mode:'wheel'}))};};
+const withColors=(id,label,recipe)=>({id,label,recipe,colors:build(recipe)});
+
+/* ---- the grouped catalog the picker dials down through: group -> item -> its lines ---- */
+const slug=t=>t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+function catalog(){
+  const keep=['Markers','Sunset','Ocean'];
+  return[
+   {id:'classic',name:'Classic',items:PRESETS.filter(p=>keep.includes(p[0])).map(([n,c])=>({id:'classic:'+slug(n),name:n,sub:'',
+     lines:[withColors('classic:'+slug(n),'',{families:[{controls:c.map(h=>['',h]),rounds:0,mode:'wheel'}]})]}))},
+   {id:'places',name:'Places',items:BIOMES.map(b=>{const id='place:'+slug(b[0]),x=BIOTA[b[0]],lines=[withColors(id+':land','land',fams([b[2],b[3],b[4]],1,'wheel'))];
+     if(x){lines.push(withColors(id+':flora',(x.labels&&x.labels.flora)||'flora',fams(x.flora,1,'wheel')));
+           lines.push(withColors(id+':fauna','fauna',fams(x.fauna,1,'wheel')));}
+     return{id,name:b[0],sub:b[1],lines};})},
+   {id:'skies',name:'Skies',items:SKIES.map(([n,sub,day,dusk,how])=>{const id='sky:'+slug(n),mk=x=>how=='bridges'?fams([x],3,'blend'):fams(x,1,'wheel');
+     return{id,name:n,sub,lines:[withColors(id+':day','day',mk(day)),withColors(id+':sunset','sunset',mk(dusk))]};})},
+   {id:'fades',name:'Fades',items:FADES.map(([n,sub,c,m])=>({id:'fade:'+slug(n),name:n,sub,lines:[withColors('fade:'+slug(n),'',fams([c],3,m))]}))},
+   {id:'pairs',name:'Pairs',items:DUOS.map(d=>({id:'pair:'+slug(d[0]),name:d[0],sub:'duotone',lines:[withColors('pair:'+slug(d[0]),'',chunks(duo(d),[5,5]))]}))
+     .concat(TRIS.map(t=>({id:'pair:'+slug(t[0]),name:t[0],sub:'tritone',lines:[withColors('pair:'+slug(t[0]),'',chunks(tri(t),[5,4,3]))]})))},
+  ];
+}
+// a seeded method's result as a recipe: one family, every colour a control (no bridges)
+function methodRecipe(k,seed){const m=METHODS[k],r=mulberry32(seed),res=m.make(r,seed%3),items=res.ordered?res.items:lineOrder(res.items);
+  if(m.id=='line')return{families:[{controls:[['dark control',items[0][0]],['light control',items.at(-1)[0]]],rounds:3,mode:'wheel'}]}; // keep its build: 2 controls, 3 rounds
+  return{families:[{controls:items.map(([h,w])=>[w||'',h]),rounds:0,mode:'wheel'}]};}
+return{RC,clamp,wrap,mulberry32,lch,guard,vivid,cuspL,shifted,ramp,neutralRamp,grey,closest,lineOrder,
+  PRESETS,BIOMES,BIOTA,SKIES,FADES,DUOS,TRIS,family,bridgesAll,biome,duo,tri,METHODS,catalog,SUGGEST,warm,expand,build,methodRecipe};
+})();
+
+</script>
+<script>/* gen/cells.js (copied in by build_lava.py; edit the source file) */
+// Cells by competition, shared by cells-lab.html and lava-lab.html.
+// Every spot on the paper joins the cell that reaches it best: distance / (size x the cell's
+// Fourier-wobbled radius in that direction). The paper is bent first (swirl), so walls curve
+// but stay closed. trace() turns any owner function into vector walls.
+// State S = { C: [{x, y, sz, A:[3], B:[3]}], WV: [6 waves {ux, uy, f, ph, amp, ax}], A: swirl px, L: swirl size px }
+(function () {
+  function rng(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  // K wobble harmonics per cell (2nd..4th), total size <= wob so the radius stays positive
+  function wobbleCoeffs(r, wob, K = 3) {
+    const A = [], B = []; let tot = 0;
+    for (let j = 0; j < K; j++) { const a = (r() - .5) / (j + 1), b = (r() - .5) / (j + 1); A.push(a); B.push(b); tot += Math.abs(a) + Math.abs(b); }
+    const f = tot > 0 ? wob / tot : 0;
+    for (let j = 0; j < K; j++) { A[j] *= f; B[j] *= f; }
+    return { A, B };
+  }
+
+  function waves(r) {
+    const WV = [];
+    for (let j = 0; j < 6; j++) {
+      const a = r() * Math.PI * 2;
+      WV.push({ ux: Math.cos(a), uy: Math.sin(a), f: (0.7 + r() * 0.6) * (j < 3 ? 1 : 1.9), ph: r() * Math.PI * 2, amp: j < 3 ? 1 : 0.45, ax: j % 3 });
+    }
+    return WV;
+  }
+
+  function warp(x, y, S) {
+    let dx = 0, dy = 0; const k = 2 * Math.PI / S.L;
+    for (const v of S.WV) {
+      const t = Math.sin(k * v.f * (v.ux * x + v.uy * y) + v.ph) * v.amp;
+      if (v.ax === 0) dx += t; else if (v.ax === 1) dy += t; else { dx += t * 0.7; dy -= t * 0.7; }
+    }
+    return [x + S.A * dx * 0.6, y + S.A * dy * 0.6];
+  }
+
+  function reach(c, co, si) {
+    let v = 1, ck = co, sk = si;
+    for (let j = 0; j < c.A.length; j++) { const c2 = ck * co - sk * si, s2 = sk * co + ck * si; ck = c2; sk = s2; v += c.A[j] * ck + c.B[j] * sk; }
+    return v;
+  }
+
+  function owner(x, y, S) {
+    const q = warp(x, y, S); let best = 1e9, bi = 0;
+    for (let i = 0; i < S.C.length; i++) {
+      const c = S.C[i], dx = q[0] - c.x, dy = q[1] - c.y, d = Math.hypot(dx, dy) || 1e-6;
+      const v = d / (c.sz * reach(c, dx / d, dy / d));
+      if (v < best) { best = v; bi = i; }
+    }
+    return bi;
+  }
+
+  // The bend must never fold the paper over itself (walls would cross). Largest swirl up to S.A
+  // whose stretch stays positive everywhere: Jacobian determinant >= 0.1 on a grid.
+  function foldFree(S, W, H, grid = 10) {
+    const minDet = A => {
+      const T = { ...S, A }; let m = Infinity;
+      for (let y = 0; y <= H; y += grid) for (let x = 0; x <= W; x += grid) {
+        const p = warp(x, y, T), px = warp(x + 1, y, T), py = warp(x, y + 1, T);
+        const det = (px[0] - p[0]) * (py[1] - p[1]) - (px[1] - p[1]) * (py[0] - p[0]);
+        if (det < m) m = det;
+      }
+      return m;
+    };
+    if (minDet(S.A) >= 0.1) return S.A;
+    let lo = 0, hi = S.A;
+    for (let i = 0; i < 14; i++) { const m = (lo + hi) / 2; if (minDet(m) >= 0.1) lo = m; else hi = m; }
+    return lo;
+  }
+
+  // Owners sampled on a grid; each crossing found exactly by bisection; chained into paths
+  // between junctions. Closed specks too small to color are dropped (they join the cell around them).
+  function trace(ownerAt, W, H, step = 3) {
+    const nx = Math.floor(W / step), ny = Math.floor(H / step), gx = W / nx, gy = H / ny;
+    const own = new Int16Array((nx + 1) * (ny + 1));
+    for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) own[j * (nx + 1) + i] = ownerAt(i * gx, j * gy);
+    const O = (i, j) => own[j * (nx + 1) + i];
+    const crossing = (x0, y0, x1, y1, a) => {
+      let lo = 0, hi = 1;
+      for (let i = 0; i < 12; i++) { const m = (lo + hi) / 2; if (ownerAt(x0 + (x1 - x0) * m, y0 + (y1 - y0) * m) === a) lo = m; else hi = m; }
+      const t = (lo + hi) / 2;
+      return [x0 + (x1 - x0) * t, y0 + (y1 - y0) * t];
+    };
+    const pts = new Map(), adj = new Map();
+    const node = (key, make) => { if (!pts.has(key)) { pts.set(key, make()); adj.set(key, []); } return key; };
+    const link = (a, b) => { adj.get(a).push(b); adj.get(b).push(a); };
+    const hEdge = (i, j) => O(i, j) !== O(i + 1, j) ? node('h' + i + ',' + j, () => crossing(i * gx, j * gy, (i + 1) * gx, j * gy, O(i, j))) : null;
+    const vEdge = (i, j) => O(i, j) !== O(i, j + 1) ? node('v' + i + ',' + j, () => crossing(i * gx, j * gy, i * gx, (j + 1) * gy, O(i, j))) : null;
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      const e = [hEdge(i, j), vEdge(i + 1, j), hEdge(i, j + 1), vEdge(i, j)].filter(Boolean);
+      if (e.length === 2) link(e[0], e[1]);
+      else if (e.length > 2) {
+        const ps = e.map(k => pts.get(k));
+        const jn = node('j' + i + ',' + j, () => [ps.reduce((s, p) => s + p[0], 0) / ps.length, ps.reduce((s, p) => s + p[1], 0) / ps.length]);
+        e.forEach(k => link(jn, k));
+      }
+    }
+    const seen = new Set(), paths = [];
+    const ek = (a, b) => a < b ? a + '|' + b : b + '|' + a;
+    const walk = (start, next) => {
+      const line = [pts.get(start)]; let prev = start, cur = next;
+      seen.add(ek(prev, cur));
+      while (true) {
+        line.push(pts.get(cur));
+        const nb = adj.get(cur);
+        if (nb.length !== 2) break;
+        const nxt = nb[0] === prev ? nb[1] : nb[0];
+        if (seen.has(ek(cur, nxt))) break;
+        seen.add(ek(cur, nxt)); prev = cur; cur = nxt;
+      }
+      return line;
+    };
+    for (const [k, nb] of adj) if (nb.length !== 2) for (const m of nb) if (!seen.has(ek(k, m))) paths.push(walk(k, m));
+    for (const [k, nb] of adj) for (const m of nb) if (!seen.has(ek(k, m))) paths.push(walk(k, m)); // closed loops
+    const len = p => p.reduce((s, q, i) => i ? s + Math.hypot(q[0] - p[i - 1][0], q[1] - p[i - 1][1]) : 0, 0);
+    const closed = p => Math.hypot(p[0][0] - p[p.length - 1][0], p[0][1] - p[p.length - 1][1]) < 1e-6;
+    return paths.filter(p => len(p) >= 1 && !(closed(p) && len(p) < 60));
+  }
+
+  function simplify(p, tol) {
+    if (p.length < 3) return p;
+    const keep = new Uint8Array(p.length); keep[0] = keep[p.length - 1] = 1;
+    const stack = [[0, p.length - 1]];
+    while (stack.length) {
+      const [a, b] = stack.pop(); let md = 0, mi = -1;
+      const [ax, ay] = p[a], [bx, by] = p[b], L = Math.hypot(bx - ax, by - ay) || 1e-9;
+      for (let i = a + 1; i < b; i++) { const d = Math.abs((bx - ax) * (ay - p[i][1]) - (ax - p[i][0]) * (by - ay)) / L; if (d > md) { md = d; mi = i; } }
+      if (md > tol) { keep[mi] = 1; stack.push([a, mi], [mi, b]); }
+    }
+    return p.filter((_, i) => keep[i]);
+  }
+
+  // Catmull-Rom through the points, written as cubic Beziers
+  function pathD(p) {
+    const f = v => Math.round(v * 100) / 100;
+    if (p.length === 2) return `M${f(p[0][0])},${f(p[0][1])}L${f(p[1][0])},${f(p[1][1])}`;
+    let d = `M${f(p[0][0])},${f(p[0][1])}`;
+    for (let i = 0; i < p.length - 1; i++) {
+      const p0 = p[i - 1] || p[i], p1 = p[i], p2 = p[i + 1], p3 = p[i + 2] || p2;
+      const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+      const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+      d += `C${f(c1[0])},${f(c1[1])} ${f(c2[0])},${f(c2[1])} ${f(p2[0])},${f(p2[1])}`;
+    }
+    return d;
+  }
+
+  // vector walls for state S as path data strings
+  function walls(S, W, H) { return trace((x, y) => owner(x, y, S), W, H).map(p => pathD(simplify(p, 0.25))); }
+
+  function svgText(paths, W, H, pen) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">\n<rect width="${W}" height="${H}" fill="#fff"/>\n` +
+      `<g stroke="#1a1a1a" stroke-width="${pen}" fill="none" stroke-linecap="round" stroke-linejoin="round">\n` +
+      paths.map(d => `<path d="${d}"/>`).join('\n') +
+      `\n<rect x="${pen / 2}" y="${pen / 2}" width="${W - pen}" height="${H - pen}"/>\n</g>\n</svg>\n`;
+  }
+
+  function download(text, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'image/svg+xml' }));
+    a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  window.CELLS = { rng, wobbleCoeffs, waves, warp, reach, owner, foldFree, trace, simplify, pathD, walls, svgText, download };
+})();
+
+</script>
+<script>
+/* LAVA LAMP (a toy beside the palette page). The palette page hands over the palette in the link
+   (#pal=<base64 JSON {n: name, r: recipe}>); it is checked like any palette from outside (cleanRecipe) before use.
+   Its colors become the heat levels, ordered by family: the biggest family is the coolest, the accent the hottest
+   (the accent shows only in the few hot blobs, as the recipe means it). Steps shows each color exactly; Smooth bridges
+   neighbors with Radiance midpoints. The lamp is lava-lab.html's: cells (gen/cells.js) as wax, drawn on the GPU. */
+const $=id=>document.getElementById(id),P=PSETS;
+const store={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
+const HEX=/^#[0-9a-f]{6}$/i,MAXC=24;
+function cleanRecipe(r){if(!r||!Array.isArray(r.families)||!r.families.length||r.families.length>8)return null;const fams=[];let n=0;
+  for(const f of r.families){if(!f||!Array.isArray(f.controls)||!f.controls.length||f.controls.length>MAXC)return null;const cs=[];
+    for(const c of f.controls){if(!Array.isArray(c)||!HEX.test(c[1]))return null;cs.push([String(c[0]??'').slice(0,60),c[1].toLowerCase()]);}
+    const rounds=[0,1,2,3].includes(f.rounds)?f.rounds:0;let m=cs.length;for(let k=0;k<rounds;k++)m=2*m-1;n+=m;
+    fams.push({controls:cs,rounds,mode:f.mode=='blend'?'blend':'wheel'});}
+  return n>96?null:{families:fams};}
+const b64d=t=>JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/')))));
+const onSite=/\.github\.io$/.test(location.hostname);
+if(!onSite)$('back').href='palettes-v3.html';
+
+// the palette: from the link, else the last one brought here, else Markers
+function readPalette(){
+  const fromObj=o=>{const r=o&&cleanRecipe(o.r);return r&&P.build(r).length<=MAXC?{name:String(o.n||'Your palette').slice(0,60),recipe:r}:null;};
+  try{const m=location.hash.match(/^#pal=([A-Za-z0-9_-]{1,20000})$/);if(m){const p=fromObj(b64d(m[1]));if(p){store.set('licorice-pal-lava',JSON.stringify({n:p.name,r:p.recipe}));return p;}}}catch(e){}
+  try{const p=fromObj(JSON.parse(store.get('licorice-pal-lava')||'null'));if(p)return p;}catch(e){}
+  for(const g of P.catalog())for(const it of g.items)for(const ln of it.lines)if(ln.id=='classic:markers')return{name:it.name,recipe:ln.recipe};
+  const it=P.catalog()[0].items[0];return{name:it.name,recipe:it.lines[0].recipe};
+}
+const PAL=readPalette();
+// cool -> hot: families by size (most colors = coolest), each family's colors in the palette's own order
+function heatOrder(recipe){
+  return recipe.families.map((f,i)=>({i,cols:P.build({families:[f]}).map(c=>c[0])})).sort((a,b)=>b.cols.length-a.cols.length||a.i-b.i).flatMap(f=>f.cols);
+}
+let levelColors=heatOrder(PAL.recipe),smooth=false,currentRamp=[];
+if(levelColors.length<2)levelColors=[levelColors[0],levelColors[0]];
+
+// ---------- the wax (from lava-lab.html) ----------
+const MAXN=128;
+let W=600,H=1200;
+const canvas=$('lamp'),gl=canvas.getContext('webgl2',{antialias:false});
+let seed=Math.floor(Math.random()*1e6),cells=[],WV=[],t=0,playing=!matchMedia('(prefers-reduced-motion: reduce)').matches;
+let spots=[],swirlNow=0,swirlCheck=0;
+const LOSS=1,SHARE=.01,MIX=.25;
+function target(){const sz=+$('size').value;return Math.max(4,Math.min(MAXN,Math.round(W*H/(sz*sz))));}
+function newCell(r,x,y){const raw=[];for(let j=0;j<6;j++)raw.push((r()-.5)/(Math.floor(j/2)+1));
+  return{x,y,vx:0,vy:0,T:.1+r()*.2,u:r()*2-1,raw,spin:0,spinRate:(r()-.5)*.6};}
+function adjustCount(){const r=CELLS.rng(Math.floor(Math.random()*1e9)),N=target();
+  while(cells.length>N)cells.splice(Math.floor(r()*cells.length),1);
+  while(cells.length<N)cells.push(newCell(r,r()*W,r()*H));}
+function fit(){const w=Math.max(50,canvas.clientWidth),h=Math.max(50,canvas.clientHeight);if(w===W&&h===H)return false;
+  for(const c of cells){c.x*=w/W;c.y*=h/H;}W=w;H=h;swirlCheck=0;return true;}
+function init(){
+  const r=CELLS.rng(seed*7919+3),N=target(),cols=Math.max(2,Math.round(Math.sqrt(N*W/H))),rows=Math.ceil(N/cols);
+  cells=[];for(let i=0;i<N;i++)cells.push(newCell(r,(i%cols+.5+(r()-.5)*.6)/cols*W,(Math.floor(i/cols)+.5+(r()-.5)*.6)/rows*H));
+  WV=CELLS.waves(CELLS.rng(seed*31+5)).map(v=>({...v,ph0:v.ph,drift:.04+r()*.1}));
+  spots=[0,1,2,3,4,5].map(()=>({w:.05+r()*.08,p:r()*Math.PI*2}));swirlCheck=0;
+}
+function coeffs(c,wob){let tot=0;for(const v of c.raw)tot+=Math.abs(v);const f=tot>0?wob/tot:0,A=[],B=[];
+  for(let j=0;j<3;j++){const a=c.raw[2*j]*f,b=c.raw[2*j+1]*f,n=j+2,cs=Math.cos(n*c.spin),sn=Math.sin(n*c.spin);A.push(a*cs-b*sn);B.push(a*sn+b*cs);}
+  return{A,B};}
+function state(){const wob=+$('wobble').value;
+  const C=cells.map(c=>{const{A,B}=coeffs(c,wob);return{x:c.x,y:c.y,sz:(1+MIX*c.u)*(.8+.55*c.T),A,B,T:c.T};});
+  return{C,WV,A:swirlNow,L:260};}
+function step(dt){
+  const N=cells.length,heat=+$('heat').value,base=Math.sqrt(W*H/N);
+  const hx=spots.slice(0,Math.max(2,Math.min(6,Math.round(W/220)))).map(s=>W*(.5+.42*Math.sin(t*s.w+s.p)));
+  let mean=0;for(const c of cells)mean+=c.T;mean/=N;
+  for(const c of cells){
+    let h=0;for(const x of hx)h+=Math.exp(-(((c.x-x)/85)**2));
+    const low=Math.min(1,Math.max(0,(c.y-(H-280))/220));h*=heat*.9*low*low;
+    const top=Math.min(1,Math.max(0,(1-c.y/H-.7)/.3)),amb=.12+.2*(c.y/H),cool=LOSS*(.05+1.2*top*top)*(.15+c.T);
+    c.T=Math.min(1.2,Math.max(0,c.T+dt*(h-cool*(c.T-amb))));
+    c.vy+=dt*260*(mean-c.T);c.spin+=dt*c.spinRate;
+    c.vx+=(Math.random()-.5)*60*dt;c.vy+=(Math.random()-.5)*60*dt;
+  }
+  const size=c=>(1+MIX*c.u)*(.8+.55*c.T);let msz=0;for(const c of cells)msz+=size(c);msz/=N;
+  for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){
+    const a=cells[i],b=cells[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1e-3,s=base*1.12*(size(a)+size(b))/(2*msz);
+    if(d<s*1.15){const q=SHARE*.8*(b.T-a.T)*dt;a.T+=q;b.T-=q;}
+    if(d>=s)continue;
+    const f=700*(s-d)/s*dt,nx=dx/d,ny=dy/d;
+    const up=a.T>b.T+.25&&b.y<a.y?[a,b,1]:b.T>a.T+.25&&a.y<b.y?[b,a,-1]:null;
+    if(up){const[hot,cold,sg]=up,side=Math.sign(cold.x-hot.x)||1;cold.vx+=f*1.4*side;cold.vy+=f*.2*sg*ny;hot.vx-=f*.3*sg*nx;hot.vy-=f*.15*sg*ny;}
+    else{a.vx-=f*nx;a.vy-=f*ny;b.vx+=f*nx;b.vy+=f*ny;}
+  }
+  const m=base*.5,drag=Math.exp(-dt*1.8);
+  for(const c of cells){
+    if(c.x<m)c.vx+=420*(m-c.x)/m*dt;if(c.x>W-m)c.vx-=420*(c.x-W+m)/m*dt;
+    if(c.y<m)c.vy+=420*(m-c.y)/m*dt;if(c.y>H-m)c.vy-=420*(c.y-H+m)/m*dt;
+    c.vx*=drag;c.vy*=drag;const sp=Math.hypot(c.vx,c.vy);if(sp>160){c.vx*=160/sp;c.vy*=160/sp;}
+    c.x+=c.vx*dt;c.y+=c.vy*dt;
+  }
+  for(const v of WV)v.ph=v.ph0+t*v.drift;
+  t+=dt;swirlCheck-=dt;
+  if(swirlCheck<=0){swirlNow=CELLS.foldFree({WV,A:+$('swirl').value,L:260},W,H,25)*.9;swirlCheck=.5;}
+}
+
+// ---------- drawing on the graphics card ----------
+const VS=`#version 300 es
+in vec2 a; void main(){ gl_Position = vec4(a, 0., 1.); }`;
+const FS=`#version 300 es
+precision highp float;
+uniform vec2 uRes, uPage;
+uniform int uN;
+uniform vec4 uCell[${MAXN}];
+uniform vec3 uA[${MAXN}], uB[${MAXN}];
+uniform vec4 uWv[6];
+uniform vec2 uWa[6];
+uniform float uSwA, uSwL, uPen, uLevels, uSmooth, uGamma;
+uniform vec3 uInk;
+uniform sampler2D uRamp;
+out vec4 o;
+void main() {
+  float s = uPage.x / uRes.x;
+  vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) * s;
+  float k = 6.2831853 / uSwL; vec2 d = vec2(0.);
+  for (int j = 0; j < 6; j++) {
+    float w = sin(k * uWv[j].z * dot(uWv[j].xy, p) + uWv[j].w) * uWa[j].x;
+    if (uWa[j].y < .5) d.x += w; else if (uWa[j].y < 1.5) d.y += w; else { d.x += w * .7; d.y -= w * .7; }
+  }
+  vec2 q = p + uSwA * d * .6;
+  float b1 = 1e9, b2 = 1e9; int i1 = 0; vec2 g1 = vec2(0.), g2 = vec2(0.);
+  for (int i = 0; i < ${MAXN}; i++) {
+    if (i >= uN) break;
+    vec2 v = q - uCell[i].xy; float r = max(length(v), 1e-4), co = v.x / r, si = v.y / r;
+    float c2 = co*co - si*si, s2 = 2.*si*co, c3 = c2*co - s2*si, s3 = s2*co + c2*si, c4 = c3*co - s3*si, s4 = s3*co + c3*si;
+    float R = 1. + uA[i].x*c2 + uB[i].x*s2 + uA[i].y*c3 + uB[i].y*s3 + uA[i].z*c4 + uB[i].z*s4;
+    float val = r / (uCell[i].z * R);
+    vec2 gr = vec2(co, si) / (uCell[i].z * R);
+    if (val < b1) { b2 = b1; g2 = g1; b1 = val; g1 = gr; i1 = i; } else if (val < b2) { b2 = val; g2 = gr; }
+  }
+  float px = (b2 - b1) / max(length(g1 - g2), 1e-6) / s;
+  float pen = uPen / s, ink = uPen > 0. ? clamp(pen * .5 - px + .5, 0., 1.) : 0.;
+  vec2 e = min(p, uPage - p); if (uPen > 0.) ink = max(ink, clamp(pen - min(e.x, e.y) / s + .5, 0., 1.));
+  float h = pow(clamp((uCell[i1].w - .12) / .88, 0., 1.), uGamma);
+  vec3 col = uSmooth < .5 ? texture(uRamp, vec2((min(floor(h * uLevels), uLevels - 1.) + .5) / 256., .5)).rgb
+                          : texture(uRamp, vec2(h * (255. / 256.) + .5 / 256., .5)).rgb;
+  o = vec4(mix(col, uInk, ink), 1.);
+}`;
+let prog,U={},rampTex;
+const gammaOf=()=>1-.7*+$('spread').value;
+function bridged(a,b,rounds=5){let r=[a,b];
+  for(let k=0;k<rounds;k++){const n=[r[0]];for(let i=1;i<r.length;i++)n.push(RadianceColor.midpointColor(r[i-1],r[i]),r[i]);r=n;}return r;}
+function uploadRamp(){
+  const ramp=[levelColors[0]];for(let i=1;i<levelColors.length;i++)ramp.push(...bridged(levelColors[i-1],levelColors[i]).slice(1));currentRamp=ramp;
+  const px=new Uint8Array(256*4);
+  for(let i=0;i<256;i++){const hex=smooth?ramp[Math.round(i/255*(ramp.length-1))]:levelColors[Math.min(i,levelColors.length-1)],rgb=RadianceColor.hexToRgb(hex);px.set([rgb.r,rgb.g,rgb.b,255],i*4);}
+  gl.bindTexture(gl.TEXTURE_2D,rampTex);const f=smooth?gl.LINEAR:gl.NEAREST;
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,f);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,f);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,256,1,0,gl.RGBA,gl.UNSIGNED_BYTE,px);
+}
+function showStrip(){
+  $('palName').textContent=PAL.name;
+  $('strip').replaceChildren(...levelColors.map(h=>{const s=document.createElement('span');s.style.background=h;s.title=h;return s;}));
+}
+function glSetup(){
+  const sh=(type,src)=>{const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s;};
+  prog=gl.createProgram();gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS));gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(prog));gl.useProgram(prog);
+  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  const a=gl.getAttribLocation(prog,'a');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,2,gl.FLOAT,false,0,0);
+  for(const n of['uRes','uPage','uN','uCell','uA','uB','uWv','uWa','uSwA','uSwL','uPen','uLevels','uSmooth','uRamp','uInk','uGamma'])U[n]=gl.getUniformLocation(prog,n);
+  rampTex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,rampTex);
+  for(const[k,v]of[[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]])gl.texParameteri(gl.TEXTURE_2D,k,v);
+}
+function resize(){fit();
+  const dpr=Math.max(.5,Math.min(window.devicePixelRatio||1,1.5,Math.sqrt(1.2e8/(W*H*Math.max(cells.length,1))))),w=Math.round(W*dpr),h=Math.round(H*dpr);
+  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}}
+function render(){
+  resize();const S=state(),N=S.C.length;
+  const cell=new Float32Array(MAXN*4),A=new Float32Array(MAXN*3),B=new Float32Array(MAXN*3);
+  S.C.forEach((c,i)=>{cell.set([c.x,c.y,c.sz,c.T],i*4);A.set(c.A,i*3);B.set(c.B,i*3);});
+  const wv=new Float32Array(24),wa=new Float32Array(12);WV.forEach((v,j)=>{wv.set([v.ux,v.uy,v.f,v.ph],j*4);wa.set([v.amp,v.ax],j*2);});
+  gl.viewport(0,0,canvas.width,canvas.height);
+  gl.uniform2f(U.uRes,canvas.width,canvas.height);gl.uniform2f(U.uPage,W,H);
+  gl.uniform1i(U.uN,N);gl.uniform4fv(U.uCell,cell);gl.uniform3fv(U.uA,A);gl.uniform3fv(U.uB,B);
+  gl.uniform4fv(U.uWv,wv);gl.uniform2fv(U.uWa,wa);
+  gl.uniform3fv(U.uInk,[.07,.07,.08]);gl.uniform1f(U.uGamma,gammaOf());
+  gl.uniform1f(U.uLevels,levelColors.length);gl.uniform1f(U.uSmooth,smooth?1:0);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,rampTex);gl.uniform1i(U.uRamp,0);
+  gl.uniform1f(U.uSwA,S.A);gl.uniform1f(U.uSwL,S.L);gl.uniform1f(U.uPen,+$('pen').value);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+}
+let last=performance.now();
+function frame(now){const real=Math.min(.05,(now-last)/1000);last=now;
+  if(playing){const dt=real*+$('speed').value/2;step(dt);step(dt);}
+  render();requestAnimationFrame(frame);}
+
+// ---------- controls ----------
+function labels(){
+  for(const id of['size','swirl'])$(id+'O').textContent=$(id).value;
+  for(const id of['heat','speed','pen'])$(id+'O').textContent=(+$(id).value).toFixed(1);
+  for(const id of['wobble','spread'])$(id+'O').textContent=(+$(id).value).toFixed(2);
+}
+for(const id of['spread','heat','speed','swirl','wobble','pen'])$(id).addEventListener('input',()=>{labels();if(id==='swirl')swirlCheck=0;});
+$('size').addEventListener('input',()=>{labels();adjustCount();});
+$('blend').onclick=()=>{smooth=!smooth;$('blend').textContent=smooth?'Steps':'Smooth';uploadRamp();};
+$('flip').onclick=()=>{levelColors=levelColors.slice().reverse();showStrip();uploadRamp();};
+$('play').onclick=()=>{playing=!playing;$('play').textContent=playing?'Pause':'Play';};
+$('newSeed').onclick=()=>{seed=Math.floor(Math.random()*1e6);init();for(let i=0;i<300;i++)step(1/30);};
+const stamp=()=>new Date().toISOString().slice(0,19).replace(/[T:]/g,'-');
+function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
+// the picture: drawn again at twice the screen size, read straight after drawing (the lamp keeps no copy)
+$('savePng').onclick=()=>{
+  const ow=canvas.width,oh=canvas.height,k=2;canvas.width=Math.round(W*k);canvas.height=Math.round(H*k);
+  const keep=resize;resize=()=>{};render();resize=keep;
+  canvas.toBlob(b=>{if(b)download(b,'licorice-lava-'+stamp()+'.png');},'image/png');
+  canvas.width=ow;canvas.height=oh;
+};
+// the coloring page: this moment's walls traced to vector lines (gen/cells.js), at least 2 px so they print
+$('saveSvg').onclick=()=>{const S=state();CELLS.download(CELLS.svgText(CELLS.walls(S,W,H),W,H,Math.max(2,+$('pen').value)),'licorice-lava-'+stamp()+'.svg');};
+
+if(!gl){$('info').textContent='The lava lamp needs WebGL2, which this browser does not offer.';}
+else{
+  try{
+    glSetup();fit();init();labels();showStrip();uploadRamp();
+    $('play').textContent=playing?'Pause':'Play';
+    for(let i=0;i<300;i++)step(1/30); // warm the lamp up before the first frame
+    $('info').textContent=levelColors.length+' colors, coolest to hottest by family: the biggest family is the coolest wax, the accent the hottest.';
+    requestAnimationFrame(frame);
+  }catch(e){$('info').textContent='The lava lamp could not start on this graphics card.';}
+}
+</script>
+</body></html>

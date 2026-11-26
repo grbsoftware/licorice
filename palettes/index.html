@@ -117,6 +117,7 @@ button.col::before{content:'';position:absolute;top:8px;left:50%;width:9px;heigh
 .sg{all:unset;cursor:pointer;display:flex;align-items:center;gap:6px;min-height:44px;padding:0 8px 0 4px;border:1px solid var(--edge);border-radius:6px;font-size:12px}
 .sg span{width:32px;height:32px;border-radius:4px;border:1px solid var(--line)}
 .make{border-bottom:1px solid var(--rule)}
+.lava{display:flex;align-items:center;justify-content:center;margin-top:8px;text-decoration:none;color:var(--ink)}
 .cur-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
 </style></head>
 <body>
@@ -124,7 +125,7 @@ button.col::before{content:'';position:absolute;top:8px;left:50%;width:9px;heigh
 <div class="app">
   <div class="page"><div class="appbar" id="appbar"></div><div class="toggles"><div class="seg" role="group" aria-label="Paper">Paper <button id="paperLight" class="on">Light</button><button id="paperDark">Dark</button></div><div class="seg" role="group" aria-label="Fill">Fill <button id="fillScatter">Scatter</button><button id="fillCluster">Cluster</button><button id="fillPattern">Pattern</button></div></div><div class="toggles" id="repWrap" style="display:none"><div class="seg" role="group" aria-label="Repeat">Repeat <button data-rep="free">Free</button><button data-rep="weave">Weave</button><button data-rep="quad">Four</button><button data-rep="flower">Flower</button><button data-rep="ripple">Ripple</button><button data-rep="motif">Motif</button></div><button class="b" id="reroll" style="display:none">Reroll</button><button class="b" id="cycle" style="display:none" aria-pressed="false">Auto cycle: off</button></div><label class="meta" id="touchWrap" style="display:none;align-items:center;gap:8px;justify-content:center">Neighbors at least <input type="range" id="touch" min="0" max="100" step="10" style="width:140px;min-height:44px"> <b id="touchVal"></b> opposite</label><div class="meta" id="fillNote" style="text-align:center;min-height:1.4em"></div><svg id="sample"></svg></div>
   <div class="panel">
-    <div class="cur"><h2>Your palette</h2><div class="cur-top"><div class="nm" id="curName" style="margin:0"></div><button class="b" id="editCur">Edit in maker</button></div><div class="grid" id="grid"></div><div class="mk-row" style="padding:8px 0 0"><button class="b" id="takeCur"></button></div></div>
+    <div class="cur"><h2>Your palette</h2><div class="cur-top"><div class="nm" id="curName" style="margin:0"></div><button class="b" id="editCur">Edit in maker</button></div><div class="grid" id="grid"></div><div class="mk-row" style="padding:8px 0 0"><button class="b" id="takeCur"></button></div><a class="b lava" id="toLava" href="../lava/" title="Your palette as warm wax in a lava lamp: a toy to play with these colors">Play with these colors: lava lamp ›</a></div>
     <div class="picks" id="picks"></div>
     <div class="nav" id="nav"></div>
     <input type="color" id="picker" aria-label="Choose a color" tabindex="-1" style="position:absolute;left:-9999px">
@@ -867,6 +868,7 @@ const sameSet=a=>a.length==picks.length&&a.every((x,i)=>x==picks[i]);
 /* SHARING a combination: a link whose #set= carries the name and the three palettes. List palettes travel as their
    stable ids (a few characters); a home-made one travels as its recipe, so it rebuilds the same on any device. */
 const b64e=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const LAVA=/\.github\.io$/.test(location.hostname)?'../lava/':'lava-v1.html';
 const b64d=t=>JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/')))));
 function shareLink(set){const p=set.picks.map(id=>{if(id.startsWith('mine:')){const m=mine.find(x=>x.id==id);return m?{n:m.name,r:m.recipe}:null;}return id;}).filter(Boolean);
   return location.origin+location.pathname+'#set='+b64e({n:set.name,p});}
@@ -1062,6 +1064,8 @@ function renderCur(){
   tk.className='b'+(inApp||tk.disabled?'':' pri');
   tk.onclick=()=>{if(inApp)picks=picks.filter(x=>x!=cur);else picks.push(cur);savePicks();};
   document.getElementById('editCur').onclick=()=>{if(cur=='draft'){view='maker';render();return;}openInMaker(f);};
+  // the lava lamp toy gets this palette in its link (checked there like any shared palette)
+  document.getElementById('toLava').href=LAVA+'#pal='+b64e({n:f.it.name+(f.ln.label?' · '+f.ln.label:''),r:f.ln.recipe});
   paint(f.ln.recipe);
 }
 // a small sample page: hex cells, so a palette can be judged on a page and not only as a strip
