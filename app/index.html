@@ -130,6 +130,13 @@ svg.glyph .dotc{fill:currentColor;stroke:none}
 #zbadge.on{opacity:1;transition:opacity .08s}
 #view{position:absolute;left:0;top:0;pointer-events:none;transform-origin:0 0}
 #overlay.fill{cursor:crosshair}
+#overlay.pen{cursor:crosshair}
+#snapFly{position:fixed;z-index:40;background:var(--panel);border:1px solid var(--edge2);border-radius:6px;padding:8px 10px;display:grid;gap:2px;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+#snapFly[hidden]{display:none}
+#snapFly label{display:flex;align-items:center;gap:6px;min-height:30px;cursor:pointer;white-space:nowrap}
+#snapFly .sep{height:1px;background:var(--edge);margin:4px 0}
+#penTol{width:46px}
+@media (pointer:coarse){#snapFly label{min-height:44px}}
 #busy{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:3;background:var(--panel);
   border:1px solid var(--edge2);border-left:2px solid var(--hot);border-radius:3px;padding:5px 12px;color:var(--bright);pointer-events:none}
 #loupe{position:fixed;left:0;top:0;z-index:8;width:132px;height:132px;border-radius:50%;pointer-events:none;
@@ -192,7 +199,7 @@ svg.glyph .dotc{fill:currentColor;stroke:none}
 .inkc{position:relative;display:inline-block;overflow:hidden;background:conic-gradient(#e33,#ec3,#3c6,#3be,#63e,#e3a,#e33)}
 .inkc input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
 
-#panel[data-style=knot] .blobonly,#panel:not([data-style=knot]) .knotonly{display:none}
+#panel[data-style=knot] .blobonly,#panel[data-style=blank] .blobonly,#panel:not([data-style=knot]) .knotonly{display:none}
 #knotSeed{flex:1 1 auto;min-width:0;width:6em}
 #knotDice svg{width:15px;height:15px}
 .gal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
@@ -302,6 +309,12 @@ label.btnlike:hover{background:#3d3d3d}
     <span class="vsep"></span>
     <label for="size">size</label><input type="range" id="size" min="2" max="18" value="4"><span class="num" id="sizeN">4</span>
   </div>
+  <div class="grp" id="open" hidden>
+    <span class="vsep"></span>
+    <label for="penTol" title="Wiggles about this many pixels across are smoothed out of the line (0: exactly as drawn)">smooth</label><input type="number" id="penTol" min="0" max="20" step="0.5" value="3" title="Wiggles about this many pixels across are smoothed out of the line (0: exactly as drawn)">
+    <label class="chk" title="On: sharp corners you draw stay sharp. Off: smoothing rounds them too"><input type="checkbox" id="penCorners" checked>corners</label>
+    <button class="sm" id="snapBtn" aria-haspopup="true" title="Hold still at the end of a stroke to snap it to a clean shape; pick which shapes">snap &#9662;</button>
+  </div>
   <div class="grp" id="oplace" hidden>
     <span class="vsep"></span>
     <span id="shapePlace" hidden><label class="chk" title="Center the shape on the page around the whole design, to use as a frame or border (the rectangle takes its width and height from your drag)"><input type="checkbox" id="frameChk">frame</label>
@@ -327,6 +340,7 @@ label.btnlike:hover{background:#3d3d3d}
 
 <div id="rail">
   <button class="tool on" data-tool="fill" title="Fill (F)" aria-label="Fill"><svg viewBox="0 0 24 24"><path d="m19 11-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2c.8.8 2 .8 2.8 0L19 11Z"/><path d="m5 2 5 5"/><path d="M2 13h15"/><path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z"/></svg><i>F</i></button>
+  <button class="tool" data-tool="pen" title="Pen (P)" aria-label="Pen"><svg viewBox="0 0 24 24"><path d="M3 21c2-1 3.5-1.2 5-2.7L19.5 6.8a2.3 2.3 0 0 0-3.3-3.3L4.7 15C3.2 16.5 4 19 3 21Z"/><path d="m14.5 5.2 3.3 3.3"/></svg><i>P</i></button>
   <button class="tool" data-tool="line" title="Line (L)" aria-label="Line"><svg viewBox="0 0 24 24"><path d="M5 19 19 5"/></svg><i>L</i></button>
   <button class="tool" data-tool="curve" title="Curve (C)" aria-label="Curve"><svg viewBox="0 0 24 24"><path d="M4 18C8 3 16 21 20 6"/></svg><i>C</i></button>
   <button class="tool" id="shapeTool" title="Shapes (S). Hold, or right-click, for all of them" aria-label="Shapes" aria-haspopup="true"><span id="shapeGlyph"></span><b class="more"></b><i>S</i></button>
@@ -348,6 +362,7 @@ label.btnlike:hover{background:#3d3d3d}
 </div>
 <canvas id="loupe" hidden></canvas>
 <div id="fly" hidden role="menu" aria-label="Shapes"></div>
+<div id="snapFly" hidden aria-label="Hold to snap"></div>
 
 <div id="strip"></div>
 
@@ -370,7 +385,7 @@ label.btnlike:hover{background:#3d3d3d}
   <div class="sec" id="drawsec">
     <button class="sech" data-sec="drawsec"><span class="cv">&#9660;</span><span class="ti">Drawing</span></button>
     <div class="secb">
-      <div class="prow"><span class="lb">Style</span><div class="seg"><button class="sm" id="styBlob">Blobs</button><button class="sm" id="styKnot">Knot</button></div><span></span></div>
+      <div class="prow"><span class="lb">Style</span><div class="seg"><button class="sm" id="styBlob">Blobs</button><button class="sm" id="styKnot">Knot</button><button class="sm" id="styBlank" title="An empty page to draw your own with the pen">Blank</button></div><span></span></div>
       <div class="prow knotonly"><label for="knotSeed" title="The same seed always draws the same knot: write it down to get it back">Seed</label><input id="knotSeed" spellcheck="false" autocomplete="off" maxlength="24" title="Type a number or any word, then Enter"><button class="sm" id="knotDice" title="Roll a new knot" aria-label="Roll a new knot"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="15" r="1.2"/><circle cx="15" cy="9" r="1.2"/><circle cx="9" cy="15" r="1.2"/></svg></button></div>
       <div class="prow blobonly"><label for="gBlobs">Blobs</label><input type="range" id="gBlobs" min="1" max="3" value="2"><output id="oBlobs">2</output></div>
       <div class="prow blobonly"><label for="gLines" title="How many strokes cross the blobs in each direction (0: none)">Lines</label><input type="range" id="gLines" min="0" max="14" value="8"><output id="oLines">8</output></div>
@@ -416,10 +431,11 @@ label.btnlike:hover{background:#3d3d3d}
 <div id="help" class="scrim" hidden>
   <div class="dlg" id="helpbox" role="dialog" aria-label="About Licorice">
     <h2><span class="logo" role="img" aria-label="Licorice"></span><button class="sm" id="helpClose">Close</button></h2>
-    <p>Every page is a new drawing: one or more blobs laid over a hand-drawn grid. You color it in, one shape at a time or all at once.</p>
+    <p>Every page is a new drawing: one or more blobs laid over a hand-drawn grid. You color it in, one shape at a time or all at once. To draw your own page, choose <b>Blank</b> under Colors &amp; settings &rsaquo; Drawing &rsaquo; Style and press New: you get an empty page and the pen.</p>
     <h3>Tools</h3>
     <table>
       <tr><td><kbd>F</kbd> Fill</td><td>Tap a shape to fill it with the current color. With the loupe on, touch, slide to aim, and lift to fill; with a mouse or pen it follows the pointer over the page.</td></tr>
+      <tr><td><kbd>P</kbd> Pen</td><td>Draw freely in the page's ink; the lines are walls, so Fill stops at them. <b>smooth</b> takes the wobble out of the line, <b>corners</b> keeps sharp turns sharp. Hold still at the end of a stroke to snap it to a clean line, arrow, circle, oval, square, rectangle or triangle (pick which under <b>snap</b>). With a tablet pen, pressing harder draws a wider line.</td></tr>
       <tr><td><kbd>L</kbd> Line</td><td>Drag to draw a straight line.</td></tr>
       <tr><td><kbd>C</kbd> Curve</td><td>Drag a line, then pull the dot to bend it. Starting another stroke keeps the curve.</td></tr>
       <tr><td><kbd>S</kbd> Shapes</td><td>Press inside a field where a decoration should start and drag to grow it: dots, circles, rings, drops, hearts, stars, suns and more, as many as you like. Drops and leaves point along the drag. Spirals (1, 2 or 3 arms) center themselves and follow the field's outline. Hold the button (or right-click it) to pick one.</td></tr>
@@ -1205,8 +1221,6 @@ function genPalette(seed){
   out.sort((a,b)=>Math.round(a.h/30)-Math.round(b.h/30)||a.L-b.L);
   return out.map(o=>o.hex);
 }
-const HINTS={fill:'Tap a shape to fill. Pinch to zoom.',aim:'Touch, slide to aim, lift to fill',line:'Drag to draw a line',curve:'Drag, then pull the dot to bend',fan:'Press where the fan starts and drag toward the far side; drag farther to reach farther'};
-
 const S={style:'blob',knotTxt:'1',knotSeed:1,inkFills:[],outW:6,frame:false,strokes:[],legacyInk:false,pearl:['#3b1470','#d0379a','#e6b33d'],fx:'',stamp:'dot',stamps:[],shape:'splat',organic:.5,autoArea:'all',autoStyle:'rings',latPaths:[],dark:false,inkIdx:0,inkC:'',palId:'markers',pal:null,minCell:2,tool:'fill',color:'#f7c613',size:4,wall:false,blobs:2,lines:8,weight:6,ink:INKS_LIGHT[0],blobPaths:[]};
 const PAPER=()=>S.dark?'#1d1a25':'#fffefb';
 const store={get(k){try{return localStorage.getItem(k);}catch(_){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(_){}}};
@@ -1670,7 +1684,7 @@ function setSize(w,h){
   LW=Math.round(W*Q);LH=Math.round(H*Q);
   lowBase.width=LW;lowBase.height=LH;lowTmp.width=LW;lowTmp.height=LH;
   fullScratch.width=W;fullScratch.height=H;
-  undoStack.length=0;$('#undo').disabled=true;pending=null;drag=null;
+  undoStack.length=0;$('#undo').disabled=true;resetTools();
   fit();return true;
 }
 const aspectOff=([w,h],t=.08)=>Math.abs(w/h-W/H)/(W/H)>t;
@@ -1832,7 +1846,7 @@ async function generate(first){
   $('#busy').hidden=false;$('#new').disabled=true;$('#genGo').disabled=true;
   await tick();
   try{
-    commitPending();
+    finishTools();
     S.ink=pickInk();
     const want=wantSize();
     if(aspectOff(want)){setSize(want[0],want[1]);first=true;}
@@ -1842,12 +1856,13 @@ async function generate(first){
       const {g,loops}=KG.make(S.knotSeed,640),k=W/1000,f1=v=>(+(v*k).toFixed(1)).toString();
       knot=mkPath(loops.map(l=>'M'+l.map(([x,y])=>f1(x)+' '+f1(y)).join('L')+'Z').join(''));
       cand={blobs:[],lines:[]};S.outW=clamp(Math.round(g.lw*k),3,40);
-    }else cand=await buildGrid(lim);
+    }else if(S.style==='blank')cand={blobs:[],lines:[]};
+    else cand=await buildGrid(lim);
     if(!first)pushUndo([P,O,K,D]);
     [P,O,K,D,V].forEach(c=>c.clearRect(0,0,W,H));
     if(knot){O.save();O.fillStyle=S.ink;O.fill(knot,'evenodd');O.restore();}
     else{drawCand(O,cand);S.outW=S.weight;}
-    if(lim){
+    if(lim&&S.style!=='blank'){
       const m=wallMask(),an=analyze(m,W,H),ids=[];
       for(let i=1;i<=an.id;i++)if(an.areas[i]<KNOT.a||an.rmax[i]<KNOT.r*3)ids.push(i);
       if(ids.length)inkFill(an,m,ids);
@@ -1868,7 +1883,7 @@ function pushUndo(list){
   $('#undo').disabled=false;
 }
 function undo(){
-  if(pending){pending=null;drawPreview();return;}
+  if(Object.values(TOOLS).some(t=>t.takeUndo&&t.takeUndo()))return; // unfinished work (a curve waiting for its bend) goes first
   const e=undoStack.pop();if(!e)return;
   e.layers.forEach(l=>l.c.putImageData(l.d,0,0));S.blobPaths=e.blobs;S.latPaths=e.lat;S.inkFills=e.fills||[];if(e.outW)S.outW=e.outW;S.stamps=e.stamps||[];S.strokes=e.strokes||[];S.legacyInk=!!e.leg;
   if(e.ink&&e.ink!==S.ink){S.ink=e.ink;S.inkIdx=e.inkIdx;if(S.inkIdx<0)S.inkC=S.ink;renderInks();}
@@ -2061,13 +2076,12 @@ function autoRings(g){
   return hexOf.map(h=>h?Object.assign(hex2rgb(h),{hex:h}):null);
 }
 function autoColor(){
-  commitPending();
+  finishTools();
   const g=cellGraph();
   paintCells(g,S.autoStyle==='rings'&&(S.latPaths||[]).length?autoRings(g):autoRandom(g));
 }
 
 /* ---------- stroke tools ---------- */
-let pending=null,drag=null;
 // stroke paths are built as SVG path text (mkPath keeps it on .d) so a stroke can be stored, redrawn sharp and exported
 const pn=(...v)=>v.map(n=>+n.toFixed(2)).join(' ');
 function linePath(a,b){return mkPath('M'+pn(a.x,a.y)+'L'+pn(b.x,b.y));}
@@ -2095,25 +2109,16 @@ function commitStroke(path){
 }
 const strokeP=new WeakMap();
 function strokePath(st){let p=strokeP.get(st);if(!p)strokeP.set(st,p=new Path2D(st.d));return p;}
-const validStroke=o=>o&&typeof o.d==='string'&&/^[MLQ0-9 .\-]+$/.test(o.d)&&/^#[0-9a-f]{6}$/i.test(o.color);
-const cleanStroke=o=>({d:o.d,color:o.color.toLowerCase(),size:clamp(+o.size||4,2,18),wall:!!o.wall});
-function commitPending(){if(pending){const c=pending;pending=null;commitStroke(curvePath(c));}}
+const okD=d=>typeof d==='string'&&/^[MLQCZ0-9 .\-]+$/.test(d);
+const validStroke=o=>o&&okD(o.d)&&/^#[0-9a-f]{6}$/i.test(o.color)&&(o.parts===undefined||Array.isArray(o.parts)&&o.parts.length<=400&&o.parts.every(p=>Array.isArray(p)&&isFinite(p[0])&&okD(p[1])));
+// a pen stroke with pressure keeps its pieces by width (parts); pen strokes are drawn in the page's ink (ink)
+const cleanStroke=o=>{const st={d:o.d,color:o.color.toLowerCase(),size:clamp(+o.size||4,2,18),wall:!!o.wall};
+  if(o.ink)st.ink=true;if(o.parts)st.parts=o.parts.map(p=>[clamp(+p[0],.5,40),p[1]]);return st;};
 function scale(){return W/cv.overlay.getBoundingClientRect().width;}
+// the preview layer shows every tool's unfinished work (a line being dragged, a curve waiting for its bend, a shape's ghost)
 function drawPreview(){
   V.clearRect(0,0,W,H);style(V);
-  if(drag&&drag.type!=='handle'){
-    if(drag.type==='line'||drag.type==='curve')V.stroke(linePath(drag.a,drag.b));
-    else if(drag.type==='cfan'){const st=cfanStamp(drag);V.stroke(st?stampPath(st):fanPath(drag.a,drag.b,drag.seed));}
-  }
-  if(hover){V.save();V.globalAlpha=.6;paintStampClip(V,hover);V.restore();}
-  if(pending){
-    V.stroke(curvePath(pending));
-    const s=scale(),acc=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#6b3fd1';
-    V.save();V.setLineDash([6*s,6*s]);V.lineWidth=1.5*s;V.strokeStyle=acc;
-    V.beginPath();V.moveTo(pending.a.x,pending.a.y);V.lineTo(pending.h.x,pending.h.y);V.lineTo(pending.b.x,pending.b.y);V.stroke();V.restore();
-    V.fillStyle=acc;V.beginPath();V.arc(pending.h.x,pending.h.y,11*s,0,TAU);V.fill();
-    V.fillStyle='#fff';V.beginPath();V.arc(pending.h.x,pending.h.y,4.5*s,0,TAU);V.fill();
-  }
+  Object.values(TOOLS).forEach(t=>{if(t.preview)t.preview(V);});
 }
 
 /* ---------- shapes: decorations that sit on top of a colored field ----------
@@ -2942,7 +2947,7 @@ function drawVectors(c){
   c.save();c.lineCap='round';c.lineJoin='round';
   if(!S.legacyInk){c.strokeStyle=c.fillStyle=S.ink;c.lineWidth=S.outW;(S.blobPaths||[]).forEach(b=>c.stroke(b));(S.latPaths||[]).forEach(l=>c.stroke(l));
     (S.inkFills||[]).forEach(f=>c.fill(f,'evenodd'));}
-  (S.strokes||[]).forEach(st=>{c.strokeStyle=st.color;c.lineWidth=st.size;c.stroke(strokePath(st));});
+  (S.strokes||[]).forEach(st=>strokeOn(c,st));
   c.restore();
   (S.stamps||[]).forEach(st=>{if(!st.under)paintStamp(c,st);});
 }
@@ -3099,14 +3104,369 @@ function showLoupe(clx,cly,p){
   LX.setTransform(LD,0,0,LD,0,0);const c=LS/2;
   LX.lineWidth=4;LX.strokeStyle='#fff';LX.beginPath();LX.arc(c,c,7,0,TAU);LX.stroke();
   LX.lineWidth=1.5;LX.strokeStyle='#15121a';LX.beginPath();LX.arc(c,c,9,0,TAU);LX.stroke();
-  LX.fillStyle=S.tool==='fill'?S.color:'#15121a';LX.beginPath();LX.arc(c,c,5,0,TAU);LX.fill();
+  const tl=TOOLS[S.tool];LX.fillStyle=tl.dot?tl.dot():'#15121a';LX.beginPath();LX.arc(c,c,5,0,TAU);LX.fill();
   LX.lineWidth=1;LX.strokeStyle='#15121a';LX.stroke();
   let x=clx-LS/2,y=cly-LS-64;if(y<8)y=cly+64;x=clamp(x,8,window.innerWidth-LS-8);
   loupe.style.transform=`translate(${x}px,${y}px)`;loupe.hidden=false;
 }
 function hideLoupe(){loupe.hidden=true;}
 
-/* ---------- pointer ---------- */
+/* ---------- the paper: what the tools work on ----------
+   A tool reaches the drawing only through this object: the page size, the marker it draws with, the field under
+   a point, the fill, the line work it adds (strokes, shapes) and the preview layer for its unfinished work. The
+   state itself still lives where it always has (S, the canvases, the undo stack); this is the surface a new tool
+   (or another app of the family) is written against. */
+const paper={
+  get w(){return W;},get h(){return H;},
+  get color(){return S.color;},get size(){return S.size;},get wall(){return !!S.wall;},
+  fieldAt(p){return cellAt(p.x,p.y);},   // the closed region under p (null off the page; .edge = the background)
+  fill(p){fillAt(p.x,p.y);},             // color the field under p, as a tap with Fill does
+  addStroke(path){commitStroke(path);},  // a path made with mkPath: kept as data, a wall too when wall is on; undoable
+  addShape(st){placeStamp(st);},         // a shape (stamp) object; undoable
+  preview:V,                             // draw unfinished work here, from the tool's preview(c)
+  refresh(){drawPreview();},             // redraw the preview layer
+  scale(){return scale();}               // page pixels per screen pixel (for handles that keep their size on screen)
+};
+
+/* ---------- tools ----------
+   Every tool has the same shape and the app talks to the current one only through it:
+     id, name, key (keyboard letter), btn (its rail button), panels (option groups it shows), overlay (cursor class)
+     hint()       the line under the page
+     down(p,e)    a press on the page; returns how the press goes on: 'tap' (moving 10px turns it into a pan when
+                  zoomed, or ends it), 'aim' (it follows the pointer) or 'draw'
+     move(p,e)    the pointer moved while pressed ('aim' and 'draw' only)
+     up(p,e)      the press ended ('tap', 'aim' and 'draw' only)
+     cancel()     the press was taken away (a second finger, the browser): drop what it was doing
+     preview(c)   draw its unfinished work on the preview layer (asked of every tool, current or not)
+     finish()     commit unfinished work (before a tool change, a save, a new page...)
+     takeUndo()   Undo was pressed: drop unfinished work instead, if there is any (true = done)
+     reset()      the page was replaced: forget unfinished work without committing it
+     leave()      it stopped being the current tool
+     dot()        the loupe's center dot color
+     out(e)       the pointer left the page
+   Everything but id, name, panels, hint and down is optional. The press a tool started stays with it to the end,
+   even if the tool changes meanwhile (a key pressed mid-drag). A new tool snaps in as one more entry in TOOLS. */
+const fillTool={id:'fill',name:'Fill',key:'f',btn:'[data-tool="fill"]',panels:['ofill'],overlay:'fill',p:null,
+  hint:()=>S.loupe?'Touch, slide to aim, lift to fill':'Tap a shape to fill. Pinch to zoom.',
+  down(p){this.p=p;return S.loupe?'aim':'tap';},
+  move(p){this.p=p;},
+  up(){paper.fill(this.p);},
+  dot:()=>S.color
+};
+const lineTool={id:'line',name:'Line',key:'l',btn:'[data-tool="line"]',panels:['ostroke','oplace'],drag:null,
+  hint:()=>'Drag to draw a line',
+  down(p){this.drag={a:p,b:p};paper.refresh();return'draw';},
+  move(p){this.drag.b=p;paper.refresh();},
+  up(){const d=this.drag;this.drag=null;if(!d||dist(d.a,d.b)<4){paper.refresh();return;}paper.addStroke(linePath(d.a,d.b));},
+  cancel(){this.drag=null;paper.refresh();},
+  reset(){this.drag=null;},
+  preview(c){if(this.drag)c.stroke(linePath(this.drag.a,this.drag.b));}
+};
+// a curve is drawn straight, then waits (pending) with a dot at its middle to pull for the bend; it is committed by
+// the next press away from the dot, a tool change, a save...
+const curveTool={id:'curve',name:'Curve',key:'c',btn:'[data-tool="curve"]',panels:['ostroke','oplace'],drag:null,pending:null,
+  hint:()=>'Drag, then pull the dot to bend',
+  down(p){
+    if(this.pending){
+      if(dist(p,this.pending.h)<34*paper.scale()){this.drag={handle:true};return'draw';}
+      this.finish();
+    }
+    this.drag={a:p,b:p};paper.refresh();return'draw';
+  },
+  move(p){if(this.drag.handle){if(this.pending)this.pending.h=p;}else this.drag.b=p;paper.refresh();},
+  up(){
+    const d=this.drag;this.drag=null;
+    if(!d||d.handle||dist(d.a,d.b)<4){paper.refresh();return;}
+    this.pending={a:d.a,b:d.b,h:{x:(d.a.x+d.b.x)/2,y:(d.a.y+d.b.y)/2}};paper.refresh();
+  },
+  cancel(){this.drag=null;paper.refresh();},
+  finish(){if(this.pending){const c=this.pending;this.pending=null;paper.addStroke(curvePath(c));}},
+  takeUndo(){if(!this.pending)return false;this.pending=null;paper.refresh();return true;},
+  reset(){this.drag=this.pending=null;},
+  preview(c){
+    const d=this.drag,pd=this.pending;
+    if(d&&!d.handle)c.stroke(linePath(d.a,d.b));
+    if(!pd)return;
+    c.stroke(curvePath(pd));
+    const s=paper.scale(),acc=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#6b3fd1';
+    c.save();c.setLineDash([6*s,6*s]);c.lineWidth=1.5*s;c.strokeStyle=acc;
+    c.beginPath();c.moveTo(pd.a.x,pd.a.y);c.lineTo(pd.h.x,pd.h.y);c.lineTo(pd.b.x,pd.b.y);c.stroke();c.restore();
+    c.fillStyle=acc;c.beginPath();c.arc(pd.h.x,pd.h.y,11*s,0,TAU);c.fill();
+    c.fillStyle='#fff';c.beginPath();c.arc(pd.h.x,pd.h.y,4.5*s,0,TAU);c.fill();
+  }
+};
+// shapes: most are aimed (press = base, drag while held grows it, lift places it; the ghost is `hover`, the press is
+// `aim`, see the shapes section); the Fan is dragged out like a line instead
+const shapeTool={id:'shape',name:'Shape',key:'s',btn:'#shapeTool',panels:['ostroke','oplace','oshape','olook','shapePlace'],drag:null,
+  hint(){
+    const sh=shapeById(S.stamp);
+    return sh.drag?'Press where the fan starts and drag toward the far side; drag farther to reach farther':
+      S.frame?'Frame: drag out from the middle of the page to size it around the design (tap for one just inside the page).':
+      sh.id==='echo'?'Press in a field to echo its outline; each new echo goes inside the last. Drag while holding to size it.':
+      sh.snap?'Press in a field to center a spiral on it; drag while holding to size it.':
+      'Press where the '+sh.name.toLowerCase().replace(/,.*/,'')+' should start; drag while holding to grow it. Place as many as you like.';
+  },
+  down(p){
+    if(isStampTool()){startAim(p);return'aim';}
+    this.drag={a:p,b:p,cell:paper.fieldAt(p),seed:Array.from({length:randi(6,8)},()=>[Math.random(),Math.random()])};
+    paper.refresh();return'draw';
+  },
+  move(p){
+    if(this.drag){this.drag.b=p;paper.refresh();return;}
+    if(aim&&dist(p,aim.p)>6){aim.q=p;showAim();} // the press is the shape's base; dragging while held grows it toward the pointer
+  },
+  up(){
+    const d=this.drag;
+    if(d){
+      this.drag=null;
+      if(dist(d.a,d.b)<4){paper.refresh();return;}
+      const st=cfanStamp(d);if(st)paper.addShape(st);else paper.addStroke(fanPath(d.a,d.b,d.seed));
+      return;
+    }
+    if(aim){
+      const st=aimStamp(aim);paper.addShape(st);lastPlaced=st?{st,aim,id:S.stamp,u:undoStack[undoStack.length-1]}:null;
+      if(st&&S.seedAuto&&shapeById(S.stamp).seeded)setSeed(String(1+Math.floor(Math.random()*99999)),true);
+    }
+    clearHover();
+  },
+  cancel(){this.drag=null;clearHover();paper.refresh();},
+  reset(){this.drag=null;},
+  leave(){closeFly();clearHover();},
+  out(e){if(e.pointerType==='mouse')clearHover();},
+  preview(c){
+    if(this.drag){const st=cfanStamp(this.drag);c.stroke(st?stampPath(st):fanPath(this.drag.a,this.drag.b,this.drag.seed));}
+    if(hover){c.save();c.globalAlpha=.6;paintStampClip(c,hover);c.restore();}
+  }
+};
+/* ---------- the pen (v32, from draw-lab.html) ----------
+   Freehand ink. The line is resampled evenly and each point averaged with its neighbors along the line (a Gaussian
+   about "smooth" screen pixels wide), so wobbles go and curves stay round; with "corners" on, sharp turns are found
+   first and not smoothed across. HOLD TO SNAP: hold still at the end of a stroke and it becomes a clean shape, if a
+   switched-on one fits (line, straight arrow, curved arrow, circle, oval, square, rectangle, triangle). A tablet pen's
+   PRESSURE sets the width along the line (a mouse or a finger draws an even line). Pen lines are always walls and
+   are drawn in the page's ink, like the outline. */
+const PEN_SHAPES=[['line','Line'],['sarrow','Straight arrow'],['carrow','Curved arrow'],['circle','Circle'],['oval','Oval'],['square','Square'],['rect','Rectangle'],['tri','Triangle']];
+const PEN={tol:3,corners:true,snap:true,on:{}};
+(()=>{try{const o=JSON.parse(store.get('licorice-pen')||'{}');if(o&&typeof o==='object'){
+  if(isFinite(o.tol))PEN.tol=clamp(+o.tol,0,20);if(o.corners===false)PEN.corners=false;if(o.snap===false)PEN.snap=false;
+  if(o.on&&typeof o.on==='object')PEN_SHAPES.forEach(([k])=>{if(o.on[k]===false)PEN.on[k]=false;});}}catch(_){}
+  PEN_SHAPES.forEach(([k])=>{if(PEN.on[k]===undefined)PEN.on[k]=true;});})();
+const savePen=()=>store.set('licorice-pen',JSON.stringify(PEN));
+// the pen's width for a pressure (0..1); a mouse reports a flat .5, so only a pen pointer varies it
+const penW=pr=>Math.max(1,S.size*(.35+.9*Math.pow(clamp(pr,0,1),.8)));
+
+function rdpIdx(pts,eps){ // which points matter at this tolerance (as flags)
+  const n=pts.length,keep=new Uint8Array(n);if(n<3||eps<=0){keep.fill(1);return keep;}
+  keep[0]=keep[n-1]=1;const st=[[0,n-1]];
+  while(st.length){const[a,b]=st.pop();let md=0,mi=-1;const A=pts[a],B=pts[b],dx=B.x-A.x,dy=B.y-A.y,len=Math.hypot(dx,dy)||1e-9;
+    for(let i=a+1;i<b;i++){const d=Math.abs((pts[i].x-A.x)*dy-(pts[i].y-A.y)*dx)/len;if(d>md){md=d;mi=i;}}
+    if(md>eps){keep[mi]=1;st.push([a,mi],[mi,b]);}}
+  return keep;
+}
+const penRdp=(pts,eps)=>{const k=rdpIdx(pts,eps);return pts.filter((_,i)=>k[i]);};
+function resampleStep(pts,step){const out=[pts[0]];let acc=0;
+  for(let i=1;i<pts.length;i++){let a=pts[i-1];const b=pts[i];let d=dist(a,b);
+    while(acc+d>=step){const t=(step-acc)/d;const q={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,pr:a.pr+(b.pr-a.pr)*t};out.push(q);a=q;d=dist(a,b);acc=0;}acc+=d;}
+  if(dist(out[out.length-1],pts[pts.length-1])>.01)out.push(pts[pts.length-1]);return out;}
+// a Gaussian average along points a..b (sigma in samples); past the ends the line is mirrored so the ends stay put
+function gaussRun(rs,a,b,sig){const R=Math.ceil(2.5*sig),wt=[];for(let j=-R;j<=R;j++)wt.push(Math.exp(-j*j/(2*sig*sig)));
+  const at=q=>q<a?{x:2*rs[a].x-rs[Math.min(b,2*a-q)].x,y:2*rs[a].y-rs[Math.min(b,2*a-q)].y,pr:rs[Math.min(b,2*a-q)].pr}:
+    q>b?{x:2*rs[b].x-rs[Math.max(a,2*b-q)].x,y:2*rs[b].y-rs[Math.max(a,2*b-q)].y,pr:rs[Math.max(a,2*b-q)].pr}:rs[q];
+  const out=[];for(let i=a;i<=b;i++){let sx=0,sy=0,sp=0,sw=0;for(let j=-R;j<=R;j++){const q=at(i+j),w=wt[j+R];sx+=q.x*w;sy+=q.y*w;sp+=q.pr*w;sw+=w;}
+    out.push(i==a||i==b?{x:rs[i].x,y:rs[i].y,pr:sp/sw}:{x:sx/sw,y:sy/sw,pr:sp/sw});}
+  return out;}
+const turnA=(a,b,c)=>{const u=Math.atan2(b.y-a.y,b.x-a.x),v=Math.atan2(c.y-b.y,c.x-b.x);let t=Math.abs(v-u);if(t>Math.PI)t=2*Math.PI-t;return t;}; // 0 = straight on, PI = straight back
+// smooth a drawn line (tol in page px): even spacing, then a Gaussian along it (sigma = 2 x tol), ends fixed; with
+// corners kept, sharp turns (over ~57 degrees, measured 4 x tol apart on a lightly smoothed copy) split it first
+function smoothPts(raw,tol,corners){
+  if(raw.length<3||!(tol>0))return raw.slice();
+  const step=Math.max(.75,tol/4),rs=resampleStep(raw,step),n=rs.length;if(n<5)return rs;
+  const cuts=[0];
+  if(corners){const pre=gaussRun(rs,0,n-1,tol/step),k=Math.max(2,Math.round(4*tol/step)),tv=i=>turnA(pre[i-k],pre[i],pre[i+k]);
+    for(let i=k;i<n-k;i++){const t=tv(i);if(t<1.0)continue;let peak=true;
+      for(let j=Math.max(k,i-k);j<=Math.min(n-k-1,i+k);j++)if(j!=i&&tv(j)>t){peak=false;break;}
+      if(peak&&i-cuts[cuts.length-1]>k)cuts.push(i);}}
+  cuts.push(n-1);
+  const out=[];for(let c=0;c<cuts.length-1;c++){const part=gaussRun(rs,cuts[c],cuts[c+1],2*tol/step);out.push(...(c?part.slice(1):part));}
+  return out;
+}
+const penTolPx=()=>PEN.tol*paper.scale();
+function rdpClosed(loop,eps){let k=0,m=-1;loop.forEach((p,i)=>{const d=dist(p,loop[0]);if(d>m){m=d;k=i;}});
+  return penRdp(loop.slice(0,k+1),eps).concat(penRdp(loop.slice(k),eps).slice(1));}
+// Catmull-Rom through the points, as SVG path text (cubic beziers)
+function crD(pts,closed){
+  if(!pts.length)return'';let d='M'+pn(pts[0].x,pts[0].y);
+  if(pts.length<3){pts.slice(1).forEach(q=>d+='L'+pn(q.x,q.y));return d;}
+  const n=pts.length,g=i=>closed?pts[(i+n)%n]:pts[Math.max(0,Math.min(n-1,i))];
+  for(let i=0;i<(closed?n:n-1);i++){const p0=g(i-1),p1=g(i),p2=g(i+1),p3=g(i+2);
+    d+='C'+pn(p1.x+(p2.x-p0.x)/6,p1.y+(p2.y-p0.y)/6,p2.x-(p3.x-p1.x)/6,p2.y-(p3.y-p1.y)/6,p2.x,p2.y);}
+  return closed?d+'Z':d;
+}
+function pathLen(pts){let s=0;for(let i=1;i<pts.length;i++)s+=dist(pts[i-1],pts[i]);return s;}
+function resampleN(pts,n){const total=pathLen(pts),step=total/(n-1),out=[pts[0]];let acc=0;
+  for(let i=1;i<pts.length&&out.length<n;i++){let a=pts[i-1],b=pts[i],d=dist(a,b);
+    while(acc+d>=step&&out.length<n){const t=(step-acc)/d;const q={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};out.push(q);a=q;d=dist(a,b);acc=0;}acc+=d;}
+  while(out.length<n)out.push(pts[pts.length-1]);return out;}
+function bboxOf(pts){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;pts.forEach(p=>{x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x);y1=Math.max(y1,p.y);});return{x0,y0,x1,y1,w:x1-x0,h:y1-y0,d:Math.hypot(x1-x0,y1-y0)};}
+function penSegDist(p,a,b){const dx=b.x-a.x,dy=b.y-a.y,l2=dx*dx+dy*dy||1e-9;let t=((p.x-a.x)*dx+(p.y-a.y)*dy)/l2;t=Math.max(0,Math.min(1,t));return Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy);}
+const snapAngle=a=>{const q=Math.PI/2,r=Math.round(a/q)*q;return Math.abs(a-r)<Math.PI/30?r:a;}; // within 6 degrees of level: level
+// the best switched-on shape for a stroke, or null. u = page px per screen px (the sizes below are screen px)
+function recognize(raw,u){
+  const on=PEN.on,b=bboxOf(raw);if(b.d<14*u)return null;
+  const len=pathLen(raw),closed=dist(raw[0],raw[raw.length-1])<Math.max(18*u,.22*b.d)&&len>2.2*b.d*.6;
+  if(!closed){
+    // an arrow: the EARLIEST sharp turn (over 109 degrees) with only a short head left after it is the tip; the
+    // shaft can do anything before it (curls, loops, U bends)
+    const v=penRdp(raw,Math.max(3*u,.03*b.d));
+    for(let i=1;i<v.length-1;i++){
+      if(turnA(v[i-1],v[i],v[i+1])<1.9)continue;const tip=v[i],ti=raw.indexOf(tip);
+      const shaft=raw.slice(0,ti+1),head=raw.slice(ti),sl=pathLen(shaft),hl=Math.max(...head.map(p=>dist(p,tip)));
+      if(pathLen(head)>.35*len||hl>.45*sl)continue; // a lot of stroke still to come: a bend in the shaft, look further on
+      if(sl<30*u||hl<6*u)break;
+      const chord=dist(shaft[0],tip),dev=Math.max(...shaft.map(p=>penSegDist(p,shaft[0],tip)));
+      const straight=dev<.08*chord;const kind=straight?(on.sarrow?'sarrow':on.carrow?'carrow':null):(on.carrow?'carrow':on.sarrow?'sarrow':null);
+      if(!kind)break;
+      const sp=kind=='sarrow'?[shaft[0],tip]:smoothPts(shaft,Math.max(2*u,penTolPx()),PEN.corners);sp[sp.length-1]=tip;
+      let back=shaft[0];if(kind!='sarrow'){const want=Math.min(36*u,.3*sl);for(let j=sp.length-1;j>=0;j--)if(dist(sp[j],tip)>=want){back=sp[j];break;}}
+      return{type:'arrow',kind,shaft:sp,straight:kind=='sarrow',tip,ang:Math.atan2(tip.y-back.y,tip.x-back.x),head:Math.min(Math.max(hl,10*u),.45*sl)};
+    }
+    const chord=dist(raw[0],raw[raw.length-1]),dev=Math.max(...raw.map(p=>penSegDist(p,raw[0],raw[raw.length-1])));
+    if(on.line&&dev<.07*chord){const a=raw[0],c=raw[raw.length-1],ang=snapAngle(Math.atan2(c.y-a.y,c.x-a.x)),l=dist(a,c);
+      return{type:'line',kind:'line',a,b:{x:a.x+Math.cos(ang)*l,y:a.y+Math.sin(ang)*l}};}
+    return null;
+  }
+  // closed: corners or an ellipse
+  const loop=raw.concat([raw[0]]);let v=rdpClosed(loop,.07*b.d);v=v.slice(0,-1);
+  let changed=true;while(changed&&v.length>3){changed=false;for(let i=0;i<v.length;i++){const a=v[(i-1+v.length)%v.length],c=v[(i+1)%v.length];if(turnA(a,v[i],c)<.5||dist(a,v[i])<.08*b.d){v.splice(i,1);changed=true;break;}}}
+  const polyErr=pts=>{let s=0;raw.forEach(p=>{let m=1e9;for(let i=0;i<pts.length;i++)m=Math.min(m,penSegDist(p,pts[i],pts[(i+1)%pts.length]));s+=m;});return s/raw.length/b.d;};
+  // ellipse by its moments (a uniformly drawn ellipse has variance a^2/2 along its long axis)
+  const rs=resampleN(loop,96);let cx=0,cy=0;rs.forEach(p=>{cx+=p.x;cy+=p.y;});cx/=rs.length;cy/=rs.length;
+  let sxx=0,syy=0,sxy=0;rs.forEach(p=>{const x=p.x-cx,y=p.y-cy;sxx+=x*x;syy+=y*y;sxy+=x*y;});sxx/=rs.length;syy/=rs.length;sxy/=rs.length;
+  const tr=sxx+syy,dt=Math.sqrt(Math.max(0,(sxx-syy)**2/4+sxy*sxy)),l1=tr/2+dt,l2=tr/2-dt,rot=.5*Math.atan2(2*sxy,sxx-syy);
+  const rx=Math.sqrt(2*l1),ry=Math.sqrt(2*Math.max(l2,1e-6));
+  let eErr=0;rs.forEach(p=>{const x=p.x-cx,y=p.y-cy,q=(x*Math.cos(rot)+y*Math.sin(rot))/rx,w=(-x*Math.sin(rot)+y*Math.cos(rot))/ry;eErr+=Math.abs(Math.hypot(q,w)-1);});eErr/=rs.length;
+  const round=ry/rx>.85;
+  if(v.length==3&&on.tri&&polyErr(v)<.035)return{type:'poly',kind:'tri',pts:v};
+  if(v.length==4&&(on.square||on.rect)&&polyErr(v)<.035){
+    let ca0=0,sa0=0;for(let i=0;i<4;i++){const a=v[i],c=v[(i+1)%4];let t=Math.atan2(c.y-a.y,c.x-a.x)%(Math.PI/2);if(t<0)t+=Math.PI/2;ca0+=Math.cos(4*t);sa0+=Math.sin(4*t);}
+    const a=snapAngle(Math.atan2(sa0,ca0)/4),ca=Math.cos(a),sa=Math.sin(a);let u0=1e9,u1=-1e9,w0=1e9,w1=-1e9;
+    raw.forEach(p=>{const q=p.x*ca+p.y*sa,w=-p.x*sa+p.y*ca;u0=Math.min(u0,q);u1=Math.max(u1,q);w0=Math.min(w0,w);w1=Math.max(w1,w);});
+    let uw=u1-u0,wh=w1-w0;const sq=Math.min(uw,wh)/Math.max(uw,wh)>.85,kind=(sq&&on.square)||!on.rect?'square':'rect';
+    const uc=(u0+u1)/2,wc=(w0+w1)/2;if(kind=='square'){const s=(uw+wh)/2;uw=wh=s;}
+    const pt=(q,w)=>({x:q*ca-w*sa,y:q*sa+w*ca});
+    return{type:'poly',kind,pts:[pt(uc-uw/2,wc-wh/2),pt(uc+uw/2,wc-wh/2),pt(uc+uw/2,wc+wh/2),pt(uc-uw/2,wc+wh/2)]};
+  }
+  if(eErr<.12&&(on.circle||on.oval)){
+    if((round&&on.circle)||!on.oval){const r=(rx+ry)/2;return{type:'ellipse',kind:'circle',cx,cy,rx:r,ry:r,rot:0};}
+    return{type:'ellipse',kind:'oval',cx,cy,rx,ry,rot:snapAngle(rot)};
+  }
+  return null;
+}
+// a snapped shape as SVG path text
+function penShapeD(it){
+  if(it.type=='line')return'M'+pn(it.a.x,it.a.y)+'L'+pn(it.b.x,it.b.y);
+  if(it.type=='poly')return it.pts.map((q,i)=>(i?'L':'M')+pn(q.x,q.y)).join('')+'Z';
+  if(it.type=='ellipse'){ // four cubic quarter arcs
+    const k=.5522847,c=Math.cos(it.rot),s=Math.sin(it.rot),P=t=>({x:it.cx+c*it.rx*Math.cos(t)-s*it.ry*Math.sin(t),y:it.cy+s*it.rx*Math.cos(t)+c*it.ry*Math.sin(t)}),
+      D=t=>({x:-c*it.rx*Math.sin(t)-s*it.ry*Math.cos(t),y:-s*it.rx*Math.sin(t)+c*it.ry*Math.cos(t)});
+    let d='M'+pn(P(0).x,P(0).y);
+    for(let q=0;q<4;q++){const t0=q*Math.PI/2,t1=t0+Math.PI/2,a=P(t0),b=P(t1),da=D(t0),db=D(t1);
+      d+='C'+pn(a.x+k*da.x,a.y+k*da.y,b.x-k*db.x,b.y-k*db.y,b.x,b.y);}
+    return d+'Z';
+  }
+  if(it.type=='arrow'){
+    let d=it.straight?'M'+pn(it.shaft[0].x,it.shaft[0].y)+'L'+pn(it.tip.x,it.tip.y):crD(penRdp(it.shaft,.3),false);
+    [1,-1].forEach(sg=>{const a=it.ang+Math.PI-sg*.48;d+='M'+pn(it.tip.x,it.tip.y)+'L'+pn(it.tip.x+Math.cos(a)*it.head,it.tip.y+Math.sin(a)*it.head);});
+    return d;
+  }
+  return'';
+}
+// a freehand line as a stroke: one even width (mouse, finger), or, with pressure, its segments grouped by width
+// (each group one path, drawn at that width with round caps, so the pieces join seamlessly)
+function freeStroke(pts,pressure){
+  const st={d:'',color:S.ink,size:S.size,wall:true,ink:true};
+  if(pts.length<2){const p=pts[0];st.d='M'+pn(p.x,p.y)+'L'+pn(p.x+.01,p.y);if(pressure)st.size=Math.round(penW(p.pr)*4)/4;return st;}
+  if(!pressure){st.d=crD(penRdp(pts,.3),false);return st;}
+  // keep the points that matter for the shape (.3 px) or where the width has changed by a quarter pixel
+  const keep=rdpIdx(pts,.3);let lw=-1;const kept=[];
+  pts.forEach((p,i)=>{const w=penW(p.pr);if(keep[i]||Math.abs(w-lw)>=.25){kept.push({x:p.x,y:p.y,w});lw=w;}});
+  const by=new Map();
+  for(let i=1;i<kept.length;i++){const a=kept[i-1],b=kept[i],w=Math.round((a.w+b.w)*2)/4;
+    by.set(w,(by.get(w)||'')+'M'+pn(a.x,a.y)+'L'+pn(b.x,b.y));}
+  st.d=crD(kept,false);st.parts=[...by.entries()].map(([w,d])=>[w,d]);
+  st.size=Math.round(kept.reduce((s,p)=>s+p.w,0)/kept.length*4)/4;
+  return st;
+}
+// draw any kept stroke (line, curve, fan, pen) on a canvas
+const partP=new WeakMap();
+function strokeOn(c,st,col){
+  c.strokeStyle=col||(st.ink?S.ink:st.color);
+  if(st.parts){let ps=partP.get(st);if(!ps)partP.set(st,ps=st.parts.map(([w,d])=>[w,new Path2D(d)]));
+    ps.forEach(([w,p])=>{c.lineWidth=w;c.stroke(p);});return;}
+  c.lineWidth=st.size;c.stroke(strokePath(st));
+}
+// a pen stroke goes onto the page as line work and a wall (always: the pen draws the coloring page itself)
+function commitPen(st){
+  pushUndo([O]);
+  O.save();O.lineCap='round';O.lineJoin='round';
+  if(st.parts)st.parts.forEach(([w,d])=>{O.strokeStyle=S.ink;O.lineWidth=Math.max(w,2.5);O.stroke(new Path2D(d));});
+  else{O.strokeStyle=S.ink;O.lineWidth=Math.max(st.size,2.5);O.stroke(strokePath(st));}
+  O.restore();
+  S.strokes=[...(S.strokes||[]),st];drawPreview();requestView();
+}
+const PEN_HOLD_MS=450;
+const penTool={id:'pen',name:'Pen',key:'p',btn:'[data-tool="pen"]',panels:['ostroke','open'],overlay:'pen',cur:null,
+  hint:()=>PEN.snap?'Draw freely. Hold still at the end of a stroke to snap it to a shape.':'Draw freely with the pen; its lines are walls the fill stops at.',
+  down(p,e){
+    const pr=e.pointerType==='pen';
+    this.cur={raw:[{x:p.x,y:p.y,pr:pr?(e.pressure||.5):.5}],pressure:pr,anchor:p,timer:0,snap:null};
+    this.hold();paper.refresh();return'draw';
+  },
+  hold(){
+    const c=this.cur;if(!c||!PEN.snap)return;clearTimeout(c.timer);
+    c.timer=setTimeout(()=>{if(this.cur!==c||c.snap)return;const s=recognize(c.raw,paper.scale());
+      if(s){c.snap=s;$('#hint').textContent=PEN_SHAPES.find(x=>x[0]===s.kind)[1]+'. Lift to keep it; Undo takes it back.';paper.refresh();}
+      else $('#hint').textContent='No switched-on shape fits that stroke, so it stays as drawn.';},PEN_HOLD_MS);
+  },
+  move(p,e){
+    const c=this.cur;if(!c||c.snap)return;
+    let evs=e&&e.getCoalescedEvents?e.getCoalescedEvents():[];if(!evs.length)evs=[e]; // some pointers report no in-between points
+    const min=.5*paper.scale();
+    evs.forEach(ev=>{const q=ev===e?p:toC(ev),last=c.raw[c.raw.length-1];if(dist(q,last)>=min)c.raw.push({x:q.x,y:q.y,pr:c.pressure?(ev.pressure||last.pr):.5});});
+    if(dist(p,c.anchor)>4*paper.scale()){c.anchor=p;this.hold();}
+    paper.refresh();
+  },
+  build(){
+    const c=this.cur;if(!c)return null;
+    if(c.snap){const st={d:penShapeD(c.snap),color:S.ink,size:S.size,wall:true,ink:true};
+      if(c.pressure)st.size=Math.round(penW(c.raw.reduce((s,q)=>s+q.pr,0)/c.raw.length)*4)/4; // a snapped shape keeps an even width
+      return st;}
+    const pts=c.raw.length<2?c.raw:smoothPts(c.raw,penTolPx(),PEN.corners);
+    return freeStroke(pts,c.pressure);
+  },
+  up(){
+    const c=this.cur;if(!c)return;clearTimeout(c.timer);
+    const st=this.build();this.cur=null;updHint();
+    if(st&&st.d)commitPen(st);else paper.refresh();
+  },
+  cancel(){if(this.cur)clearTimeout(this.cur.timer);this.cur=null;updHint();paper.refresh();},
+  reset(){if(this.cur)clearTimeout(this.cur.timer);this.cur=null;},
+  preview(c){
+    if(!this.cur)return;const st=this.build();if(!st||!st.d)return;
+    c.save();c.lineCap='round';c.lineJoin='round';
+    strokeOn(c,st,S.ink);c.restore();
+  },
+  dot:()=>S.ink
+};
+const TOOLS={fill:fillTool,pen:penTool,line:lineTool,curve:curveTool,shape:shapeTool};
+const TOOL_PANELS=[...new Set(Object.values(TOOLS).flatMap(t=>t.panels))];
+const KEYTOOLS={};Object.values(TOOLS).forEach(t=>{if(t.key)KEYTOOLS[t.key]=t.id;});
+function finishTools(){Object.values(TOOLS).forEach(t=>{if(t.finish)t.finish();});}
+function resetTools(){Object.values(TOOLS).forEach(t=>{if(t.reset)t.reset();});}
+
+/* ---------- pointer ----------
+   The page's own handling: pointer capture, two-finger pinch, a tap that moves 10px turning into a pan (zoomed) or
+   nothing, the loupe. Everything else is the tool's: one.tool is the tool that got the press. */
 const pts=new Map();let pinch=null,one=null;
 function toC(e){const r=cv.overlay.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};}
 function startPinch(){
@@ -3125,22 +3485,14 @@ wrap.addEventListener('pointerdown',e=>{
   pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
   try{wrap.setPointerCapture(e.pointerId);}catch(_){}
   if(pts.size===2){
-    if(drag&&drag.type!=='handle')drag=null;
+    if(one&&one.tool.cancel)one.tool.cancel();
     one=null;hideLoupe();drawPreview();startPinch();return;
   }
   if(pts.size>2)return;
-  const p=toC(e);
-  one={id:e.pointerId,x0:e.clientX,y0:e.clientY,p,mode:'tap'};
-  if(S.tool==='fill'){if(S.loupe){one.mode='aim';showLoupe(e.clientX,e.clientY,p);}return;}
-  if(isStampTool()){one.mode='aim';startAim(p);if(S.loupe)showLoupe(e.clientX,e.clientY,p);return;}
-  one.mode='draw';
-  if(S.tool==='curve'&&pending){
-    if(dist(p,pending.h)<34*scale()){drag={type:'handle'};if(S.loupe)showLoupe(e.clientX,e.clientY,p);return;}
-    commitPending();
-  }
-  const fan=S.tool==='shape';
-  drag={type:fan?'cfan':S.tool,a:p,b:p,cell:fan?cellAt(p.x,p.y):null,seed:Array.from({length:randi(6,8)},()=>[Math.random(),Math.random()])};
-  drawPreview();if(S.loupe)showLoupe(e.clientX,e.clientY,p);
+  const p=toC(e),tool=TOOLS[S.tool];
+  one={id:e.pointerId,x0:e.clientX,y0:e.clientY,tool,mode:'tap'};
+  one.mode=tool.down(p,e)||'tap';
+  if(one.mode!=='tap'&&S.loupe)showLoupe(e.clientX,e.clientY,p);
 });
 wrap.addEventListener('pointermove',e=>{
   if(!pts.has(e.pointerId))return;
@@ -3152,17 +3504,10 @@ wrap.addEventListener('pointermove',e=>{
     if(Z.z>1.01){one.mode='pan';one.tx0=Z.tx;one.ty0=Z.ty;}else one.mode='dead';
   }
   if(one.mode==='pan'){Z.tx=one.tx0+e.clientX-one.x0;Z.ty=one.ty0+e.clientY-one.y0;clampPan();applyZ();return;}
+  if(one.mode!=='aim'&&one.mode!=='draw')return;
   const p=toC(e);
-  if(one.mode==='aim'&&isStampTool()){
-    // the press is the shape's base; dragging while held grows it toward the pointer
-    if(aim&&dist(p,one.p)>6){aim.q=p;showAim();}
-    if(S.loupe)showLoupe(e.clientX,e.clientY,p);return;
-  }
-  if(one.mode==='aim'){one.p=p;if(S.loupe)showLoupe(e.clientX,e.clientY,p);return;}
-  if(one.mode==='draw'&&drag){
-    if(drag.type==='handle')pending.h=p;else drag.b=p;
-    drawPreview();if(S.loupe)showLoupe(e.clientX,e.clientY,p);
-  }
+  if(one.tool.move)one.tool.move(p,e);
+  if(S.loupe)showLoupe(e.clientX,e.clientY,p);
 });
 function up(e){
   if(!pts.has(e.pointerId))return;
@@ -3170,45 +3515,37 @@ function up(e){
   if(pinch){if(pts.size<2)pinch=null;one=null;return;}
   if(!one||one.id!==e.pointerId)return;
   const o=one;one=null;hideLoupe();
-  if(e.type==='pointercancel'){drag=null;clearHover();drawPreview();return;}
-  if(o.mode==='tap'||o.mode==='aim'){
-    if(isStampTool()){if(aim){const st=aimStamp(aim);placeStamp(st);lastPlaced=st?{st,aim,id:S.stamp,u:undoStack[undoStack.length-1]}:null;
-      if(st&&S.seedAuto&&shapeById(S.stamp).seeded)setSeed(String(1+Math.floor(Math.random()*99999)),true);}clearHover();}
-    else fillAt(o.p.x,o.p.y);
-    return;
-  }
-  if(o.mode!=='draw'||!drag)return;
-  const d=drag;drag=null;
-  if(d.type==='handle'||dist(d.a,d.b)<4){drawPreview();return;}
-  if(d.type==='line')commitStroke(linePath(d.a,d.b));
-  else if(d.type==='curve'){pending={a:d.a,b:d.b,h:{x:(d.a.x+d.b.x)/2,y:(d.a.y+d.b.y)/2}};drawPreview();}
-  else if(d.type==='cfan'){const st=cfanStamp(d);if(st)placeStamp(st);else commitStroke(fanPath(d.a,d.b,d.seed));}
+  if(e.type==='pointercancel'){if(o.tool.cancel)o.tool.cancel();return;}
+  if(o.mode==='tap'||o.mode==='aim'||o.mode==='draw'){if(o.tool.up)o.tool.up(toC(e),e);}
 }
 wrap.addEventListener('pointerup',up);wrap.addEventListener('pointercancel',up);
 // a mouse or pen hovering over the page (nothing pressed): with the loupe on, it follows the pointer too, once a frame.
 // Touch has no hover, so on a touch screen the loupe still shows only while a finger is down.
 let hoverRAF=0,hoverAt=null;
 wrap.addEventListener('pointermove',e=>{
-  if(!S.loupe||e.pointerType==='touch'||one||drag||pts.size)return;
+  if(!S.loupe||e.pointerType==='touch'||one||pts.size)return;
   const p=toC(e);if(p.x<0||p.y<0||p.x>=W||p.y>=H){hoverAt=null;hideLoupe();return;}
   hoverAt={x:e.clientX,y:e.clientY,p};
-  if(!hoverRAF)hoverRAF=requestAnimationFrame(()=>{hoverRAF=0;if(hoverAt&&S.loupe&&!one&&!drag)showLoupe(hoverAt.x,hoverAt.y,hoverAt.p);});
+  if(!hoverRAF)hoverRAF=requestAnimationFrame(()=>{hoverRAF=0;if(hoverAt&&S.loupe&&!one)showLoupe(hoverAt.x,hoverAt.y,hoverAt.p);});
 });
-wrap.addEventListener('pointerleave',e=>{if(e.pointerType!=='touch'&&!one){hoverAt=null;hideLoupe();}});
+wrap.addEventListener('pointerleave',e=>{
+  if(e.pointerType!=='touch'&&!one){hoverAt=null;hideLoupe();}
+  const t=TOOLS[S.tool];if(t.out)t.out(e);
+});
 
 /* ---------- UI ---------- */
 function setTool(t){
-  commitPending();S.tool=t;
-  document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('on',b.dataset.tool===t));$('#shapeTool').classList.toggle('on',t==='shape');
-  $('#tname').textContent=TOOLNAMES[t];$('#ofill').hidden=t!=='fill';$('#ostroke').hidden=$('#oplace').hidden=t==='fill';$('#oshape').hidden=$('#olook').hidden=$('#shapePlace').hidden=t!=='shape';$('#wallL').hidden=false;
-  if(t!=='shape'){closeFly();clearHover();}
-  cv.overlay.classList.toggle('fill',t==='fill');updHint();
+  const tool=TOOLS[t]||TOOLS.fill,old=TOOLS[S.tool];
+  finishTools();
+  if(old&&old!==tool&&old.leave)old.leave();
+  S.tool=tool.id;
+  Object.values(TOOLS).forEach(x=>{const b=x.btn&&$(x.btn);if(b)b.classList.toggle('on',x===tool);});
+  $('#tname').textContent=tool.name;
+  TOOL_PANELS.forEach(id=>{$('#'+id).hidden=!tool.panels.includes(id);});$('#wallL').hidden=false;
+  Object.values(TOOLS).forEach(x=>{if(x.overlay)cv.overlay.classList.toggle(x.overlay,x===tool);});
+  updHint();
 }
-const TOOLNAMES={fill:'Fill',line:'Line',curve:'Curve',shape:'Shape'};
-function updHint(){
-  if(S.tool==='shape'){const sh=shapeById(S.stamp);$('#hint').textContent=sh.drag?HINTS.fan:S.frame?'Frame: drag out from the middle of the page to size it around the design (tap for one just inside the page).':(sh.id==='echo'?'Press in a field to echo its outline; each new echo goes inside the last. Drag while holding to size it.':sh.snap?'Press in a field to center a spiral on it; drag while holding to size it.':'Press where the '+sh.name.toLowerCase().replace(/,.*/,'')+' should start; drag while holding to grow it. Place as many as you like.');return;}
-  $('#hint').textContent=S.tool==='fill'&&S.loupe?HINTS.aim:HINTS[S.tool];
-}
+function updHint(){$('#hint').textContent=TOOLS[S.tool].hint();}
 /* ---------- the shapes tool: a Photoshop-style group, hold (or right-click) for the picker ---------- */
 const fly=$('#fly'),shapeBtn=$('#shapeTool');
 function renderFly(){
@@ -3244,7 +3581,6 @@ shapeBtn.oncontextmenu=e=>{e.preventDefault();setTool('shape');openFly();};
 $('#shapePick').onclick=()=>fly.hidden?openFly():closeFly();
 document.addEventListener('pointerdown',e=>{if(!fly.hidden&&!fly.contains(e.target)&&!shapeBtn.contains(e.target)&&!$('#shapePick').contains(e.target))closeFly();},true);
 $('#fitBox').oninput=e=>{const sh=shapeById(S.stamp),v=+e.target.value;fitFor[sh.id]=v/100;$('#fitN').textContent=v;store.set('dblob-fit',JSON.stringify(fitFor));if(aim)showAim();};
-wrap.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')clearHover();});
 function setLoupe(v){
   S.loupe=v;$('#loupeBtn').checked=v;updHint();if(!v)hideLoupe();
   try{localStorage.setItem('dblob-loupe',v?'1':'0');}catch(_){}
@@ -3474,13 +3810,30 @@ function setDark(v,init){
 $('#paperLight').onclick=()=>{if(S.dark)setDark(false);};$('#paperDark').onclick=()=>{if(!S.dark)setDark(true);};
 
 $('#genGo').onclick=()=>{newDrawing();closePanel();};
-function setStyle(v){S.style=v==='knot'?'knot':'blob';$('#styBlob').classList.toggle('on',S.style==='blob');$('#styKnot').classList.toggle('on',S.style==='knot');
-  $('#panel').dataset.style=S.style;store.set('licorice-style',S.style);}
+function setStyle(v){S.style=v==='knot'||v==='blank'?v:'blob';['Blob','Knot','Blank'].forEach(n=>$('#sty'+n).classList.toggle('on',S.style===n.toLowerCase()));
+  $('#panel').dataset.style=S.style;store.set('licorice-style',S.style);
+  $('#new').title=S.style==='blank'?'Start a blank page (Undo brings the last one back)':'Draw a new page';}
 function setKnotSeed(t){t=String(t).trim().slice(0,24)||'1';S.knotTxt=t;S.knotSeed=seedFrom(t);$('#knotSeed').value=t;store.set('licorice-knotseed',t);}
 const rollKnot=()=>setKnotSeed(String(1+Math.floor(Math.random()*999999)));
 // New: blobs draw fresh; a knot rolls a new seed first (typing a seed and pressing Enter redraws that exact one)
-function newDrawing(){if(S.style==='knot')rollKnot();generate(false);}
-$('#styBlob').onclick=()=>setStyle('blob');$('#styKnot').onclick=()=>setStyle('knot');
+// Blank: an empty page, and the pen picked up to draw on it
+async function newDrawing(){if(S.style==='knot')rollKnot();await generate(false);if(S.style==='blank'&&S.tool==='fill')setTool('pen');}
+$('#styBlob').onclick=()=>setStyle('blob');$('#styKnot').onclick=()=>setStyle('knot');$('#styBlank').onclick=()=>setStyle('blank');
+/* the pen's options: smoothing, corners, and which shapes a held stroke can snap to */
+const snapFly=$('#snapFly'),snapBtn=$('#snapBtn');
+function renderSnap(){
+  const row=(id,name,on)=>`<label><input type="checkbox" data-k="${id}"${on?' checked':''}>${name}</label>`;
+  snapFly.innerHTML=row('snap','Hold to snap',PEN.snap)+'<div class="sep"></div>'+PEN_SHAPES.map(([k,n])=>row(k,n,PEN.on[k])).join('');
+  snapFly.querySelectorAll('[data-k]').forEach(x=>{if(x.dataset.k!=='snap')x.disabled=!PEN.snap;});
+  snapBtn.classList.toggle('on',PEN.snap);
+}
+snapFly.onchange=e=>{const k=e.target.dataset.k;if(!k)return;if(k==='snap')PEN.snap=e.target.checked;else PEN.on[k]=e.target.checked;savePen();renderSnap();updHint();};
+snapBtn.onclick=()=>{if(!snapFly.hidden){snapFly.hidden=true;return;}renderSnap();snapFly.hidden=false;const b=snapBtn.getBoundingClientRect();
+  snapFly.style.left=clamp(b.left,8,innerWidth-snapFly.offsetWidth-8)+'px';snapFly.style.top=(b.bottom+6)+'px';};
+document.addEventListener('pointerdown',e=>{if(!snapFly.hidden&&!snapFly.contains(e.target)&&!snapBtn.contains(e.target))snapFly.hidden=true;},true);
+$('#penTol').value=PEN.tol;$('#penTol').oninput=e=>{const v=+e.target.value;if(isFinite(v)&&e.target.value!==''){PEN.tol=clamp(v,0,20);savePen();}};
+$('#penCorners').checked=PEN.corners;$('#penCorners').onchange=e=>{PEN.corners=e.target.checked;savePen();};
+renderSnap();
 $('#knotSeed').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();setKnotSeed(e.target.value);setStyle('knot');generate(false);}};
 $('#knotSeed').onchange=e=>setKnotSeed(e.target.value);
 $('#knotDice').onclick=()=>{rollKnot();generate(false);};
@@ -3519,7 +3872,7 @@ const DB={p:null,
   put(o){return this.run('readwrite',st=>st.put(o));},del(id){return this.run('readwrite',st=>st.delete(id));},all(){return this.run('readonly',st=>st.getAll());}
 };
 function snapshot(){
-  commitPending();
+  finishTools();
   return{app:'licorice',v:2,W,H,paint:cv.paint.toDataURL('image/png'),outline:cv.outline.toDataURL('image/png'),deco:cv.deco.toDataURL('image/png'),stamps:S.stamps,
     knots:cv.knots.toDataURL('image/png'),strokes:S.strokes||[],legacyInk:S.legacyInk||undefined,
     blobs:(S.blobPaths||[]).map(p=>p.d).filter(Boolean),lat:(S.latPaths||[]).map(p=>p.d).filter(Boolean),fills:(S.inkFills||[]).map(p=>p.d).filter(Boolean),
@@ -3553,7 +3906,7 @@ async function restore(st){
   if(!st||st.app!=='licorice'||!(st.W>=200&&st.H>=200&&st.W*st.H<=4000000))throw new Error('not a Licorice drawing');
   const imgs=await Promise.all([st.paint,st.outline,st.deco].map(loadImg));
   const knots=typeof st.knots==='string'?await loadImg(st.knots):null;
-  commitPending();setSize(st.W|0,st.H|0);pushUndo([P,O,K,D]);
+  finishTools();setSize(st.W|0,st.H|0);pushUndo([P,O,K,D]);
   if(!!st.dark!==S.dark)setDark(!!st.dark,true);
   if((st.inkIdx|0)<0&&/^#[0-9a-f]{6}$/i.test(st.inkC)){S.inkIdx=-1;S.inkC=st.inkC.toLowerCase();S.ink=S.inkC;}
   else{S.inkIdx=clamp(st.inkIdx|0,0,3);S.ink=currentInks()[S.inkIdx];}
@@ -3736,7 +4089,7 @@ async function encodePNG8(c){
   return{blob:new Blob([sig,pngChunk('IHDR',ih),pngChunk('PLTE',pl),pngChunk('IDAT',z),pngChunk('IEND',new Uint8Array(0))],{type:'image/png'}),n};
 }
 $('#save').onclick=()=>{
-  commitPending();exCache={};exCur=null;
+  finishTools();exCache={};exCur=null;
   const pv=flatten(Math.min(2,1400/Math.max(W,H)));$('#shot').src=pv.toDataURL('image/png');pv.width=pv.height=0;
   fillSizes();const f=store.get('licorice-exfmt');if(f&&$('#exFmt option[value="'+f+'"]'))$('#exFmt').value=f;
   $('#modal').hidden=false;makeExport();
@@ -3771,8 +4124,9 @@ function buildSVG(){
     [...(S.blobPaths||[]),...(S.latPaths||[])].filter(p=>p.d).map(p=>`<path d="${esc(p.d)}"/>`).join('')+'</g>');
   if(!S.legacyInk&&(S.inkFills||[]).length)o.push(`<g id="page-ink" fill="${S.ink}" fill-rule="evenodd">`+S.inkFills.filter(p=>p.d).map(p=>`<path d="${esc(p.d)}"/>`).join('')+'</g>');
   const deco=layerPNG([cv.deco]);if(deco)o.push(`<g id="older-lines">${img(deco)}</g>`);
-  o.push('<g id="lines" fill="none" stroke-linecap="round" stroke-linejoin="round">'+(S.strokes||[]).map(st=>
-    `<path d="${esc(st.d)}" stroke="${st.color}" stroke-width="${st.size}"/>`).join('')+'</g>');
+  o.push('<g id="lines" fill="none" stroke-linecap="round" stroke-linejoin="round">'+(S.strokes||[]).map(st=>{const col=st.ink?S.ink:st.color;
+    return st.parts?`<g stroke="${col}">`+st.parts.map(([w,d])=>`<path d="${esc(d)}" stroke-width="${pn(w)}"/>`).join('')+'</g>':
+      `<path d="${esc(st.d)}" stroke="${col}" stroke-width="${st.size}"/>`;}).join('')+'</g>');
   let defs='',gi=0;
   const shapeSVG=st=>{
     if(st.fill)return`<path d="${esc(st.d)}" fill="${st.color}"/>`;
@@ -3839,7 +4193,6 @@ function showHelp(v){help.hidden=!v;}
 $('#helpBtn').onclick=()=>showHelp(true);$('#helpClose').onclick=()=>showHelp(false);
 help.addEventListener('pointerdown',e=>{if(e.target===help)showHelp(false);});
 $('#modal').addEventListener('pointerdown',e=>{if(e.target.id==='modal')$('#modal').hidden=true;});
-const KEYTOOLS={f:'fill',l:'line',c:'curve',s:'shape'};
 addEventListener('keydown',e=>{
   if(e.key==='Escape'){if(!help.hidden)showHelp(false);else if(!$('#modal').hidden)$('#modal').hidden=true;else closePanel();return;}
   if(e.target.id==='pkHex'||e.target.id==='seedBox')return;
