@@ -91,7 +91,7 @@ body.pageOnly #stage{background:#000}
 
 /* ---- swatches ---- */
 #strip{display:flex;align-items:center;flex-wrap:nowrap;gap:8px;padding:8px 10px;background:var(--panel);border-top:1px solid #111;
-  max-height:124px;overflow-y:auto;scrollbar-width:thin}
+  max-height:max(124px,calc(var(--appH,100dvh)*.34));overflow-y:auto;scrollbar-width:thin} /* v38: tall enough to show a whole palette on a phone; only scrolls when there's truly more */
 #strip::-webkit-scrollbar{display:none}
 #slots{display:flex;flex-wrap:wrap;gap:8px 12px;flex:1 1 auto;min-width:0;align-items:center}
 .slot{display:flex;align-items:center;flex-wrap:wrap;gap:6px;flex:0 1 auto;min-width:0}
@@ -302,7 +302,7 @@ body.optsOpen #opts .grp,body.optsOpen #opts .seg{max-width:100%;flex-wrap:wrap}
       <textarea id="mImp" style="width:100%;min-height:70px;background:var(--well);color:var(--ink);border:1px solid var(--edge2);border-radius:8px;padding:8px;font:12px var(--mono)" placeholder="<svg xmlns=…"></textarea>
       <button id="mLoad">Load it</button>
       <p class="msg" id="mMsg"></p>
-      <p style="margin:0;color:var(--dim)">Licorice Ink &amp; Fill · version 37 · keyboard: ] next color, [ previous color</p>
+      <p style="margin:0;color:var(--dim)">Licorice Ink &amp; Fill · version 38 · keyboard: ] next color, [ previous color</p>
       <p style="border-top:1px solid var(--edge);padding-top:10px;margin-top:4px">More Licorice: <a href="https://grbsoftware.github.io/licorice/" style="color:var(--hot)">Home</a> · <a href="https://grbsoftware.github.io/licorice/palettes/" style="color:var(--hot)">Palettes</a> · <a href="https://grbsoftware.github.io/licorice/app/" style="color:var(--hot)">Coloring app</a></p>
       <img id="shot" alt="Your page" hidden>
     </div></div>
