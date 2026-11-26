@@ -82,6 +82,11 @@ input[type=checkbox]{accent-color:var(--hot);width:16px;height:16px;margin:0}
 #toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(10,10,10,.88);color:#fff;
   padding:8px 14px;border-radius:999px;font-weight:600;pointer-events:none;white-space:nowrap;border:1px solid var(--edge2)}
 #zoomui{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}
+/* v39: on phones, the selected thing's Delete sits right on the drawing (the full options are behind Settings) */
+#selBar{position:absolute;left:10px;top:10px;display:flex;gap:6px;z-index:3}
+#selBar button{min-height:44px;background:rgba(37,37,37,.94)}
+@media(min-width:900px){#selBar{display:none!important}}
+body.pageOnly #selBar{display:none!important}
 #zoomui button{min-width:38px;justify-content:center;background:rgba(37,37,37,.92)}
 /* Page only (v35): just the page on black; a tap, Back or Esc brings everything back */
 body.pageOnly #opts,body.pageOnly #strip,body.pageOnly #rail,body.pageOnly #zoomui,body.pageOnly #toast{display:none!important}
@@ -226,6 +231,7 @@ body.optsOpen #opts .grp,body.optsOpen #opts .seg{max-width:100%;flex-wrap:wrap}
     </svg>
     <div id="toast" hidden></div>
     <div id="pageOnlyHit" hidden title="Tap to bring the tools back"></div>
+    <div id="selBar" hidden><button id="sbDel" class="warn">Delete</button><button id="sbMore">More options</button></div>
     <div id="zoomui"><button id="bPageOnly" title="Just the page on black. Tap or Back to return.">Page only</button><button id="zOut" title="Zoom out" aria-label="Zoom out">−</button><button id="zFit" title="Fit page">Fit</button><button id="zIn" title="Zoom in" aria-label="Zoom in">+</button><button id="bFull" title="Full screen"><span id="bFullT">Full</span></button></div>
   </div>
   <div id="strip">
@@ -302,7 +308,7 @@ body.optsOpen #opts .grp,body.optsOpen #opts .seg{max-width:100%;flex-wrap:wrap}
       <textarea id="mImp" style="width:100%;min-height:70px;background:var(--well);color:var(--ink);border:1px solid var(--edge2);border-radius:8px;padding:8px;font:12px var(--mono)" placeholder="<svg xmlns=…"></textarea>
       <button id="mLoad">Load it</button>
       <p class="msg" id="mMsg"></p>
-      <p style="margin:0;color:var(--dim)">Licorice Ink &amp; Fill · version 38 · keyboard: ] next color, [ previous color</p>
+      <p style="margin:0;color:var(--dim)">Licorice Ink &amp; Fill · version 39 · keyboard: ] next color, [ previous color</p>
       <p style="border-top:1px solid var(--edge);padding-top:10px;margin-top:4px">More Licorice: <a href="https://grbsoftware.github.io/licorice/" style="color:var(--hot)">Home</a> · <a href="https://grbsoftware.github.io/licorice/palettes/" style="color:var(--hot)">Palettes</a> · <a href="https://grbsoftware.github.io/licorice/app/" style="color:var(--hot)">Coloring app</a></p>
       <img id="shot" alt="Your page" hidden>
     </div></div>
@@ -2092,6 +2098,13 @@ function stepColor(d){const cs=[...document.querySelectorAll('#slots [data-c]')]
   let i=cs.indexOf(opt.color.toLowerCase());i=i<0?0:(i+d+cs.length)%cs.length;pickColor(cs[i]);
   const on=document.querySelector('#slots .swb.on');if(on)on.scrollIntoView({block:'nearest',inline:'nearest'});}
 // phone Settings: slide the current tool's settings up under the page
+function syncSelBar(){const b=$('#selBar');if(!b)return;const it=sel&&sel.k==='ink'?findInk(sel.id):null;
+  b.hidden=!(tool==='edit'&&sel);$('#sbDel').textContent=it&&it.t==='path'&&selPt>=0?'Delete point':'Delete';}
+{const _ro=renderOpts;renderOpts=function(){_ro();syncSelBar();};}
+$('#sbDel').onclick=()=>{if(!sel)return;const it=sel.k==='ink'?findInk(sel.id):null;
+  if(it&&it.t==='path'&&selPt>=0&&it.pts[selPt]){begin();it.pts.splice(selPt,1);if(it.pts.length<2){doc.ink=doc.ink.filter(x=>x!==it);sel=null;}selPt=-1;commit();renderOpts();render();return;}
+  deleteSel();};
+$('#sbMore').onclick=()=>{document.body.classList.add('optsOpen');requestAnimationFrame(()=>{applyView();render();});};
 $('#bOpts').onclick=()=>{document.body.classList.toggle('optsOpen');requestAnimationFrame(()=>{applyView();render();});};
 // Back (phone back button, back swipe, browser Back) closes what's open instead of leaving the page
 (()=>{let held=0,skip=0;
